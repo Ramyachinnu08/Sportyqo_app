@@ -27,8 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedSport: widget.selectedSport,
         playerId: widget.playerId),
     const DugoutScreen(),
-    const PlaybookScreen(),
     const PerformanceScreen(),
+    const PlaybookScreen(),
   ];
 
   @override
@@ -39,8 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Color(0xFF0F0F2A),
-          border:
-          Border(top: BorderSide(color: Colors.white10)),
+          border: Border(
+              top: BorderSide(color: Colors.white10)),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
@@ -66,13 +66,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 activeIcon: Icon(Icons.people),
                 label: 'Dugout'),
             BottomNavigationBarItem(
-                icon: Icon(Icons.menu_book_outlined),
-                activeIcon: Icon(Icons.menu_book),
-                label: 'Playbook'),
-            BottomNavigationBarItem(
                 icon: Icon(Icons.bar_chart_outlined),
                 activeIcon: Icon(Icons.bar_chart),
                 label: 'Performance'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.menu_book_outlined),
+                activeIcon: Icon(Icons.menu_book),
+                label: 'Playbook'),
           ],
         ),
       ),
@@ -169,13 +169,15 @@ class _HomeTabState extends State<_HomeTab> {
                                   fontSize: 30,
                                   fontWeight:
                                   FontWeight.w800,
-                                  color: AppColors.primary)),
+                                  color:
+                                  AppColors.primary)),
                         ]),
                         if (widget.playerId != null) ...[
                           const SizedBox(height: 4),
                           Text(widget.playerId!,
                               style: const TextStyle(
-                                  color: Color(0xFF00C853),
+                                  color:
+                                  Color(0xFF00C853),
                                   fontSize: 13,
                                   fontWeight:
                                   FontWeight.w600,
@@ -188,7 +190,8 @@ class _HomeTabState extends State<_HomeTab> {
                                 color: Colors.white54,
                                 fontSize: 13)),
                         const SizedBox(height: 2),
-                        Text(_activeTeam ?? 'No Team',
+                        Text(
+                            _activeTeam ?? 'No Team',
                             style: const TextStyle(
                                 color: AppColors.primary,
                                 fontSize: 13,
@@ -197,14 +200,12 @@ class _HomeTabState extends State<_HomeTab> {
                       ],
                     ),
                   ),
-
-                  // Notification Bell
                   GestureDetector(
                     onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) =>
-                            const _NotificationScreen())),
+                            builder: (_) => const
+                            _NotificationScreen())),
                     child: Stack(children: [
                       Container(
                         width: 42,
@@ -218,11 +219,9 @@ class _HomeTabState extends State<_HomeTab> {
                             size: 22),
                       ),
                       Positioned(
-                        top: 6,
-                        right: 6,
+                        top: 6, right: 6,
                         child: Container(
-                          width: 9,
-                          height: 9,
+                          width: 9, height: 9,
                           decoration: BoxDecoration(
                               color: AppColors.primary,
                               shape: BoxShape.circle,
@@ -234,16 +233,13 @@ class _HomeTabState extends State<_HomeTab> {
                       ),
                     ]),
                   ),
-
                   const SizedBox(width: 10),
-
-                  // Profile Picture
                   GestureDetector(
                     onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) =>
-                            const _ProfileImageScreen())),
+                            builder: (_) => const
+                            _ProfileImageScreen())),
                     child: Container(
                       width: 44,
                       height: 44,
@@ -281,8 +277,8 @@ class _HomeTabState extends State<_HomeTab> {
                       color: const Color(0xFF13132B),
                       borderRadius:
                       BorderRadius.circular(22),
-                      border:
-                      Border.all(color: Colors.white10),
+                      border: Border.all(
+                          color: Colors.white10),
                     ),
                     child: Column(
                       crossAxisAlignment:
@@ -290,7 +286,8 @@ class _HomeTabState extends State<_HomeTab> {
                       children: [
                         Row(
                           mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
+                          MainAxisAlignment
+                              .spaceBetween,
                           children: const [
                             Text('Qo Score',
                                 style: TextStyle(
@@ -326,8 +323,10 @@ class _HomeTabState extends State<_HomeTab> {
                         ),
                         const SizedBox(height: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 5),
+                          padding:
+                          const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5),
                           decoration: BoxDecoration(
                             color: AppColors.primary
                                 .withOpacity(0.18),
@@ -344,8 +343,10 @@ class _HomeTabState extends State<_HomeTab> {
                                   width: 8,
                                   height: 8,
                                   decoration: BoxDecoration(
-                                      color: AppColors.primary,
-                                      shape: BoxShape.circle)),
+                                      color:
+                                      AppColors.primary,
+                                      shape:
+                                      BoxShape.circle)),
                               const SizedBox(width: 6),
                               const Text('Purple Card',
                                   style: TextStyle(
@@ -410,8 +411,8 @@ class _HomeTabState extends State<_HomeTab> {
                       color: const Color(0xFF13132B),
                       borderRadius:
                       BorderRadius.circular(18),
-                      border:
-                      Border.all(color: Colors.white10),
+                      border: Border.all(
+                          color: Colors.white10),
                     ),
                     child: Row(children: [
                       _ShieldBadge(
@@ -448,8 +449,10 @@ class _HomeTabState extends State<_HomeTab> {
                       ),
                       if (_activeTeam != null)
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                          padding:
+                          const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4),
                           decoration: BoxDecoration(
                             color: const Color(0xFF00C853)
                                 .withOpacity(0.15),
@@ -462,14 +465,16 @@ class _HomeTabState extends State<_HomeTab> {
                           ),
                           child: const Text('Active',
                               style: TextStyle(
-                                  color: Color(0xFF00C853),
+                                  color:
+                                  Color(0xFF00C853),
                                   fontSize: 12,
                                   fontWeight:
                                   FontWeight.w600)),
                         ),
                       const SizedBox(width: 8),
                       const Icon(Icons.chevron_right,
-                          color: Colors.white38, size: 20),
+                          color: Colors.white38,
+                          size: 20),
                     ]),
                   ),
                 ),
@@ -494,13 +499,14 @@ class _HomeTabState extends State<_HomeTab> {
                       onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) =>
-                              const _AllMatchesScreen())),
+                              builder: (_) => const
+                              _AllMatchesScreen())),
                       child: const Text('View All',
                           style: TextStyle(
                               color: AppColors.primary,
                               fontSize: 13,
-                              fontWeight: FontWeight.w600)),
+                              fontWeight:
+                              FontWeight.w600)),
                     ),
                   ],
                 ),
@@ -513,10 +519,11 @@ class _HomeTabState extends State<_HomeTab> {
                     horizontal: 20),
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius:
+                    BorderRadius.circular(20),
                     color: const Color(0xFF13132B),
-                    border:
-                    Border.all(color: Colors.white10),
+                    border: Border.all(
+                        color: Colors.white10),
                   ),
                   child: Column(children: [
                     ClipRRect(
@@ -528,14 +535,20 @@ class _HomeTabState extends State<_HomeTab> {
                           child: Image.network(
                             'https://i.ibb.co/ksm7Jj8f/1a.png',
                             fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                Container(
+                                    color: const Color(
+                                        0xFF13132B)),
                           ),
                         ),
                         Positioned.fill(
                           child: Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
+                                begin:
+                                Alignment.topCenter,
+                                end: Alignment
+                                    .bottomCenter,
                                 colors: [
                                   Colors.black
                                       .withOpacity(0.45),
@@ -547,15 +560,18 @@ class _HomeTabState extends State<_HomeTab> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(
+                          padding:
+                          const EdgeInsets.symmetric(
                               vertical: 26),
                           child: Row(
                             mainAxisAlignment:
-                            MainAxisAlignment.spaceEvenly,
+                            MainAxisAlignment
+                                .spaceEvenly,
                             children: [
                               Column(children: [
                                 _ShieldBadge(
-                                    color: AppColors.primary,
+                                    color:
+                                    AppColors.primary,
                                     icon: Icons.shield,
                                     size: 56,
                                     letter: 'A'),
@@ -567,11 +583,13 @@ class _HomeTabState extends State<_HomeTab> {
                                         color: Colors.white,
                                         fontSize: 13,
                                         fontWeight:
-                                        FontWeight.w600)),
+                                        FontWeight
+                                            .w600)),
                               ]),
                               const Text('VS',
                                   style: TextStyle(
-                                      color: AppColors.primary,
+                                      color:
+                                      AppColors.primary,
                                       fontSize: 18,
                                       fontWeight:
                                       FontWeight.w800)),
@@ -580,7 +598,8 @@ class _HomeTabState extends State<_HomeTab> {
                                     color: Colors.white24,
                                     icon: Icons.bolt,
                                     size: 56,
-                                    iconColor: Colors.white),
+                                    iconColor:
+                                    Colors.white),
                                 const SizedBox(height: 8),
                                 Text(
                                     _getTeam2(widget
@@ -589,7 +608,8 @@ class _HomeTabState extends State<_HomeTab> {
                                         color: Colors.white,
                                         fontSize: 13,
                                         fontWeight:
-                                        FontWeight.w600)),
+                                        FontWeight
+                                            .w600)),
                               ]),
                             ],
                           ),
@@ -655,8 +675,8 @@ class _HomeTabState extends State<_HomeTab> {
                       context,
                       MaterialPageRoute(
                           builder: (_) => JoinLeagueScreen(
-                            onJoined:
-                                (teamName, leagueName) {
+                            onJoined: (teamName,
+                                leagueName) {
                               setState(() {
                                 _activeTeam = teamName;
                                 _activeLeague =
@@ -665,7 +685,8 @@ class _HomeTabState extends State<_HomeTab> {
                             },
                           ))),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius:
+                    BorderRadius.circular(20),
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius:
@@ -679,6 +700,10 @@ class _HomeTabState extends State<_HomeTab> {
                           child: Image.network(
                             'https://i.ibb.co/QjvzBGMY/1aa.png',
                             fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                Container(
+                                    color: const Color(
+                                        0xFF13132B)),
                           ),
                         ),
                         Positioned.fill(
@@ -686,7 +711,8 @@ class _HomeTabState extends State<_HomeTab> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                                end:
+                                Alignment.bottomRight,
                                 colors: [
                                   Colors.black
                                       .withOpacity(0.55),
@@ -740,7 +766,8 @@ class _HomeTabState extends State<_HomeTab> {
                                             FontWeight
                                                 .w700)),
                                   ]),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(
+                                      height: 8),
                                   const Text(
                                       'Enter a league code shared\nby your coach or organizer.',
                                       style: TextStyle(
@@ -748,7 +775,8 @@ class _HomeTabState extends State<_HomeTab> {
                                           Colors.white70,
                                           fontSize: 12,
                                           height: 1.5)),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(
+                                      height: 16),
                                   Container(
                                     padding: const EdgeInsets
                                         .symmetric(
@@ -908,8 +936,7 @@ class _ScoreGraphPainter extends CustomPainter {
 
     canvas.drawCircle(
         Offset(size.width, points.last * size.height),
-        4.5,
-        dotPaint);
+        4.5, dotPaint);
     canvas.drawCircle(
         Offset(size.width, points.last * size.height),
         4.5,
@@ -943,7 +970,7 @@ class _NotificationScreenState
       'title': 'Points Added!',
       'subtitle': '+52 Qo points added to your profile',
       'time': '2m ago',
-      'read': false
+      'read': false,
     },
     {
       'icon': Icons.people,
@@ -951,7 +978,7 @@ class _NotificationScreenState
       'title': 'New Follower',
       'subtitle': 'Rahul Sharma started following you',
       'time': '15m ago',
-      'read': false
+      'read': false,
     },
     {
       'icon': Icons.sports_cricket,
@@ -959,7 +986,7 @@ class _NotificationScreenState
       'title': 'League Update',
       'subtitle': 'Summer League 2024 is now live!',
       'time': '1h ago',
-      'read': false
+      'read': false,
     },
     {
       'icon': Icons.favorite,
@@ -967,7 +994,7 @@ class _NotificationScreenState
       'title': 'Post Liked',
       'subtitle': 'Jason liked your match highlight',
       'time': '2h ago',
-      'read': true
+      'read': true,
     },
     {
       'icon': Icons.shield,
@@ -975,23 +1002,25 @@ class _NotificationScreenState
       'title': 'Match Scheduled',
       'subtitle': 'Alpha Warriors vs Thunder on 24 May',
       'time': '3h ago',
-      'read': true
+      'read': true,
     },
     {
       'icon': Icons.star,
       'color': const Color(0xFFFFB300),
       'title': 'Achievement Unlocked!',
-      'subtitle': 'You scored 100+ in a single match 🎉',
+      'subtitle':
+      'You scored 100+ in a single match 🎉',
       'time': '1d ago',
-      'read': true
+      'read': true,
     },
     {
       'icon': Icons.person_add,
       'color': const Color(0xFF7B2FFF),
-      'title': 'Follow Request',
-      'subtitle': 'Vikram Reddy wants to follow you',
+      'title': 'Coach Recommended You',
+      'subtitle':
+      'Coach Rahul recommended you to a club',
       'time': '1d ago',
-      'read': true
+      'read': true,
     },
     {
       'icon': Icons.emoji_events,
@@ -999,7 +1028,7 @@ class _NotificationScreenState
       'title': 'Rank Improved!',
       'subtitle': 'You moved from #16 to #14',
       'time': '2d ago',
-      'read': true
+      'read': true,
     },
   ];
 
@@ -1014,8 +1043,8 @@ class _NotificationScreenState
       body: SafeArea(
         child: Column(children: [
           Padding(
-            padding:
-            const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            padding: const EdgeInsets.fromLTRB(
+                20, 16, 20, 0),
             child: Row(children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -1043,7 +1072,8 @@ class _NotificationScreenState
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 11,
-                              fontWeight: FontWeight.w700)),
+                              fontWeight:
+                              FontWeight.w700)),
                     ),
                   ],
                 ]),
@@ -1052,12 +1082,14 @@ class _NotificationScreenState
                 onTap: () {
                   setState(() {
                     _notifications = _notifications
-                        .map((n) => {...n, 'read': true})
+                        .map((n) =>
+                    {...n, 'read': true})
                         .toList();
                   });
                   ScaffoldMessenger.of(context)
                       .showSnackBar(const SnackBar(
-                    content: Text('All marked as read ✅'),
+                    content:
+                    Text('All marked as read ✅'),
                     backgroundColor: AppColors.primary,
                     duration: Duration(seconds: 2),
                   ));
@@ -1073,8 +1105,8 @@ class _NotificationScreenState
           const SizedBox(height: 16),
           Expanded(
             child: ListView.separated(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 20),
               itemCount: _notifications.length,
               separatorBuilder: (_, __) =>
               const SizedBox(height: 10),
@@ -1084,7 +1116,7 @@ class _NotificationScreenState
                   onTap: () => setState(() {
                     _notifications[i] = {
                       ..._notifications[i],
-                      'read': true
+                      'read': true,
                     };
                   }),
                   child: Container(
@@ -1097,15 +1129,15 @@ class _NotificationScreenState
                       borderRadius:
                       BorderRadius.circular(14),
                       border: Border.all(
-                          color: n['read'] as bool
-                              ? Colors.white10
-                              : AppColors.primary
-                              .withOpacity(0.3)),
+                        color: n['read'] as bool
+                            ? Colors.white10
+                            : AppColors.primary
+                            .withOpacity(0.3),
+                      ),
                     ),
                     child: Row(children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: 44, height: 44,
                         decoration: BoxDecoration(
                           color: (n['color'] as Color)
                               .withOpacity(0.15),
@@ -1125,24 +1157,28 @@ class _NotificationScreenState
                             Row(children: [
                               Expanded(
                                   child: Text(
-                                      n['title'] as String,
+                                      n['title']
+                                      as String,
                                       style: const TextStyle(
-                                          color: Colors.white,
+                                          color:
+                                          Colors.white,
                                           fontWeight:
-                                          FontWeight.w700,
+                                          FontWeight
+                                              .w700,
                                           fontSize: 14))),
                               if (!(n['read'] as bool))
                                 Container(
                                     width: 8,
                                     height: 8,
                                     decoration: BoxDecoration(
-                                        color:
-                                        AppColors.primary,
-                                        shape:
-                                        BoxShape.circle)),
+                                        color: AppColors
+                                            .primary,
+                                        shape: BoxShape
+                                            .circle)),
                             ]),
                             const SizedBox(height: 3),
-                            Text(n['subtitle'] as String,
+                            Text(
+                                n['subtitle'] as String,
                                 style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12,
@@ -1180,7 +1216,7 @@ class _AllMatchesScreen extends StatelessWidget {
       'time': '06:00 PM',
       'venue': 'Green Field Arena',
       'status': 'Upcoming',
-      'statusColor': Color(0xFF7B2FFF)
+      'statusColor': Color(0xFF7B2FFF),
     },
     {
       'team1': 'Alpha Warriors',
@@ -1189,7 +1225,7 @@ class _AllMatchesScreen extends StatelessWidget {
       'time': '05:00 PM',
       'venue': 'City Stadium',
       'status': 'Won',
-      'statusColor': Color(0xFF00C853)
+      'statusColor': Color(0xFF00C853),
     },
     {
       'team1': 'Alpha Warriors',
@@ -1198,7 +1234,7 @@ class _AllMatchesScreen extends StatelessWidget {
       'time': '04:00 PM',
       'venue': 'Green Field Arena',
       'status': 'Won',
-      'statusColor': Color(0xFF00C853)
+      'statusColor': Color(0xFF00C853),
     },
     {
       'team1': 'Alpha Warriors',
@@ -1207,7 +1243,7 @@ class _AllMatchesScreen extends StatelessWidget {
       'time': '06:00 PM',
       'venue': 'Sports Complex',
       'status': 'Won',
-      'statusColor': Color(0xFF00C853)
+      'statusColor': Color(0xFF00C853),
     },
     {
       'team1': 'Alpha Warriors',
@@ -1216,16 +1252,7 @@ class _AllMatchesScreen extends StatelessWidget {
       'time': '03:00 PM',
       'venue': 'City Stadium',
       'status': 'Lost',
-      'statusColor': Colors.red
-    },
-    {
-      'team1': 'Alpha Warriors',
-      'team2': 'Green Giants',
-      'date': '30 Apr 2025',
-      'time': '05:00 PM',
-      'venue': 'Green Field Arena',
-      'status': 'Won',
-      'statusColor': Color(0xFF00C853)
+      'statusColor': Colors.red,
     },
   ];
 
@@ -1236,8 +1263,8 @@ class _AllMatchesScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(children: [
           Padding(
-            padding:
-            const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            padding: const EdgeInsets.fromLTRB(
+                20, 16, 20, 0),
             child: Row(children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -1255,8 +1282,8 @@ class _AllMatchesScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Expanded(
             child: ListView.separated(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 20),
               itemCount: _matches.length,
               separatorBuilder: (_, __) =>
               const SizedBox(height: 12),
@@ -1266,28 +1293,31 @@ class _AllMatchesScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0F0F2A),
-                    borderRadius: BorderRadius.circular(16),
-                    border:
-                    Border.all(color: Colors.white10),
+                    borderRadius:
+                    BorderRadius.circular(16),
+                    border: Border.all(
+                        color: Colors.white10),
                   ),
                   child: Column(children: [
                     Row(children: [
                       Expanded(
                           child: Column(children: [
                             Container(
-                                width: 44,
-                                height: 44,
+                                width: 44, height: 44,
                                 decoration: BoxDecoration(
                                     color: AppColors.primary
                                         .withOpacity(0.2),
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: AppColors.primary
-                                            .withOpacity(0.4))),
+                                        color: AppColors
+                                            .primary
+                                            .withOpacity(
+                                            0.4))),
                                 child: const Center(
                                     child: Text('A',
                                         style: TextStyle(
-                                            color: Colors.white,
+                                            color:
+                                            Colors.white,
                                             fontSize: 20,
                                             fontWeight:
                                             FontWeight
@@ -1297,7 +1327,8 @@ class _AllMatchesScreen extends StatelessWidget {
                                 style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
-                                    fontWeight: FontWeight.w600),
+                                    fontWeight:
+                                    FontWeight.w600),
                                 textAlign: TextAlign.center),
                           ])),
                       Column(children: [
@@ -1305,18 +1336,23 @@ class _AllMatchesScreen extends StatelessWidget {
                             style: TextStyle(
                                 color: Colors.white54,
                                 fontSize: 16,
-                                fontWeight: FontWeight.w800)),
+                                fontWeight:
+                                FontWeight.w800)),
                         const SizedBox(height: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 3),
+                          padding:
+                          const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 3),
                           decoration: BoxDecoration(
-                              color:
-                              (m['statusColor'] as Color)
+                              color: (m['statusColor']
+                              as Color)
                                   .withOpacity(0.2),
                               borderRadius:
-                              BorderRadius.circular(20)),
-                          child: Text(m['status'] as String,
+                              BorderRadius.circular(
+                                  20)),
+                          child: Text(
+                              m['status'] as String,
                               style: TextStyle(
                                   color: m['statusColor']
                                   as Color,
@@ -1328,13 +1364,13 @@ class _AllMatchesScreen extends StatelessWidget {
                       Expanded(
                           child: Column(children: [
                             Container(
-                                width: 44,
-                                height: 44,
+                                width: 44, height: 44,
                                 decoration: BoxDecoration(
                                     color: Colors.white10,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: Colors.white24)),
+                                        color:
+                                        Colors.white24)),
                                 child: const Icon(Icons.bolt,
                                     color: Colors.white,
                                     size: 24)),
@@ -1343,7 +1379,8 @@ class _AllMatchesScreen extends StatelessWidget {
                                 style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 11,
-                                    fontWeight: FontWeight.w600),
+                                    fontWeight:
+                                    FontWeight.w600),
                                 textAlign: TextAlign.center),
                           ])),
                     ]),
@@ -1357,7 +1394,8 @@ class _AllMatchesScreen extends StatelessWidget {
                       children: [
                         Row(children: [
                           const Icon(
-                              Icons.calendar_today_outlined,
+                              Icons
+                                  .calendar_today_outlined,
                               color: Colors.white38,
                               size: 12),
                           const SizedBox(width: 4),
@@ -1464,8 +1502,8 @@ class _LeagueDetailScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(children: [
           Padding(
-            padding:
-            const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.fromLTRB(
+                16, 16, 16, 0),
             child: Row(children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -1483,16 +1521,17 @@ class _LeagueDetailScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Expanded(
             child: SingleChildScrollView(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16),
               child: Column(children: [
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0F0F2A),
-                    borderRadius: BorderRadius.circular(20),
-                    border:
-                    Border.all(color: Colors.white10),
+                    borderRadius:
+                    BorderRadius.circular(20),
+                    border: Border.all(
+                        color: Colors.white10),
                   ),
                   child: Column(children: [
                     Row(children: [
@@ -1521,22 +1560,26 @@ class _LeagueDetailScreen extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                        padding:
+                        const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4),
                         decoration: BoxDecoration(
                           color: const Color(0xFF00C853)
                               .withOpacity(0.15),
                           borderRadius:
                           BorderRadius.circular(20),
                           border: Border.all(
-                              color: const Color(0xFF00C853)
+                              color:
+                              const Color(0xFF00C853)
                                   .withOpacity(0.3)),
                         ),
                         child: const Text('Active',
                             style: TextStyle(
                                 color: Color(0xFF00C853),
                                 fontSize: 12,
-                                fontWeight: FontWeight.w600)),
+                                fontWeight:
+                                FontWeight.w600)),
                       ),
                     ]),
                     const SizedBox(height: 16),
@@ -1547,25 +1590,26 @@ class _LeagueDetailScreen extends StatelessWidget {
                       MainAxisAlignment.spaceAround,
                       children: [
                         _LeagueStat(
-                            label: 'Teams', value: '8'),
+                            label: 'Teams',
+                            value: '8'),
                         Container(
-                            height: 40,
-                            width: 1,
+                            height: 40, width: 1,
                             color: Colors.white10),
                         _LeagueStat(
-                            label: 'Matches', value: '12'),
+                            label: 'Matches',
+                            value: '12'),
                         Container(
-                            height: 40,
-                            width: 1,
+                            height: 40, width: 1,
                             color: Colors.white10),
                         _LeagueStat(
-                            label: 'My Rank', value: '#3'),
+                            label: 'My Rank',
+                            value: '#3'),
                         Container(
-                            height: 40,
-                            width: 1,
+                            height: 40, width: 1,
                             color: Colors.white10),
                         _LeagueStat(
-                            label: 'Points', value: '24'),
+                            label: 'Points',
+                            value: '24'),
                       ],
                     ),
                   ]),
@@ -1575,9 +1619,10 @@ class _LeagueDetailScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0F0F2A),
-                    borderRadius: BorderRadius.circular(16),
-                    border:
-                    Border.all(color: Colors.white10),
+                    borderRadius:
+                    BorderRadius.circular(16),
+                    border: Border.all(
+                        color: Colors.white10),
                   ),
                   child: Column(
                     crossAxisAlignment:
@@ -1606,7 +1651,8 @@ class _LeagueDetailScreen extends StatelessWidget {
                                       fontWeight:
                                       FontWeight.w700,
                                       fontSize: 16)),
-                              Text('U16 $sport • 28 Players',
+                              Text(
+                                  'U16 $sport • 28 Players',
                                   style: const TextStyle(
                                       color: Colors.white54,
                                       fontSize: 12)),
@@ -1614,8 +1660,10 @@ class _LeagueDetailScreen extends StatelessWidget {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                          padding:
+                          const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4),
                           decoration: BoxDecoration(
                             color: AppColors.primary
                                 .withOpacity(0.15),
@@ -1638,9 +1686,10 @@ class _LeagueDetailScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0F0F2A),
-                    borderRadius: BorderRadius.circular(16),
-                    border:
-                    Border.all(color: Colors.white10),
+                    borderRadius:
+                    BorderRadius.circular(16),
+                    border: Border.all(
+                        color: Colors.white10),
                   ),
                   child: Column(
                     crossAxisAlignment:
@@ -1679,9 +1728,11 @@ class _LeagueDetailScreen extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () => _confirmExit(context),
+                    onPressed: () =>
+                        _confirmExit(context),
                     icon: const Icon(Icons.logout,
-                        color: Colors.redAccent, size: 18),
+                        color: Colors.redAccent,
+                        size: 18),
                     label: const Text('Exit Team',
                         style: TextStyle(
                             color: Colors.redAccent,
@@ -1731,11 +1782,12 @@ class _LeagueStat extends StatelessWidget {
 class _StandingRow extends StatelessWidget {
   final String pos, team, pts;
   final bool isMe;
-  const _StandingRow(
-      {required this.pos,
-        required this.team,
-        required this.pts,
-        required this.isMe});
+  const _StandingRow({
+    required this.pos,
+    required this.team,
+    required this.pts,
+    required this.isMe,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1801,8 +1853,8 @@ class _ProfileImageScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(children: [
           Padding(
-            padding:
-            const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            padding: const EdgeInsets.fromLTRB(
+                20, 16, 20, 0),
             child: Row(children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -1820,8 +1872,7 @@ class _ProfileImageScreen extends StatelessWidget {
           const Spacer(),
           Stack(alignment: Alignment.center, children: [
             Container(
-              width: 160,
-              height: 160,
+              width: 160, height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
@@ -1834,11 +1885,9 @@ class _ProfileImageScreen extends StatelessWidget {
               ),
             ),
             Positioned(
-              bottom: 8,
-              right: 8,
+              bottom: 8, right: 8,
               child: Container(
-                width: 40,
-                height: 40,
+                width: 40, height: 40,
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
@@ -1862,8 +1911,8 @@ class _ProfileImageScreen extends StatelessWidget {
                   color: Colors.white54, fontSize: 13)),
           const Spacer(),
           Padding(
-            padding:
-            const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            padding: const EdgeInsets.fromLTRB(
+                20, 0, 20, 16),
             child: Column(children: [
               SizedBox(
                 width: double.infinity,
@@ -1899,13 +1948,14 @@ class _ProfileImageScreen extends StatelessWidget {
                   onPressed: () =>
                       ScaffoldMessenger.of(context)
                           .showSnackBar(const SnackBar(
-                          content:
-                          Text('Gallery opened! 🖼️'),
+                          content: Text(
+                              'Gallery opened! 🖼️'),
                           backgroundColor:
                           AppColors.primary)),
                   icon: const Icon(Icons.photo_library,
                       color: Colors.white, size: 20),
-                  label: const Text('Choose from Gallery',
+                  label: const Text(
+                      'Choose from Gallery',
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: 15,

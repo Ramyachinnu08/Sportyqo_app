@@ -22,8 +22,8 @@ class _CoachHomeScreenState
   late final List<Widget> _screens = [
     const _CoachHomeTab(),
     const CoachDugoutScreen(),
-    const CoachPlaybookScreen(),
     const CoachPerformanceScreen(),
+    const CoachPlaybookScreen(),
   ];
 
   @override
@@ -61,13 +61,13 @@ class _CoachHomeScreenState
                 activeIcon: Icon(Icons.people),
                 label: 'Dugout'),
             BottomNavigationBarItem(
-                icon: Icon(Icons.menu_book_outlined),
-                activeIcon: Icon(Icons.menu_book),
-                label: 'Playbook'),
-            BottomNavigationBarItem(
                 icon: Icon(Icons.bar_chart_outlined),
                 activeIcon: Icon(Icons.bar_chart),
                 label: 'Performance'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.menu_book_outlined),
+                activeIcon: Icon(Icons.menu_book),
+                label: 'Playbook'),
           ],
         ),
       ),
@@ -101,16 +101,13 @@ class _CoachHomeTab extends StatelessWidget {
                     BorderRadius.circular(8),
                     child: Image.network(
                       'https://i.ibb.co/pjLXfmH4/29.png',
-                      width: 36,
-                      height: 36,
+                      width: 36, height: 36,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) =>
                           Container(
-                            width: 36,
-                            height: 36,
+                            width: 36, height: 36,
                             decoration: BoxDecoration(
-                              color:
-                              const Color(0xFF00C853),
+                              color: const Color(0xFF00C853),
                               borderRadius:
                               BorderRadius.circular(8),
                             ),
@@ -146,8 +143,7 @@ class _CoachHomeTab extends StatelessWidget {
                             _CoachNotificationScreen())),
                     child: Stack(children: [
                       Container(
-                        width: 42,
-                        height: 42,
+                        width: 42, height: 42,
                         decoration: BoxDecoration(
                             color: Colors.white10,
                             shape: BoxShape.circle),
@@ -157,19 +153,19 @@ class _CoachHomeTab extends StatelessWidget {
                             size: 22),
                       ),
                       Positioned(
-                          top: 6,
-                          right: 6,
-                          child: Container(
-                              width: 9,
-                              height: 9,
-                              decoration: BoxDecoration(
+                        top: 6, right: 6,
+                        child: Container(
+                          width: 9, height: 9,
+                          decoration: BoxDecoration(
+                              color:
+                              const Color(0xFF00C853),
+                              shape: BoxShape.circle,
+                              border: Border.all(
                                   color: const Color(
-                                      0xFF00C853),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                      color: const Color(
-                                          0xFF0A0A0A),
-                                      width: 1.5)))),
+                                      0xFF0A0A0A),
+                                  width: 1.5)),
+                        ),
+                      ),
                     ]),
                   ),
                   const SizedBox(width: 10),
@@ -177,8 +173,7 @@ class _CoachHomeTab extends StatelessWidget {
                     onTap: () =>
                         _showProfileQuick(context),
                     child: Container(
-                      width: 44,
-                      height: 44,
+                      width: 44, height: 44,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
@@ -188,8 +183,7 @@ class _CoachHomeTab extends StatelessWidget {
                         color: const Color(0xFF1A1A1A),
                       ),
                       child: const Icon(Icons.person,
-                          color: Colors.white,
-                          size: 24),
+                          color: Colors.white, size: 24),
                     ),
                   ),
                 ]),
@@ -214,8 +208,7 @@ class _CoachHomeTab extends StatelessWidget {
                               FontWeight.w800)),
                       const SizedBox(width: 8),
                       Container(
-                        width: 24,
-                        height: 24,
+                        width: 24, height: 24,
                         decoration: const BoxDecoration(
                           color: Color(0xFF00C853),
                           shape: BoxShape.circle,
@@ -274,8 +267,7 @@ class _CoachHomeTab extends StatelessWidget {
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              begin:
-                              Alignment.centerLeft,
+                              begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                               colors: [
                                 const Color(0xFF0A0A1A)
@@ -289,12 +281,10 @@ class _CoachHomeTab extends StatelessWidget {
                       ),
                       Container(
                         width: double.infinity,
-                        padding:
-                        const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           border: Border.all(
-                              color: const Color(
-                                  0xFF00C853)
+                              color: const Color(0xFF00C853)
                                   .withOpacity(0.5),
                               width: 1.5),
                           borderRadius:
@@ -305,8 +295,7 @@ class _CoachHomeTab extends StatelessWidget {
                           CrossAxisAlignment.start,
                           children: [
                             Container(
-                              width: 44,
-                              height: 44,
+                              width: 44, height: 44,
                               decoration: BoxDecoration(
                                 color: const Color(
                                     0xFF00C853)
@@ -317,14 +306,11 @@ class _CoachHomeTab extends StatelessWidget {
                                 border: Border.all(
                                     color: const Color(
                                         0xFF00C853)
-                                        .withOpacity(
-                                        0.3)),
+                                        .withOpacity(0.3)),
                               ),
                               child: const Icon(
-                                  Icons
-                                      .add_circle_outline,
-                                  color:
-                                  Color(0xFF00C853),
+                                  Icons.add_circle_outline,
+                                  color: Color(0xFF00C853),
                                   size: 24),
                             ),
                             const SizedBox(height: 16),
@@ -333,8 +319,7 @@ class _CoachHomeTab extends StatelessWidget {
                                     color: Colors.white,
                                     fontSize: 22,
                                     fontWeight:
-                                    FontWeight
-                                        .w800)),
+                                    FontWeight.w800)),
                             const SizedBox(height: 6),
                             const Text(
                                 'Create your first league and\nstart tracking player performance.',
@@ -344,23 +329,19 @@ class _CoachHomeTab extends StatelessWidget {
                                     height: 1.5)),
                             const SizedBox(height: 16),
                             Row(children: [
-                              const Text(
-                                  '+ Create League',
+                              const Text('+ Create League',
                                   style: TextStyle(
-                                      color: Color(
-                                          0xFF00C853),
+                                      color:
+                                      Color(0xFF00C853),
                                       fontSize: 14,
                                       fontWeight:
-                                      FontWeight
-                                          .w700)),
+                                      FontWeight.w700)),
                               const SizedBox(width: 12),
                               Container(
-                                width: 36,
-                                height: 36,
+                                width: 36, height: 36,
                                 decoration:
                                 const BoxDecoration(
-                                  color:
-                                  Color(0xFF00C853),
+                                  color: Color(0xFF00C853),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -399,16 +380,15 @@ class _CoachHomeTab extends StatelessWidget {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) =>
                               Container(
-                                  color: const Color(
-                                      0xFF111111)),
+                                  color:
+                                  const Color(0xFF111111)),
                         ),
                       ),
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              begin:
-                              Alignment.centerLeft,
+                              begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                               colors: [
                                 const Color(0xFF111111)
@@ -422,8 +402,7 @@ class _CoachHomeTab extends StatelessWidget {
                       ),
                       Container(
                         width: double.infinity,
-                        padding:
-                        const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           border: Border.all(
                               color: Colors.white12),
@@ -435,16 +414,14 @@ class _CoachHomeTab extends StatelessWidget {
                           CrossAxisAlignment.start,
                           children: [
                             Container(
-                              width: 44,
-                              height: 44,
+                              width: 44, height: 44,
                               decoration: BoxDecoration(
                                 color: Colors.white10,
                                 borderRadius:
                                 BorderRadius.circular(
                                     12),
                                 border: Border.all(
-                                    color:
-                                    Colors.white12),
+                                    color: Colors.white12),
                               ),
                               child: const Icon(
                                   Icons.people_outline,
@@ -457,8 +434,7 @@ class _CoachHomeTab extends StatelessWidget {
                                     color: Colors.white,
                                     fontSize: 22,
                                     fontWeight:
-                                    FontWeight
-                                        .w800)),
+                                    FontWeight.w800)),
                             const SizedBox(height: 6),
                             const Text(
                                 'View and manage\nyour existing leagues.',
@@ -473,18 +449,15 @@ class _CoachHomeTab extends StatelessWidget {
                                       color: Colors.white,
                                       fontSize: 14,
                                       fontWeight:
-                                      FontWeight
-                                          .w700)),
+                                      FontWeight.w700)),
                               const SizedBox(width: 12),
                               Container(
-                                width: 36,
-                                height: 36,
+                                width: 36, height: 36,
                                 decoration: BoxDecoration(
                                   color: Colors.white12,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                      color:
-                                      Colors.white24),
+                                      color: Colors.white24),
                                 ),
                                 child: const Icon(
                                     Icons.arrow_forward,
@@ -510,8 +483,8 @@ class _CoachHomeTab extends StatelessWidget {
                   onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const
-                          CoachCertificationScreen())),
+                          builder: (_) =>
+                          const CoachCertificationScreen())),
                   child: ClipRRect(
                     borderRadius:
                     BorderRadius.circular(20),
@@ -522,16 +495,15 @@ class _CoachHomeTab extends StatelessWidget {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) =>
                               Container(
-                                  color: const Color(
-                                      0xFF0D0900)),
+                                  color:
+                                  const Color(0xFF0D0900)),
                         ),
                       ),
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              begin:
-                              Alignment.centerLeft,
+                              begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                               colors: [
                                 const Color(0xFF0D0900)
@@ -545,12 +517,10 @@ class _CoachHomeTab extends StatelessWidget {
                       ),
                       Container(
                         width: double.infinity,
-                        padding:
-                        const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           border: Border.all(
-                              color: const Color(
-                                  0xFFFFB300)
+                              color: const Color(0xFFFFB300)
                                   .withOpacity(0.5),
                               width: 1.5),
                           borderRadius:
@@ -561,8 +531,7 @@ class _CoachHomeTab extends StatelessWidget {
                           CrossAxisAlignment.start,
                           children: [
                             Container(
-                              width: 44,
-                              height: 44,
+                              width: 44, height: 44,
                               decoration: BoxDecoration(
                                 color: const Color(
                                     0xFFFFB300)
@@ -573,13 +542,11 @@ class _CoachHomeTab extends StatelessWidget {
                                 border: Border.all(
                                     color: const Color(
                                         0xFFFFB300)
-                                        .withOpacity(
-                                        0.3)),
+                                        .withOpacity(0.3)),
                               ),
                               child: const Icon(
                                   Icons.star_outline,
-                                  color:
-                                  Color(0xFFFFB300),
+                                  color: Color(0xFFFFB300),
                                   size: 24),
                             ),
                             const SizedBox(height: 16),
@@ -588,8 +555,7 @@ class _CoachHomeTab extends StatelessWidget {
                                     color: Colors.white,
                                     fontSize: 22,
                                     fontWeight:
-                                    FontWeight
-                                        .w800)),
+                                    FontWeight.w800)),
                             const SizedBox(height: 6),
                             const Text(
                                 'Become a verified SportyQo Coach\nand build player trust.',
@@ -601,20 +567,17 @@ class _CoachHomeTab extends StatelessWidget {
                             Row(children: [
                               const Text('Get Certified',
                                   style: TextStyle(
-                                      color: Color(
-                                          0xFFFFB300),
+                                      color:
+                                      Color(0xFFFFB300),
                                       fontSize: 14,
                                       fontWeight:
-                                      FontWeight
-                                          .w700)),
+                                      FontWeight.w700)),
                               const SizedBox(width: 12),
                               Container(
-                                width: 36,
-                                height: 36,
+                                width: 36, height: 36,
                                 decoration:
                                 const BoxDecoration(
-                                  color:
-                                  Color(0xFFFFB300),
+                                  color: Color(0xFFFFB300),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -652,8 +615,7 @@ class _CoachHomeTab extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 70,
-              height: 70,
+              width: 70, height: 70,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
@@ -673,8 +635,7 @@ class _CoachHomeTab extends StatelessWidget {
             const Text(
                 'Head Coach • Falcons Cricket Academy',
                 style: TextStyle(
-                    color: Colors.white54,
-                    fontSize: 13)),
+                    color: Colors.white54, fontSize: 13)),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment:
@@ -789,8 +750,8 @@ class _CoachNotificationScreenState
       body: SafeArea(
         child: Column(children: [
           Padding(
-            padding:
-            const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            padding: const EdgeInsets.fromLTRB(
+                20, 16, 20, 0),
             child: Row(children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -883,8 +844,7 @@ class _CoachNotificationScreenState
                     ),
                     child: Row(children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: 44, height: 44,
                         decoration: BoxDecoration(
                           color: (n['color'] as Color)
                               .withOpacity(0.15),

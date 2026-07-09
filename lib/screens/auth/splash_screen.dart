@@ -40,139 +40,177 @@ class SplashScreen extends StatelessWidget {
           SafeArea(
             child: Column(
               children: [
-                const Spacer(),
+                const Spacer(flex: 3),
 
-                // ── Logo ──
-                RichText(
-                  text: const TextSpan(children: [
-                    TextSpan(
-                      text: 'Sporty',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 36,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'Poppins'),
-                    ),
-                    TextSpan(
-                      text: 'Qo',
-                      style: TextStyle(
-                          color: Color(0xFF7B2FFF),
-                          fontSize: 36,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'Poppins'),
-                    ),
-                  ]),
+                // ── Logo Image ──
+                Image.network(
+                  'https://i.ibb.co/cXgJptfk/29.png',
+                  width: 120,
+                  height: 120,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) =>
+                  const SizedBox.shrink(),
                 ),
 
-                const SizedBox(height: 8),
-
-                const Text(
-                  'Track. Perform. Rise.',
-                  style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                      letterSpacing: 0.5),
-                ),
-
-                const Spacer(),
-
-                // ── Get Started Button ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24),
-                  child: GestureDetector(
-                    onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) =>
-                            const ChooseRoleScreen())),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 18),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00C853),
-                        borderRadius:
-                        BorderRadius.circular(30),
+                // ── SportyQo Text + Tagline (moved up) ──
+                Transform.translate(
+                  offset: const Offset(0, -25),
+                  child: Column(
+                    children: [
+                      RichText(
+                        text: const TextSpan(children: [
+                          TextSpan(
+                            text: 'Sporty',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 36,
+                                fontWeight:
+                                FontWeight.w800,
+                                fontFamily: 'Poppins'),
+                          ),
+                          TextSpan(
+                            text: 'Qo',
+                            style: TextStyle(
+                                color: Color(0xFF7B2FFF),
+                                fontSize: 36,
+                                fontWeight:
+                                FontWeight.w800,
+                                fontFamily: 'Poppins'),
+                          ),
+                        ]),
                       ),
-                      child: Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment.center,
-                        children: const [
-                          Text('Get Started',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight:
-                                  FontWeight.w700)),
-                          SizedBox(width: 10),
-                          Icon(Icons.arrow_forward,
-                              color: Colors.white,
-                              size: 20),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Log In Button ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24),
-                  child: GestureDetector(
-                    onTap: () =>
-                        _showLoginOptions(context),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16),
-                      decoration: BoxDecoration(
-                        color:
-                        Colors.white.withOpacity(0.1),
-                        borderRadius:
-                        BorderRadius.circular(30),
-                        border: Border.all(
-                            color: Colors.white24,
-                            width: 1),
-                      ),
-                      child: Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.person_outline,
-                              color: Colors.white,
-                              size: 20),
-                          SizedBox(width: 8),
-                          Text('Log In',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight:
-                                  FontWeight.w600)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // ── Trusted text ──
-                Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.verified_outlined,
-                        color: Colors.white38, size: 14),
-                    SizedBox(width: 6),
-                    Text(
-                        'Trusted by athletes & coaches worldwide',
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Track. Perform. Rise.',
                         style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 12)),
-                  ],
+                            color: Colors.white70,
+                            fontSize: 16,
+                            letterSpacing: 0.5),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const Spacer(flex: 2),
+
+                // ── Buttons (moved up) ──
+                Transform.translate(
+                  offset: const Offset(0, -30),
+                  child: Column(
+                    children: [
+                      // ── Get Started Button ──
+                      Padding(
+                        padding:
+                        const EdgeInsets.symmetric(
+                            horizontal: 24),
+                        child: GestureDetector(
+                          onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) =>
+                                  const ChooseRoleScreen())),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets
+                                .symmetric(vertical: 18),
+                            decoration: BoxDecoration(
+                              color:
+                              const Color(0xFF00C853),
+                              borderRadius:
+                              BorderRadius.circular(
+                                  30),
+                            ),
+                            child: Row(
+                              mainAxisAlignment:
+                              MainAxisAlignment
+                                  .center,
+                              children: const [
+                                Text('Get Started',
+                                    style: TextStyle(
+                                        color:
+                                        Colors.white,
+                                        fontSize: 18,
+                                        fontWeight:
+                                        FontWeight
+                                            .w700)),
+                                SizedBox(width: 10),
+                                Icon(Icons.arrow_forward,
+                                    color: Colors.white,
+                                    size: 20),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // ── Log In Button ──
+                      Padding(
+                        padding:
+                        const EdgeInsets.symmetric(
+                            horizontal: 24),
+                        child: GestureDetector(
+                          onTap: () =>
+                              _showLoginOptions(context),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets
+                                .symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white
+                                  .withOpacity(0.1),
+                              borderRadius:
+                              BorderRadius.circular(
+                                  30),
+                              border: Border.all(
+                                  color: Colors.white24,
+                                  width: 1),
+                            ),
+                            child: Row(
+                              mainAxisAlignment:
+                              MainAxisAlignment
+                                  .center,
+                              children: const [
+                                Icon(
+                                    Icons.person_outline,
+                                    color: Colors.white,
+                                    size: 20),
+                                SizedBox(width: 8),
+                                Text('Log In',
+                                    style: TextStyle(
+                                        color:
+                                        Colors.white,
+                                        fontSize: 16,
+                                        fontWeight:
+                                        FontWeight
+                                            .w600)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // ── Trusted text ──
+                      Row(
+                        mainAxisAlignment:
+                        MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.verified_outlined,
+                              color: Colors.white38,
+                              size: 14),
+                          SizedBox(width: 6),
+                          Text(
+                              'Trusted by athletes & coaches worldwide',
+                              style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 12)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 32),

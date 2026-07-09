@@ -552,8 +552,8 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                       ),
                       child: Text(
                         _isFollowing
-                            ? 'Following'
-                            : 'Follow',
+                            ? 'Tracking'
+                            : 'Track',
                         style: TextStyle(
                             color: _isFollowing
                                 ? Colors.white70

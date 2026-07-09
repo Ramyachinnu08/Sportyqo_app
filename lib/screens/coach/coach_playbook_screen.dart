@@ -729,8 +729,8 @@ class _CoachPlaybookScreenState
                       ),
                       child: Text(
                         _isFollowing
-                            ? 'Following'
-                            : 'Follow',
+                            ? 'Tracking'
+                            : 'Track',
                         style: TextStyle(
                             color: _isFollowing
                                 ? Colors.white70
