@@ -12,6 +12,13 @@ class CoachDugoutScreen extends StatefulWidget {
 
 class _CoachDugoutScreenState
     extends State<CoachDugoutScreen> {
+  final List<String> _tabs = const [
+    'All',
+    'Players',
+    'Coaches',
+    'Teams',
+    'Following',
+  ];
   String _selectedTab = 'All';
   String _searchQuery = '';
   final TextEditingController _searchController =
