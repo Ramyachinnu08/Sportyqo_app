@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 import '../coach/select_coach_sport_screen.dart';
 
@@ -14,6 +16,48 @@ class _CompleteCoachProfileScreenState
     extends State<CompleteCoachProfileScreen> {
   String _experience = '8+ Years';
   String _level = 'A License';
+  bool _submitting = false;
+  final _academyCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _academyCtrl.dispose();
+    _locationCtrl.dispose();
+    super.dispose();
+  }
+
+  int get _experienceYears {
+    final match = RegExp(r'\d+').firstMatch(_experience);
+    return match == null ? 0 : int.parse(match.group(0)!);
+  }
+
+  Future<void> _saveAndContinue() async {
+    setState(() => _submitting = true);
+    try {
+      await CoachService.updateProfile(
+        roleTitle: 'Head Coach',
+        academy: _academyCtrl.text.trim().isEmpty
+            ? null
+            : _academyCtrl.text.trim(),
+        location: _locationCtrl.text.trim().isEmpty
+            ? null
+            : _locationCtrl.text.trim(),
+        certification: _level,
+        experienceYears: _experienceYears,
+      );
+      await UserService.me();
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SelectCoachSportScreen()),
+      );
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   void _showPhotoOptions() {
     showModalBottomSheet(
@@ -161,21 +205,16 @@ class _CompleteCoachProfileScreenState
 
               const SizedBox(height: 24),
               _buildTextField(
-                  hint: 'Full Name',
-                  icon: Icons.person_outline,
-                  isDark: isDark),
+                  hint: 'Academy / Club Name',
+                  icon: Icons.school_outlined,
+                  isDark: isDark,
+                  controller: _academyCtrl),
               const SizedBox(height: 14),
               _buildTextField(
-                  hint: 'Email',
-                  icon: Icons.email_outlined,
+                  hint: 'Location (City, State)',
+                  icon: Icons.location_on_outlined,
                   isDark: isDark,
-                  keyboardType: TextInputType.emailAddress),
-              const SizedBox(height: 14),
-              _buildTextField(
-                  hint: 'Phone Number',
-                  icon: Icons.phone_outlined,
-                  isDark: isDark,
-                  keyboardType: TextInputType.phone),
+                  controller: _locationCtrl),
               const SizedBox(height: 14),
               _buildDropdown(
                 label: 'Experience',
@@ -202,14 +241,7 @@ class _CompleteCoachProfileScreenState
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) =>
-                          const SelectCoachSportScreen()),
-                    );
-                  },
+                  onPressed: _submitting ? null : _saveAndContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00C853),
                     foregroundColor: Colors.black,
@@ -217,7 +249,9 @@ class _CompleteCoachProfileScreenState
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text('Save & Continue',
+                  child: _submitting
+                      ? const ButtonSpinner()
+                      : const Text('Save & Continue',
                       style: TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
@@ -235,8 +269,10 @@ class _CompleteCoachProfileScreenState
     required IconData icon,
     required bool isDark,
     TextInputType? keyboardType,
+    TextEditingController? controller,
   }) {
     return TextField(
+      controller: controller,
       keyboardType: keyboardType,
       style: TextStyle(
           color: isDark ? AppColors.textWhite : AppColors.textDark),

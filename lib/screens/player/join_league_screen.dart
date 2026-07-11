@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../api/api_client.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 
 class JoinLeagueScreen extends StatefulWidget {
@@ -11,76 +15,81 @@ class JoinLeagueScreen extends StatefulWidget {
 
 class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
   int _step = 0;
-  final List<String> _code = ['', '', '', '', '', ''];
-  int _activeBox = 0;
+  final _codeCtrl = TextEditingController();
+  bool _busy = false;
   String? _selectedTeam;
+  String? _selectedTeamId;
+  Map<String, dynamic>? _league; // from GET /leagues/by-code/{code}
+  List<Map<String, dynamic>> _teams = [];
 
-  final List<Map<String, dynamic>> _teams = [
-    {
-      'name': 'Falcons FC',
-      'division': 'U16 Division',
-      'players': 28,
-      'emoji': '🦅',
-      'roster': [
-        {'name': 'Aarav Mehta', 'position': 'Striker', 'qoScore': 87},
-        {'name': 'Rohan Sharma', 'position': 'Midfielder', 'qoScore': 82},
-        {'name': 'Vikram Singh', 'position': 'Defender', 'qoScore': 79},
-        {'name': 'Karan Patel', 'position': 'Goalkeeper', 'qoScore': 85},
-        {'name': 'Dev Kapoor', 'position': 'Winger', 'qoScore': 76},
-      ],
-    },
-    {
-      'name': 'Alpha Warriors',
-      'division': 'U16 Division',
-      'players': 26,
-      'emoji': '⚔️',
-      'roster': [
-        {'name': 'Arjun Reddy', 'position': 'Striker', 'qoScore': 90},
-        {'name': 'Sahil Khan', 'position': 'Midfielder', 'qoScore': 84},
-        {'name': 'Yash Verma', 'position': 'Defender', 'qoScore': 78},
-        {'name': 'Aditya Nair', 'position': 'Goalkeeper', 'qoScore': 81},
-      ],
-    },
-    {
-      'name': 'Thunder Strikers',
-      'division': 'U16 Division',
-      'players': 24,
-      'emoji': '⚡',
-      'roster': [
-        {'name': 'Ishaan Gupta', 'position': 'Striker', 'qoScore': 88},
-        {'name': 'Rahul Joshi', 'position': 'Midfielder', 'qoScore': 80},
-        {'name': 'Aryan Malhotra', 'position': 'Defender', 'qoScore': 75},
-      ],
-    },
-    {
-      'name': 'Green Field United',
-      'division': 'U16 Division',
-      'players': 30,
-      'emoji': '⚽',
-      'roster': [
-        {'name': 'Pranav Iyer', 'position': 'Striker', 'qoScore': 86},
-        {'name': 'Kabir Das', 'position': 'Midfielder', 'qoScore': 83},
-        {'name': 'Veer Choudhary', 'position': 'Defender', 'qoScore': 77},
-        {'name': 'Aniket Rao', 'position': 'Goalkeeper', 'qoScore': 79},
-      ],
-    },
-  ];
+  @override
+  void dispose() {
+    _codeCtrl.dispose();
+    super.dispose();
+  }
 
-  void _onKeyTap(String val) {
-    if (val == '⌫') {
-      if (_activeBox > 0) {
-        setState(() {
-          _activeBox--;
-          _code[_activeBox] = '';
-        });
-      }
+  String get _leagueName =>
+      (_league?['name'] as String?) ?? 'this league';
+
+  Future<void> _lookupLeague() async {
+    final code = _codeCtrl.text.trim().toUpperCase();
+    if (code.length < 6) {
+      showInfo(context, 'Enter the full league code (e.g. FALC-16-24).');
       return;
     }
-    if (_activeBox < 6) {
+    setState(() => _busy = true);
+    try {
+      final league = await LeagueService.findByCode(code);
+      if (!mounted) return;
+      if (league == null) {
+        showInfo(context, "That league code doesn't exist.");
+        return;
+      }
       setState(() {
-        _code[_activeBox] = val;
-        if (_activeBox < 5) _activeBox++;
+        _league = league;
+        _teams = (league['teams'] as List<dynamic>)
+            .map((t) => <String, dynamic>{
+                  'id': t['id'],
+                  'name': t['name'],
+                  'division': league['cricket_type'] ?? '',
+                  'players': t['player_count'] ?? 0,
+                  'emoji': '🏏',
+                })
+            .toList();
+        _selectedTeam = null;
+        _selectedTeamId = null;
+        _step = 1;
       });
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _joinLeague() async {
+    if (_selectedTeamId == null || _league == null) return;
+    setState(() => _busy = true);
+    try {
+      await LeagueService.join(
+        leagueCode: (_league!['league_code'] ?? _codeCtrl.text.trim())
+            .toString()
+            .toUpperCase(),
+        teamId: _selectedTeamId!,
+      );
+      if (!mounted) return;
+      setState(() => _step = 2);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'ALREADY_MEMBER') {
+        setState(() => _step = 2); // treat as success — they're in
+      } else {
+        showApiError(context, e);
+      }
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -177,42 +186,45 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             const Text(
-                'Ask your coach or organizer for the\n6-digit league code',
+                'Ask your coach or organizer for the\nleague code (e.g. FALC-16-24)',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white38, fontSize: 13)),
             const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(6, (i) {
-                final isFilled = _code[i].isNotEmpty;
-                final isActive = _activeBox == i;
-                return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 5),
-                  width: 44,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F0F2A),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: TextField(
+                controller: _codeCtrl,
+                textAlign: TextAlign.center,
+                textCapitalization: TextCapitalization.characters,
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(
+                      RegExp(r'[A-Za-z0-9\-]')),
+                  LengthLimitingTextInputFormatter(16),
+                ],
+                onChanged: (_) => setState(() {}),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.w700),
+                decoration: InputDecoration(
+                  hintText: 'FALC-16-24',
+                  hintStyle: const TextStyle(
+                      color: Colors.white24, letterSpacing: 3),
+                  filled: true,
+                  fillColor: const Color(0xFF0F0F2A),
+                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isActive
-                          ? AppColors.primary
-                          : (isFilled
-                          ? AppColors.primary.withOpacity(0.6)
-                          : Colors.white12),
-                      width: isActive ? 2 : 1,
-                    ),
+                    borderSide:
+                        const BorderSide(color: Colors.white12),
                   ),
-                  child: Center(
-                    child: Text(
-                      _code[i].isNotEmpty ? _code[i] : '',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700),
-                    ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                        color: AppColors.primary, width: 2),
                   ),
-                );
-              }),
+                ),
+              ),
             ),
             const SizedBox(height: 20),
             Row(
@@ -235,8 +247,8 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _code.every((c) => c.isNotEmpty)
-                  ? () => setState(() => _step = 1)
+              onPressed: (_codeCtrl.text.trim().length >= 6 && !_busy)
+                  ? _lookupLeague
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -253,51 +265,8 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
             ),
           ),
         ),
-        Container(
-          color: const Color(0xFF0F0F2A),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          child: Column(children: [
-            _buildKeyRow(['1', '2', '3']),
-            const SizedBox(height: 8),
-            _buildKeyRow(['4', '5', '6']),
-            const SizedBox(height: 8),
-            _buildKeyRow(['7', '8', '9']),
-            const SizedBox(height: 8),
-            _buildKeyRow(['', '0', '⌫']),
-          ]),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildKeyRow(List<String> keys) {
-    return Row(
-      children: keys.map((k) {
-        if (k.isEmpty) return const Expanded(child: SizedBox());
-        return Expanded(
-          child: GestureDetector(
-            onTap: () => _onKeyTap(k),
-            child: Container(
-              height: 52,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A3A),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Center(
-                child: k == '⌫'
-                    ? const Icon(Icons.backspace_outlined,
-                    color: Colors.white, size: 20)
-                    : Text(k,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500)),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
+      ],
     );
   }
 
@@ -329,13 +298,13 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
       const SizedBox(height: 6),
       RichText(
         textAlign: TextAlign.center,
-        text: const TextSpan(children: [
-          TextSpan(
+        text: TextSpan(children: [
+          const TextSpan(
               text: 'Select the team you want to join in\n',
               style: TextStyle(color: Colors.white54, fontSize: 13)),
           TextSpan(
-              text: 'Under16 Pro League.',
-              style: TextStyle(
+              text: '$_leagueName.',
+              style: const TextStyle(
                   color: AppColors.primary,
                   fontSize: 13,
                   fontWeight: FontWeight.w600)),
@@ -364,19 +333,19 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text('LEAGUE',
+              children: [
+                const Text('LEAGUE',
                     style: TextStyle(
                         color: Colors.white38,
                         fontSize: 10,
                         letterSpacing: 1)),
-                Text('Under16 Pro League',
-                    style: TextStyle(
+                Text(_leagueName,
+                    style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                         fontSize: 14)),
-                Text('Season 2024-25',
-                    style: TextStyle(color: Colors.white54, fontSize: 12)),
+                Text((_league?['location'] as String?) ?? '',
+                    style: const TextStyle(color: Colors.white54, fontSize: 12)),
               ],
             ),
           ]),
@@ -405,8 +374,10 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
             final t = _teams[i];
             final isSelected = _selectedTeam == t['name'];
             return GestureDetector(
-              onTap: () =>
-                  setState(() => _selectedTeam = t['name'] as String),
+              onTap: () => setState(() {
+                _selectedTeam = t['name'] as String;
+                _selectedTeamId = t['id'] as String?;
+              }),
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -456,16 +427,8 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
                   // ── View Players button ──
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => _TeamRosterScreen(
-                            teamName: t['name'] as String,
-                            emoji: t['emoji'] as String,
-                            roster: t['roster'] as List<Map<String, dynamic>>,
-                          ),
-                        ),
-                      );
+                      showInfo(context,
+                          'Roster is visible after you join the team.');
                     },
                     child: Container(
                       padding: const EdgeInsets.all(6),
@@ -509,9 +472,9 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
         child: SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: _selectedTeam == null
+            onPressed: (_selectedTeam == null || _busy)
                 ? null
-                : () => setState(() => _step = 2),
+                : _joinLeague,
             icon: const Icon(Icons.arrow_forward,
                 color: Colors.white, size: 18),
             label: const Text('Continue',
@@ -647,13 +610,13 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
                 const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text('Under16 Pro League',
-                        style: TextStyle(
+                  children: [
+                    Text(_leagueName,
+                        style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
                             fontSize: 14)),
-                    Text('Season 2024-25',
+                    const Text('',
                         style: TextStyle(
                             color: Colors.white54, fontSize: 12)),
                   ],
@@ -682,7 +645,7 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
                   if (widget.onJoined != null && _selectedTeam != null) {
                     widget.onJoined!(
                       _selectedTeam!,
-                      'Under16 Pro League',
+                      _leagueName,
                     );
                   }
                   Navigator.pop(context);
@@ -790,122 +753,3 @@ class _StepIndicator extends StatelessWidget {
 }
 
 // ── Team Roster Screen ──────────────────────────────────────────────────
-
-class _TeamRosterScreen extends StatelessWidget {
-  final String teamName;
-  final String emoji;
-  final List<Map<String, dynamic>> roster;
-
-  const _TeamRosterScreen({
-    required this.teamName,
-    required this.emoji,
-    required this.roster,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Row(children: [
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.arrow_back_ios,
-                      color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Text(emoji, style: const TextStyle(fontSize: 24)),
-                const SizedBox(width: 8),
-                Text(teamName,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800)),
-              ]),
-            ),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('${roster.length} Players',
-                  style:
-                  const TextStyle(color: Colors.white38, fontSize: 13)),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: roster.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, i) {
-                  final p = roster[i];
-                  return Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F0F2A),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white12),
-                    ),
-                    child: Row(children: [
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            (p['name'] as String).substring(0, 1),
-                            style: const TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(p['name'] as String,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 14)),
-                            Text(p['position'] as String,
-                                style: const TextStyle(
-                                    color: Colors.white54, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00C853).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text('Qo ${p['qoScore']}',
-                            style: const TextStyle(
-                                color: const Color(0xFF00C853),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700)),
-                      ),
-                    ]),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-}

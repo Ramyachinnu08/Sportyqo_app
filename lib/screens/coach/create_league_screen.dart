@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import 'package:flutter/services.dart';
 import 'share_league_code_screen.dart';
 
@@ -13,10 +15,10 @@ class CreateLeagueScreen extends StatefulWidget {
 class _CreateLeagueScreenState
     extends State<CreateLeagueScreen> {
   int _step = 1;
-  final _leagueNameCtrl =
-  TextEditingController(text: 'Falcons U16 Premier League');
-  final _locationCtrl =
-  TextEditingController(text: 'Bangalore, Karnataka');
+  bool _busy = false;
+  Map<String, dynamic>? _created; // POST /leagues response (server code)
+  final _leagueNameCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController();
   String _gender = 'Men\'s';
   int _teamsCount = 8;
   String _leagueType = 'Professional Cricket';
@@ -35,19 +37,10 @@ class _CreateLeagueScreenState
   @override
   void initState() {
     super.initState();
-    final initialTeams = [
-      'Falcons FC',
-      'Warriors United',
-      'Royal Strikers',
-      'Blaze Cricket Club',
-      'Titans Academy',
-      'Rising Stars',
-      'Victory XI',
-      'Eagle Hearts',
-    ];
-    for (final name in initialTeams) {
+    // Empty editable slots — real names come from the coach.
+    for (var i = 0; i < _teamsCount; i++) {
       _teamControllers
-          .add(TextEditingController(text: name));
+          .add(TextEditingController(text: 'Team ${i + 1}'));
     }
   }
 
@@ -112,14 +105,46 @@ class _CreateLeagueScreenState
     }
   }
 
-  // Generate league code like FALC-16-24
-  String _generateCode() {
-    final name = _leagueNameCtrl.text;
-    final prefix = name.length >= 4
-        ? name.substring(0, 4).toUpperCase()
-        : name.toUpperCase();
-    final now = DateTime.now();
-    return '$prefix-${now.day.toString().padLeft(2, '0')}-${now.year.toString().substring(2)}';
+  /// The league code is minted SERVER-side on create (unique per league).
+  Future<void> _submitLeague() async {
+    final name = _leagueNameCtrl.text.trim();
+    final teamNames = _teamControllers
+        .map((c) => c.text.trim())
+        .where((t) => t.isNotEmpty)
+        .toList();
+    if (name.isEmpty) {
+      showInfo(context, 'Give your league a name.');
+      return;
+    }
+    if (teamNames.length < 2) {
+      showInfo(context, 'A league needs at least 2 team names.');
+      return;
+    }
+    if (teamNames.toSet().length != teamNames.length) {
+      showInfo(context, 'Team names must be unique.');
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final created = await LeagueService.create(
+        name: name,
+        cricketType: _leagueType,
+        gender: _gender,
+        location: _locationCtrl.text.trim().isEmpty
+            ? null
+            : _locationCtrl.text.trim(),
+        teamNames: teamNames,
+      );
+      if (!mounted) return;
+      setState(() {
+        _created = created;
+        _step = 2;
+      });
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -233,8 +258,7 @@ class _CreateLeagueScreenState
             Padding(
               padding: const EdgeInsets.all(20),
               child: GestureDetector(
-                onTap: () =>
-                    setState(() => _step = 2),
+                onTap: _busy ? null : _submitLeague,
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -617,7 +641,7 @@ class _CreateLeagueScreenState
   // ── Step 2 ────────────────────────────────────────
 
   Widget _buildStep2() {
-    final code = _generateCode();
+    final code = (_created?['league_code'] as String?) ?? '';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(

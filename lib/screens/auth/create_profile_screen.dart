@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 import 'select_sport_screen.dart';
 
@@ -14,8 +16,36 @@ class _CreateProfileScreenState
     extends State<CreateProfileScreen> {
   String _selectedGender = 'Male';
   DateTime? _dob;
+  bool _submitting = false;
   final TextEditingController _locationCtrl =
   TextEditingController();
+
+  Future<void> _saveAndContinue() async {
+    if (_dob == null) {
+      showInfo(context, 'Please select your date of birth.');
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      final dob =
+          '${_dob!.year.toString().padLeft(4, '0')}-${_dob!.month.toString().padLeft(2, '0')}-${_dob!.day.toString().padLeft(2, '0')}';
+      await UserService.updateProfile(
+        dob: dob,
+        location: _locationCtrl.text.trim().isEmpty
+            ? null
+            : _locationCtrl.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SelectSportScreen()),
+      );
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -421,14 +451,7 @@ class _CreateProfileScreenState
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) =>
-                          const SelectSportScreen()),
-                    );
-                  },
+                  onPressed: _submitting ? null : _saveAndContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(
@@ -437,7 +460,9 @@ class _CreateProfileScreenState
                         borderRadius:
                         BorderRadius.circular(14)),
                   ),
-                  child: Row(
+                  child: _submitting
+                      ? const ButtonSpinner()
+                      : Row(
                     mainAxisAlignment:
                     MainAxisAlignment.center,
                     children: const [

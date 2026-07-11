@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../api/api_config.dart';
+import '../../api/mappers.dart';
+import '../../api/services.dart';
 import '../../theme/app_theme.dart';
 import 'dugout_screen.dart';
 import 'playbook_screen.dart';
@@ -93,8 +96,54 @@ class _HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<_HomeTab> {
-  String? _activeLeague = 'U16 Division • Division 1';
-  String? _activeTeam = 'Falcons FC';
+  String? _activeLeague;
+  String? _activeTeam;
+  String? _activeLeagueId;
+  Map<String, dynamic>? _dash;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    try {
+      final dash = await PlayerService.dashboard();
+      if (!mounted) return;
+      setState(() {
+        _dash = dash;
+        _loading = false;
+        final league = dash['active_league'] as Map<String, dynamic>?;
+        _activeLeague = league?['league_name'] as String?;
+        _activeTeam = league?['team_name'] as String?;
+        _activeLeagueId = league?['id'] as String?;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Map<String, dynamic>? get _upcoming =>
+      _dash?['upcoming_match'] as Map<String, dynamic>?;
+
+  String _fmtDate(String? iso) {
+    if (iso == null) return '—';
+    final d = DateTime.tryParse(iso)?.toLocal();
+    if (d == null) return '—';
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
+  String _fmtTime(String? iso) {
+    if (iso == null) return '—';
+    final d = DateTime.tryParse(iso)?.toLocal();
+    if (d == null) return '—';
+    final h12 = d.hour % 12 == 0 ? 12 : d.hour % 12;
+    final ampm = d.hour >= 12 ? 'PM' : 'AM';
+    return '${h12.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')} $ampm';
+  }
 
   String _getSportRole(String sport) {
     switch (sport) {
@@ -157,14 +206,16 @@ class _HomeTabState extends State<_HomeTab> {
                       crossAxisAlignment:
                       CrossAxisAlignment.start,
                       children: [
-                        Row(children: const [
-                          Text('Alex',
-                              style: TextStyle(
+                        Row(children: [
+                          Text(
+                              (_dash?['player']?['first_name'] as String?) ??
+                                  Session.firstName,
+                              style: const TextStyle(
                                   fontSize: 30,
                                   fontWeight:
                                   FontWeight.w800,
                                   color: Colors.white)),
-                          Text('.',
+                          const Text('.',
                               style: TextStyle(
                                   fontSize: 30,
                                   fontWeight:
@@ -172,9 +223,9 @@ class _HomeTabState extends State<_HomeTab> {
                                   color:
                                   AppColors.primary)),
                         ]),
-                        if (widget.playerId != null) ...[
+                        if ((_dash?['player']?['player_id'] ?? widget.playerId) != null) ...[
                           const SizedBox(height: 4),
-                          Text(widget.playerId!,
+                          Text((_dash?['player']?['player_id'] ?? widget.playerId!) as String,
                               style: const TextStyle(
                                   color:
                                   Color(0xFF00C853),
@@ -185,7 +236,7 @@ class _HomeTabState extends State<_HomeTab> {
                         ],
                         const SizedBox(height: 8),
                         Text(
-                            'U16 • ${_getSportRole(widget.selectedSport)}',
+                            '${_dash?['player']?['age_group'] ?? ''} • ${_dash?['player']?['sub_role'] ?? _getSportRole(widget.selectedSport)}',
                             style: const TextStyle(
                                 color: Colors.white54,
                                 fontSize: 13)),
@@ -303,8 +354,8 @@ class _HomeTabState extends State<_HomeTab> {
                           crossAxisAlignment:
                           CrossAxisAlignment.center,
                           children: [
-                            const Text('720',
-                                style: TextStyle(
+                            Text('${_dash?['qo_score']?['current'] ?? 0}',
+                                style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 54,
                                     fontWeight:
@@ -362,7 +413,7 @@ class _HomeTabState extends State<_HomeTab> {
                           Icon(Icons.arrow_upward,
                               color: Color(0xFF7B2FFF),
                               size: 14),
-                          Text('+35 this month',
+                          Text('+${_dash?['qo_score']?['delta_month'] ?? 0} this month',
                               style: TextStyle(
                                   color: Color(0xFF7B2FFF),
                                   fontSize: 12,
@@ -391,6 +442,8 @@ class _HomeTabState extends State<_HomeTab> {
                         MaterialPageRoute(
                             builder: (_) =>
                                 _LeagueDetailScreen(
+                                  leagueId:
+                                  _activeLeagueId,
                                   leagueName:
                                   _activeLeague!,
                                   teamName:
@@ -402,7 +455,9 @@ class _HomeTabState extends State<_HomeTab> {
                       setState(() {
                         _activeTeam = null;
                         _activeLeague = null;
+                        _activeLeagueId = null;
                       });
+                      _loadDashboard();
                     }
                   },
                   child: Container(
@@ -577,8 +632,8 @@ class _HomeTabState extends State<_HomeTab> {
                                     letter: 'A'),
                                 const SizedBox(height: 8),
                                 Text(
-                                    _getTeam1(widget
-                                        .selectedSport),
+                                    (_upcoming?['team_a']?['name'] as String?) ??
+                                        _getTeam1(widget.selectedSport),
                                     style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 13,
@@ -602,8 +657,8 @@ class _HomeTabState extends State<_HomeTab> {
                                     Colors.white),
                                 const SizedBox(height: 8),
                                 Text(
-                                    _getTeam2(widget
-                                        .selectedSport),
+                                    (_upcoming?['team_b']?['name'] as String?) ??
+                                        _getTeam2(widget.selectedSport),
                                     style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 13,
@@ -623,37 +678,37 @@ class _HomeTabState extends State<_HomeTab> {
                       child: Row(
                         mainAxisAlignment:
                         MainAxisAlignment.spaceBetween,
-                        children: const [
+                        children: [
                           Row(children: [
-                            Icon(
+                            const Icon(
                                 Icons
                                     .calendar_today_outlined,
                                 color: Colors.white54,
                                 size: 14),
-                            SizedBox(width: 4),
-                            Text('24 May 2025',
-                                style: TextStyle(
+                            const SizedBox(width: 4),
+                            Text(_fmtDate(_upcoming?['starts_at'] as String?),
+                                style: const TextStyle(
                                     color: Colors.white70,
                                     fontSize: 12)),
                           ]),
                           Row(children: [
-                            Icon(Icons.access_time,
+                            const Icon(Icons.access_time,
                                 color: Colors.white54,
                                 size: 14),
-                            SizedBox(width: 4),
-                            Text('06:00 PM',
-                                style: TextStyle(
+                            const SizedBox(width: 4),
+                            Text(_fmtTime(_upcoming?['starts_at'] as String?),
+                                style: const TextStyle(
                                     color: Colors.white70,
                                     fontSize: 12)),
                           ]),
                           Row(children: [
-                            Icon(
+                            const Icon(
                                 Icons.location_on_outlined,
                                 color: Colors.white54,
                                 size: 14),
-                            SizedBox(width: 4),
-                            Text('Green Field Arena',
-                                style: TextStyle(
+                            const SizedBox(width: 4),
+                            Text((_upcoming?['venue'] as String?) ?? 'TBD',
+                                style: const TextStyle(
                                     color: Colors.white70,
                                     fontSize: 12)),
                           ]),
@@ -682,6 +737,7 @@ class _HomeTabState extends State<_HomeTab> {
                                 _activeLeague =
                                     leagueName;
                               });
+                              _loadDashboard();
                             },
                           ))),
                   child: ClipRRect(
@@ -963,74 +1019,30 @@ class _NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState
     extends State<_NotificationScreen> {
-  late List<Map<String, dynamic>> _notifications = [
-    {
-      'icon': Icons.emoji_events,
-      'color': const Color(0xFFFFB300),
-      'title': 'Points Added!',
-      'subtitle': '+52 Qo points added to your profile',
-      'time': '2m ago',
-      'read': false,
-    },
-    {
-      'icon': Icons.people,
-      'color': const Color(0xFF7B2FFF),
-      'title': 'New Follower',
-      'subtitle': 'Rahul Sharma started following you',
-      'time': '15m ago',
-      'read': false,
-    },
-    {
-      'icon': Icons.sports_cricket,
-      'color': const Color(0xFF00C853),
-      'title': 'League Update',
-      'subtitle': 'Summer League 2024 is now live!',
-      'time': '1h ago',
-      'read': false,
-    },
-    {
-      'icon': Icons.favorite,
-      'color': Colors.red,
-      'title': 'Post Liked',
-      'subtitle': 'Jason liked your match highlight',
-      'time': '2h ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.shield,
-      'color': const Color(0xFF7B2FFF),
-      'title': 'Match Scheduled',
-      'subtitle': 'Alpha Warriors vs Thunder on 24 May',
-      'time': '3h ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.star,
-      'color': const Color(0xFFFFB300),
-      'title': 'Achievement Unlocked!',
-      'subtitle':
-      'You scored 100+ in a single match 🎉',
-      'time': '1d ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.person_add,
-      'color': const Color(0xFF7B2FFF),
-      'title': 'Coach Recommended You',
-      'subtitle':
-      'Coach Rahul recommended you to a club',
-      'time': '1d ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.emoji_events,
-      'color': const Color(0xFF00C853),
-      'title': 'Rank Improved!',
-      'subtitle': 'You moved from #16 to #14',
-      'time': '2d ago',
-      'read': true,
-    },
-  ];
+  List<Map<String, dynamic>> _notifications = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final res = await NotificationService.list();
+      final items = (res['items'] as List<dynamic>)
+          .map((n) => notificationToTile(n as Map<String, dynamic>))
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _notifications = items;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1080,6 +1092,7 @@ class _NotificationScreenState
               ),
               GestureDetector(
                 onTap: () {
+                  NotificationService.markAllRead();
                   setState(() {
                     _notifications = _notifications
                         .map((n) =>
@@ -1104,7 +1117,16 @@ class _NotificationScreenState
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: ListView.separated(
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                        color: AppColors.primary))
+                : _notifications.isEmpty
+                    ? const Center(
+                        child: Text('No notifications yet',
+                            style: TextStyle(
+                                color: Colors.white38)))
+                    : ListView.separated(
               padding: const EdgeInsets.symmetric(
                   horizontal: 20),
               itemCount: _notifications.length,
@@ -1113,12 +1135,19 @@ class _NotificationScreenState
               itemBuilder: (context, i) {
                 final n = _notifications[i];
                 return GestureDetector(
-                  onTap: () => setState(() {
-                    _notifications[i] = {
-                      ..._notifications[i],
-                      'read': true,
-                    };
-                  }),
+                  onTap: () {
+                    final id = _notifications[i]['id'] as String?;
+                    if (id != null &&
+                        _notifications[i]['read'] != true) {
+                      NotificationService.markRead(id);
+                    }
+                    setState(() {
+                      _notifications[i] = {
+                        ..._notifications[i],
+                        'read': true,
+                      };
+                    });
+                  },
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -1205,56 +1234,73 @@ class _NotificationScreenState
 
 // ── All Matches Screen ────────────────────────────────────────────────
 
-class _AllMatchesScreen extends StatelessWidget {
+class _AllMatchesScreen extends StatefulWidget {
   const _AllMatchesScreen();
 
-  final List<Map<String, dynamic>> _matches = const [
-    {
-      'team1': 'Alpha Warriors',
-      'team2': 'Thunder Strikers',
-      'date': '24 May 2025',
-      'time': '06:00 PM',
-      'venue': 'Green Field Arena',
-      'status': 'Upcoming',
-      'statusColor': Color(0xFF7B2FFF),
-    },
-    {
-      'team1': 'Alpha Warriors',
-      'team2': 'Royal Challengers',
-      'date': '18 May 2025',
-      'time': '05:00 PM',
-      'venue': 'City Stadium',
-      'status': 'Won',
-      'statusColor': Color(0xFF00C853),
-    },
-    {
-      'team1': 'Alpha Warriors',
-      'team2': 'Super Kings',
-      'date': '14 May 2025',
-      'time': '04:00 PM',
-      'venue': 'Green Field Arena',
-      'status': 'Won',
-      'statusColor': Color(0xFF00C853),
-    },
-    {
-      'team1': 'Alpha Warriors',
-      'team2': 'Blue Riders',
-      'date': '10 May 2025',
-      'time': '06:00 PM',
-      'venue': 'Sports Complex',
-      'status': 'Won',
-      'statusColor': Color(0xFF00C853),
-    },
-    {
-      'team1': 'Alpha Warriors',
-      'team2': 'Red Panthers',
-      'date': '05 May 2025',
-      'time': '03:00 PM',
-      'venue': 'City Stadium',
-      'status': 'Lost',
-      'statusColor': Colors.red,
-    },
-  ];
+  @override
+  State<_AllMatchesScreen> createState() => _AllMatchesScreenState();
+}
+
+class _AllMatchesScreenState extends State<_AllMatchesScreen> {
+  List<Map<String, dynamic>> _matches = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  String _fmtD(String? iso) {
+    final d = iso == null ? null : DateTime.tryParse(iso)?.toLocal();
+    if (d == null) return '';
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
+  String _fmtT(String? iso) {
+    final d = iso == null ? null : DateTime.tryParse(iso)?.toLocal();
+    if (d == null) return '';
+    final h12 = d.hour % 12 == 0 ? 12 : d.hour % 12;
+    return '${h12.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')} ${d.hour >= 12 ? 'PM' : 'AM'}';
+  }
+
+  Future<void> _load() async {
+    try {
+      final res = await PlayerService.matches();
+      final items = (res['items'] as List<dynamic>).map((raw) {
+        final m = raw as Map<String, dynamic>;
+        final my = m['my_result'] as String? ?? 'upcoming';
+        final status = my == 'won'
+            ? 'Won'
+            : my == 'lost'
+                ? 'Lost'
+                : my == 'draw'
+                    ? 'Draw'
+                    : 'Upcoming';
+        return <String, dynamic>{
+          'team1': m['team_a']?['name'] ?? '',
+          'team2': m['team_b']?['name'] ?? '',
+          'date': _fmtD(m['starts_at'] as String?),
+          'time': _fmtT(m['starts_at'] as String?),
+          'venue': m['venue'] ?? 'TBD',
+          'status': status,
+          'statusColor': status == 'Won'
+              ? const Color(0xFF00C853)
+              : status == 'Lost'
+                  ? Colors.red
+                  : const Color(0xFF7B2FFF),
+        };
+      }).toList();
+      if (!mounted) return;
+      setState(() {
+        _matches = items;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1281,7 +1327,16 @@ class _AllMatchesScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: ListView.separated(
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                        color: AppColors.primary))
+                : _matches.isEmpty
+                    ? const Center(
+                        child: Text('No matches yet',
+                            style: TextStyle(
+                                color: Colors.white38)))
+                    : ListView.separated(
               padding: const EdgeInsets.symmetric(
                   horizontal: 20),
               itemCount: _matches.length,
@@ -1441,11 +1496,13 @@ class _AllMatchesScreen extends StatelessWidget {
 // ── League Detail Screen ──────────────────────────────────────────────
 
 class _LeagueDetailScreen extends StatelessWidget {
+  final String? leagueId;
   final String leagueName;
   final String teamName;
   final String sport;
 
   const _LeagueDetailScreen({
+    this.leagueId,
     required this.leagueName,
     required this.teamName,
     required this.sport,
@@ -1476,9 +1533,22 @@ class _LeagueDetailScreen extends StatelessWidget {
                 style: TextStyle(color: Colors.white38)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              Navigator.pop(context, true);
+              try {
+                if (leagueId != null) {
+                  await LeagueService.exit(leagueId!);
+                }
+                if (context.mounted) {
+                  Navigator.pop(context, true);
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: Colors.redAccent));
+                }
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,

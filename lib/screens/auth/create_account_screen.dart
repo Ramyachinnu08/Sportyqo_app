@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 import 'create_profile_screen.dart';
 import 'login_screen.dart';
@@ -16,6 +18,7 @@ class _CreateAccountScreenState
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _agreeToTerms = false;
+  bool _submitting = false;
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
@@ -28,6 +31,38 @@ class _CreateAccountScreenState
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _signUp() async {
+    final name = _nameCtrl.text.trim();
+    final email = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text;
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      showInfo(context, 'Please fill in your name, email and password.');
+      return;
+    }
+    if (!_agreeToTerms) {
+      showInfo(context, 'Please agree to the Terms to continue.');
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      await AuthService.register(
+        fullName: name,
+        email: email,
+        password: password,
+        role: 'player',
+      );
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const CreateProfileScreen()),
+      );
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -186,16 +221,7 @@ class _CreateAccountScreenState
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Navigate directly without validation
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                        const CreateProfileScreen(),
-                      ),
-                    );
-                  },
+                  onPressed: _submitting ? null : _signUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     padding: const EdgeInsets.symmetric(
@@ -204,7 +230,9 @@ class _CreateAccountScreenState
                         borderRadius:
                         BorderRadius.circular(14)),
                   ),
-                  child: Row(
+                  child: _submitting
+                      ? const ButtonSpinner()
+                      : Row(
                     mainAxisAlignment:
                     MainAxisAlignment.center,
                     children: const [

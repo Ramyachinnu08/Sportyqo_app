@@ -1,9 +1,52 @@
 import 'package:flutter/material.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 import 'verification_sent_screen.dart';
 
-class EnterMobileScreen extends StatelessWidget {
+class EnterMobileScreen extends StatefulWidget {
   const EnterMobileScreen({super.key});
+
+  @override
+  State<EnterMobileScreen> createState() => _EnterMobileScreenState();
+}
+
+class _EnterMobileScreenState extends State<EnterMobileScreen> {
+  final _phoneCtrl = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _phoneCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendCode() async {
+    final digits = _phoneCtrl.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length != 10) {
+      showInfo(context, 'Enter a valid 10-digit mobile number.');
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      final res = await AuthService.sendOtp('+91$digits');
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VerificationSentScreen(
+            requestId: res['request_id'] as String,
+            maskedPhone: res['masked_phone'] as String? ?? '+91 $digits',
+            devCode: res['dev_code'] as String?,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +122,7 @@ class EnterMobileScreen extends StatelessWidget {
                     ),
                     Expanded(
                       child: TextField(
+                        controller: _phoneCtrl,
                         keyboardType: TextInputType.phone,
                         style: TextStyle(
                             color: isDark
@@ -121,13 +165,7 @@ class EnterMobileScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const VerificationSentScreen()),
-                    );
-                  },
+                  onPressed: _submitting ? null : _sendCode,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00C853),
                     foregroundColor: Colors.black,
@@ -135,7 +173,9 @@ class EnterMobileScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text('Continue',
+                  child: _submitting
+                      ? const ButtonSpinner()
+                      : const Text('Continue',
                       style: TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w700)),
                 ),

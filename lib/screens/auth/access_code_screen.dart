@@ -1,9 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../api/api_client.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 import 'complete_coach_profile_screen.dart';
 
-class AccessCodeScreen extends StatelessWidget {
-  const AccessCodeScreen({super.key});
+/// The server is the only OTP gate now — the old build accepted any 6 digits.
+class AccessCodeScreen extends StatefulWidget {
+  final String requestId;
+  final String? devCode; // present outside production for easy testing
+  const AccessCodeScreen(
+      {super.key, required this.requestId, this.devCode});
+
+  @override
+  State<AccessCodeScreen> createState() => _AccessCodeScreenState();
+}
+
+class _AccessCodeScreenState extends State<AccessCodeScreen> {
+  final _codeCtrl = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _codeCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _verify() async {
+    final code = _codeCtrl.text.trim();
+    if (code.length != 6) {
+      showInfo(context, 'Enter the 6-digit code.');
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      await AuthService.verifyOtp(
+          requestId: widget.requestId, code: code);
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => const CompleteCoachProfileScreen()),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'CODE_EXPIRED') {
+        showInfo(context, 'That code expired — go back and resend.');
+      } else {
+        showApiError(context, e);
+      }
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +78,7 @@ class AccessCodeScreen extends StatelessWidget {
               const Spacer(),
               Center(
                 child: Text(
-                  'Access Code Sent!',
+                  'Enter Access Code',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -37,14 +89,14 @@ class AccessCodeScreen extends StatelessWidget {
               const SizedBox(height: 8),
               const Center(
                 child: Text(
-                  'Your access code has been\nsent by SportyQo team',
+                  'Enter the 6-digit code sent\nby the SportyQo team',
                   textAlign: TextAlign.center,
                   style:
                   TextStyle(fontSize: 14, color: AppColors.textGrey),
                 ),
               ),
               const SizedBox(height: 40),
-              // Code display
+              // ── Code input ──
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -59,47 +111,45 @@ class AccessCodeScreen extends StatelessWidget {
                         style: TextStyle(
                             color: AppColors.textGrey, fontSize: 13)),
                     const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: ['7', '8', '2', '6', '4', '1']
-                          .map((digit) => Container(
-                        width: 44,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00C853)
-                              .withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
+                    TextField(
+                      controller: _codeCtrl,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      maxLength: 6,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly
+                      ],
+                      style: TextStyle(
+                        fontSize: 28,
+                        letterSpacing: 16,
+                        fontWeight: FontWeight.w800,
+                        color: isDark
+                            ? AppColors.textWhite
+                            : AppColors.textDark,
+                      ),
+                      decoration: InputDecoration(
+                        counterText: '',
+                        hintText: '••••••',
+                        hintStyle: const TextStyle(
+                            color: AppColors.textGrey, letterSpacing: 16),
+                        filled: true,
+                        fillColor:
+                        const Color(0xFF00C853).withOpacity(0.08),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
                               color: const Color(0xFF00C853)
                                   .withOpacity(0.3)),
                         ),
-                        child: Center(
-                          child: Text(
-                            digit,
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: isDark
-                                  ? AppColors.textWhite
-                                  : AppColors.textDark,
-                            ),
-                          ),
-                        ),
-                      ))
-                          .toList(),
-                    ),
-                    const SizedBox(height: 16),
-                    // Envelope icon
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00C853).withOpacity(0.1),
-                        shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.mark_email_read_outlined,
-                          size: 40, color: Color(0xFF00C853)),
+                      onSubmitted: (_) => _verify(),
                     ),
+                    if (widget.devCode != null) ...[
+                      const SizedBox(height: 12),
+                      Text('dev code: ${widget.devCode}',
+                          style: const TextStyle(
+                              color: AppColors.textGrey, fontSize: 12)),
+                    ],
                   ],
                 ),
               ),
@@ -114,14 +164,7 @@ class AccessCodeScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) =>
-                          const CompleteCoachProfileScreen()),
-                    );
-                  },
+                  onPressed: _submitting ? null : _verify,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00C853),
                     foregroundColor: Colors.black,
@@ -129,7 +172,9 @@ class AccessCodeScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text('Continue',
+                  child: _submitting
+                      ? const ButtonSpinner()
+                      : const Text('Continue',
                       style: TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w700)),
                 ),

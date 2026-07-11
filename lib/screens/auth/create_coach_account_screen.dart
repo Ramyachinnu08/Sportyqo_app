@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 import 'enter_mobile_screen.dart';
 
@@ -14,6 +16,58 @@ class _CreateCoachAccountScreenState extends State<CreateCoachAccountScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _agreeToTerms = false;
+  bool _submitting = false;
+  final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    _passwordCtrl.dispose();
+    _confirmCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _signUp() async {
+    final name = _nameCtrl.text.trim();
+    final email = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text;
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      showInfo(context, 'Please fill in your name, email and password.');
+      return;
+    }
+    if (password != _confirmCtrl.text) {
+      showInfo(context, 'Passwords do not match.');
+      return;
+    }
+    if (!_agreeToTerms) {
+      showInfo(context, 'Please agree to the Terms to continue.');
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      await AuthService.register(
+        fullName: name,
+        email: email,
+        password: password,
+        role: 'coach',
+      );
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const EnterMobileScreen()),
+      );
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +109,7 @@ class _CreateCoachAccountScreenState extends State<CreateCoachAccountScreen> {
                 hint: 'Full Name',
                 icon: Icons.person_outline,
                 isDark: isDark,
+                controller: _nameCtrl,
               ),
               const SizedBox(height: 14),
               _buildTextField(
@@ -62,17 +117,20 @@ class _CreateCoachAccountScreenState extends State<CreateCoachAccountScreen> {
                 icon: Icons.email_outlined,
                 isDark: isDark,
                 keyboardType: TextInputType.emailAddress,
+                controller: _emailCtrl,
               ),
               const SizedBox(height: 14),
               _buildTextField(
                 hint: 'Phone Number',
                 icon: Icons.phone_outlined,
                 isDark: isDark,
+                controller: _phoneCtrl,
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 14),
               _buildTextField(
                 hint: 'Password',
+                controller: _passwordCtrl,
                 icon: Icons.lock_outline,
                 isDark: isDark,
                 obscureText: _obscurePassword,
@@ -90,6 +148,7 @@ class _CreateCoachAccountScreenState extends State<CreateCoachAccountScreen> {
               const SizedBox(height: 14),
               _buildTextField(
                 hint: 'Confirm Password',
+                controller: _confirmCtrl,
                 icon: Icons.lock_outline,
                 isDark: isDark,
                 obscureText: _obscureConfirm,
@@ -149,13 +208,7 @@ class _CreateCoachAccountScreenState extends State<CreateCoachAccountScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const EnterMobileScreen()),
-                    );
-                  },
+                  onPressed: _submitting ? null : _signUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00C853),
                     foregroundColor: Colors.black,
@@ -163,7 +216,9 @@ class _CreateCoachAccountScreenState extends State<CreateCoachAccountScreen> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text('Sign Up',
+                  child: _submitting
+                      ? const ButtonSpinner()
+                      : const Text('Sign Up',
                       style: TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
@@ -245,8 +300,10 @@ class _CreateCoachAccountScreenState extends State<CreateCoachAccountScreen> {
     TextInputType? keyboardType,
     bool obscureText = false,
     Widget? suffixIcon,
+    TextEditingController? controller,
   }) {
     return TextField(
+      controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
       style: TextStyle(

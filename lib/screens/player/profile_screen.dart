@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../api/services.dart';
 import '../../theme/app_theme.dart';
 import '../auth/choose_role_screen.dart';
 
@@ -341,10 +342,15 @@ class ProfileScreen extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel', style: TextStyle(color: Colors.white38))),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const ChooseRoleScreen()),
+            onPressed: () async {
+              await AuthService.logout(); // revokes the refresh token
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const ChooseRoleScreen()),
                   (route) => false,
-            ),
+                );
+              }
+            },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             child: const Text('Logout', style: TextStyle(color: Colors.white)),
           ),

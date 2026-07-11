@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import 'coach_home_screen.dart';
 
 class SelectCoachSportScreen extends StatefulWidget {
@@ -11,6 +13,24 @@ class SelectCoachSportScreen extends StatefulWidget {
 
 class _SelectCoachSportScreenState extends State<SelectCoachSportScreen> {
   String? _selectedSport;
+  bool _submitting = false;
+
+  Future<void> _continueAsCoach() async {
+    setState(() => _submitting = true);
+    try {
+      await CoachService.updateProfile(sport: _selectedSport);
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const CoachHomeScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   final List<Map<String, dynamic>> _sports = [
     {
@@ -200,16 +220,9 @@ class _SelectCoachSportScreenState extends State<SelectCoachSportScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _selectedSport == null
+                  onPressed: (_selectedSport == null || _submitting)
                       ? null
-                      : () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const CoachHomeScreen()),
-                          (route) => false,
-                    );
-                  },
+                      : _continueAsCoach,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00C853),
                     disabledBackgroundColor:
