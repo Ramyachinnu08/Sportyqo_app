@@ -361,7 +361,7 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                             const Color(0xFF7B2FFF)
                                 .withOpacity(0.5)),
                       ),
-                      child: Column(children: const [
+                      child: Column(children: [
                         Text('Qo Score',
                             style: TextStyle(
                                 color: Color(0xFF7B2FFF),
