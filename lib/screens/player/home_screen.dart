@@ -409,12 +409,12 @@ class _HomeTabState extends State<_HomeTab> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Row(children: const [
-                          Icon(Icons.arrow_upward,
+                        Row(children: [
+                          const Icon(Icons.arrow_upward,
                               color: Color(0xFF7B2FFF),
                               size: 14),
                           Text('+${_dash?['qo_score']?['delta_month'] ?? 0} this month',
-                              style: TextStyle(
+                              style: const TextStyle(
                                   color: Color(0xFF7B2FFF),
                                   fontSize: 12,
                                   fontWeight:
