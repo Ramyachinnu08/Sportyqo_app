@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../api/api_config.dart';
 import '../../api/mappers.dart';
 import '../../api/services.dart';
@@ -145,19 +148,7 @@ class _HomeTabState extends State<_HomeTab> {
     return '${h12.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')} $ampm';
   }
 
-  String _getSportRole(String sport) {
-    switch (sport) {
-      case 'Football': return 'Forward';
-      case 'Cricket': return 'Batsman';
-      case 'Basketball': return 'Point Guard';
-      case 'Volleyball': return 'Setter';
-      case 'Swimming': return 'Freestyle';
-      case 'Badminton': return 'Singles';
-      case 'Tennis': return 'Singles';
-      case 'Kabaddi': return 'Raider';
-      default: return 'Player';
-    }
-  }
+
 
 
 
@@ -210,7 +201,13 @@ class _HomeTabState extends State<_HomeTab> {
                         ],
                         const SizedBox(height: 8),
                         Text(
-                            '${_dash?['player']?['age_group'] ?? ''} • ${_dash?['player']?['sub_role'] ?? _getSportRole(widget.selectedSport)}',
+                            [
+                              _dash?['player']?['age_group'],
+                              _dash?['player']?['sub_role'],
+                            ]
+                                .whereType<String>()
+                                .where((s) => s.isNotEmpty)
+                                .join(' • '),
                             style: const TextStyle(
                                 color: Colors.white54,
                                 fontSize: 13)),
@@ -243,6 +240,10 @@ class _HomeTabState extends State<_HomeTab> {
                             color: Colors.white,
                             size: 22),
                       ),
+                      if (((_dash?['unread_notifications']
+                                  as num?) ??
+                              0) >
+                          0)
                       Positioned(
                         top: 6, right: 6,
                         child: Container(
@@ -260,26 +261,39 @@ class _HomeTabState extends State<_HomeTab> {
                   ),
                   const SizedBox(width: 10),
                   GestureDetector(
-                    onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const
-                            _ProfileImageScreen())),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: AppColors.primary,
-                            width: 2),
-                        image: const DecorationImage(
-                          image: NetworkImage(
-                              'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop&crop=faces'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
+                    onTap: () async {
+                      final p = _dash?['player']
+                          as Map<String, dynamic>?;
+                      await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  _ProfileImageScreen(
+                                    avatarUrl: p?['avatar_url']
+                                        as String?,
+                                    name: (p?['full_name']
+                                            as String?) ??
+                                        '',
+                                    details: [
+                                      p?['age_group'],
+                                      p?['sub_role'],
+                                      _activeTeam,
+                                    ]
+                                        .whereType<String>()
+                                        .where((s) =>
+                                            s.isNotEmpty)
+                                        .join(' • '),
+                                  )));
+                      // refresh so a new avatar shows up
+                      _loadDashboard();
+                    },
+                    child: _HeaderAvatar(
+                        url: _dash?['player']?['avatar_url']
+                            as String?,
+                        name: (_dash?['player']
+                                    ?['first_name']
+                                as String?) ??
+                            Session.firstName),
                   ),
                 ]),
               ),
@@ -1888,8 +1902,110 @@ class _StandingRow extends StatelessWidget {
 
 // ── Profile Image Screen ──────────────────────────────────────────────
 
-class _ProfileImageScreen extends StatelessWidget {
-  const _ProfileImageScreen();
+/// Small circular avatar used in the home header. Shows the player's real
+/// photo from the backend, or their initial when no photo is set.
+class _HeaderAvatar extends StatelessWidget {
+  final String? url;
+  final String name;
+  const _HeaderAvatar({this.url, this.name = ''});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color(0xFF13132B),
+        border: Border.all(color: AppColors.primary, width: 2),
+        image: url != null && url!.isNotEmpty
+            ? DecorationImage(
+                image: NetworkImage(url!), fit: BoxFit.cover)
+            : null,
+      ),
+      child: url == null || url!.isEmpty
+          ? Center(
+              child: Text(
+                  name.isNotEmpty ? name[0].toUpperCase() : '?',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800)))
+          : null,
+    );
+  }
+}
+
+class _ProfileImageScreen extends StatefulWidget {
+  final String? avatarUrl;
+  final String name;
+  final String details;
+  const _ProfileImageScreen(
+      {this.avatarUrl, this.name = '', this.details = ''});
+
+  @override
+  State<_ProfileImageScreen> createState() =>
+      _ProfileImageScreenState();
+}
+
+class _ProfileImageScreenState extends State<_ProfileImageScreen> {
+  final _picker = ImagePicker();
+  String? _avatarUrl;
+  bool _uploading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _avatarUrl = widget.avatarUrl;
+  }
+
+  String _mimeFor(XFile x) {
+    if (x.mimeType != null && x.mimeType!.isNotEmpty) return x.mimeType!;
+    final n = x.name.toLowerCase();
+    if (n.endsWith('.png')) return 'image/png';
+    if (n.endsWith('.webp')) return 'image/webp';
+    if (n.endsWith('.heic') || n.endsWith('.heif')) return 'image/heic';
+    return 'image/jpeg';
+  }
+
+  Future<void> _pick(ImageSource source) async {
+    if (_uploading) return;
+    try {
+      final x = await _picker.pickImage(
+          source: source,
+          maxWidth: 1080,
+          maxHeight: 1080,
+          imageQuality: 85);
+      if (x == null) return; // user cancelled
+      setState(() => _uploading = true);
+
+      final bytes = await x.readAsBytes();
+      final mime = _mimeFor(x).split('/');
+      final res = await UserService.updateProfile(
+        avatar: http.MultipartFile.fromBytes(
+          'avatar',
+          bytes,
+          filename: x.name.isNotEmpty ? x.name : 'avatar.jpg',
+          contentType: MediaType(mime[0], mime[1]),
+        ),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _avatarUrl = res['avatar_url'] as String?;
+        _uploading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Profile photo updated'),
+          backgroundColor: AppColors.primary));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _uploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not update photo: $e'),
+          backgroundColor: Colors.red));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1898,8 +2014,7 @@ class _ProfileImageScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-                20, 16, 20, 0),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
             child: Row(children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -1917,58 +2032,64 @@ class _ProfileImageScreen extends StatelessWidget {
           const Spacer(),
           Stack(alignment: Alignment.center, children: [
             Container(
-              width: 160, height: 160,
+              width: 160,
+              height: 160,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                    color: AppColors.primary, width: 3),
-                image: const DecorationImage(
-                  image: NetworkImage(
-                      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=faces'),
-                  fit: BoxFit.cover,
-                ),
+                color: const Color(0xFF13132B),
+                border:
+                    Border.all(color: AppColors.primary, width: 3),
+                image: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                    ? DecorationImage(
+                        image: NetworkImage(_avatarUrl!),
+                        fit: BoxFit.cover)
+                    : null,
               ),
+              child: _avatarUrl == null || _avatarUrl!.isEmpty
+                  ? Center(
+                      child: Text(
+                          widget.name.isNotEmpty
+                              ? widget.name[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 56,
+                              fontWeight: FontWeight.w800)))
+                  : null,
             ),
-            Positioned(
-              bottom: 8, right: 8,
-              child: Container(
-                width: 40, height: 40,
+            if (_uploading)
+              Container(
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: const Color(0xFF0A0A1A),
-                      width: 2),
-                ),
-                child: const Icon(Icons.camera_alt,
-                    color: Colors.white, size: 20),
+                    shape: BoxShape.circle,
+                    color: Colors.black.withOpacity(0.55)),
+                child: const Center(
+                    child: CircularProgressIndicator(
+                        color: AppColors.primary)),
               ),
-            ),
           ]),
           const SizedBox(height: 24),
-          const Text('Alex Johnson',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800)),
-          const Text('U16 • Forward • Falcons FC',
-              style: TextStyle(
-                  color: Colors.white54, fontSize: 13)),
+          if (widget.name.isNotEmpty)
+            Text(widget.name,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800)),
+          if (widget.details.isNotEmpty)
+            Text(widget.details,
+                style: const TextStyle(
+                    color: Colors.white54, fontSize: 13)),
           const Spacer(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-                20, 0, 20, 16),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             child: Column(children: [
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () =>
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(const SnackBar(
-                          content:
-                          Text('Camera opened! 📷'),
-                          backgroundColor:
-                          AppColors.primary)),
+                  onPressed: _uploading
+                      ? null
+                      : () => _pick(ImageSource.camera),
                   icon: const Icon(Icons.camera_alt,
                       color: Colors.white, size: 20),
                   label: const Text('Take Photo',
@@ -1978,11 +2099,10 @@ class _ProfileImageScreen extends StatelessWidget {
                           fontWeight: FontWeight.w600)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
               ),
@@ -1990,28 +2110,22 @@ class _ProfileImageScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () =>
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(const SnackBar(
-                          content: Text(
-                              'Gallery opened! 🖼️'),
-                          backgroundColor:
-                          AppColors.primary)),
+                  onPressed: _uploading
+                      ? null
+                      : () => _pick(ImageSource.gallery),
                   icon: const Icon(Icons.photo_library,
                       color: Colors.white, size: 20),
-                  label: const Text(
-                      'Choose from Gallery',
+                  label: const Text('Choose from Gallery',
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.w600)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14)),
                   ),
                 ),
               ),
@@ -2021,18 +2135,15 @@ class _ProfileImageScreen extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(
-                        color: Colors.white24),
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14),
+                    side: const BorderSide(color: Colors.white24),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text('Cancel',
+                  child: const Text('Done',
                       style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 15)),
+                          color: Colors.white54, fontSize: 15)),
                 ),
               ),
             ]),
