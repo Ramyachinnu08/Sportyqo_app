@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' show pi;
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import 'player_id_ready_screen.dart';
 
 class GeneratingIdScreen extends StatefulWidget {
@@ -26,28 +28,35 @@ class _GeneratingIdScreenState
       duration: const Duration(seconds: 2),
     )..repeat();
 
-    Future.delayed(
-        const Duration(milliseconds: 2000), () {
-      if (!mounted) return;
+    _allocateId();
+  }
 
-      // Generate ID like P26001 to P26999
-      final now = DateTime.now();
-      final year = now.year.toString().substring(2);
-      final count =
-      (now.millisecondsSinceEpoch % 999 + 1)
-          .toString()
-          .padLeft(3, '0');
-      final playerId = 'P$year$count';
+  /// The Player ID is minted SERVER-SIDE (unique, sequential per year).
+  /// This screen just animates while the request is in flight.
+  Future<void> _allocateId() async {
+    try {
+      final results = await Future.wait([
+        UserService.selectSport(sport: widget.selectedSport),
+        // keep the generating animation visible for a beat
+        Future.delayed(const Duration(milliseconds: 1200)),
+      ]);
+      final res = results.first as Map<String, dynamic>;
+      await UserService.me(); // refresh cached session with player_id
+      if (!mounted) return;
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => PlayerIdReadyScreen(
-            playerId: playerId,
+            playerId: res['player_id'] as String,
             selectedSport: widget.selectedSport,
           ),
         ),
       );
-    });
+    } catch (e) {
+      if (!mounted) return;
+      showApiError(context, e);
+      Navigator.of(context).pop();
+    }
   }
 
   @override

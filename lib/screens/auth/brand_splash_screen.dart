@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../api/services.dart';
+import '../coach/coach_home_screen.dart';
+import '../player/home_screen.dart';
 import 'splash_screen.dart';
 
 class BrandSplashScreen extends StatefulWidget {
@@ -36,19 +39,38 @@ class _BrandSplashScreenState extends State<BrandSplashScreen>
 
     _controller.forward();
 
-    Future.delayed(const Duration(milliseconds: 2200), () {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          transitionDuration:
-          const Duration(milliseconds: 600),
-          pageBuilder: (_, animation, __) => FadeTransition(
-            opacity: animation,
-            child: const SplashScreen(),
-          ),
+    _boot();
+  }
+
+  /// Restore a saved session (rotating refresh token) while the logo
+  /// animates; land logged-in users straight on their home screen.
+  Future<void> _boot() async {
+    final results = await Future.wait([
+      AuthService.tryRestore(),
+      Future.delayed(const Duration(milliseconds: 2200)),
+    ]);
+    if (!mounted) return;
+    final user = results.first as Map<String, dynamic>?;
+
+    Widget next;
+    if (user != null && user['onboarding_stage'] == 'complete') {
+      next = user['role'] == 'coach'
+          ? const CoachHomeScreen()
+          : const HomeScreen();
+    } else {
+      next = const SplashScreen();
+    }
+
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration:
+        const Duration(milliseconds: 600),
+        pageBuilder: (_, animation, __) => FadeTransition(
+          opacity: animation,
+          child: next,
         ),
-      );
-    });
+      ),
+    );
   }
 
   @override

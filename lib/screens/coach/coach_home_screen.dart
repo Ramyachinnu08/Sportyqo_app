@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../api/mappers.dart';
+import '../../api/services.dart';
 import '../../theme/app_theme.dart';
 import 'coach_dugout_screen.dart';
 import 'coach_playbook_screen.dart';
@@ -669,75 +671,30 @@ class _CoachNotificationScreen extends StatefulWidget {
 
 class _CoachNotificationScreenState
     extends State<_CoachNotificationScreen> {
-  late List<Map<String, dynamic>> _notifications = [
-    {
-      'icon': Icons.person_add,
-      'color': const Color(0xFF00C853),
-      'title': 'New Player Joined!',
-      'subtitle': 'Rahul Sharma joined Alpha Warriors',
-      'time': '2m ago',
-      'read': false,
-    },
-    {
-      'icon': Icons.emoji_events,
-      'color': const Color(0xFFFFB300),
-      'title': 'Points Updated',
-      'subtitle': 'Match points uploaded successfully',
-      'time': '15m ago',
-      'read': false,
-    },
-    {
-      'icon': Icons.sports_cricket,
-      'color': const Color(0xFF1A6BFF),
-      'title': 'Match Scheduled',
-      'subtitle':
-      'Alpha Warriors vs Royal Challengers — 24 May',
-      'time': '1h ago',
-      'read': false,
-    },
-    {
-      'icon': Icons.shield,
-      'color': const Color(0xFF00C853),
-      'title': 'League Created',
-      'subtitle': 'Under16 Pro League is now live!',
-      'time': '2h ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.star,
-      'color': const Color(0xFFFFB300),
-      'title': 'Certification Update',
-      'subtitle':
-      'Your coach certification is under review',
-      'time': '3h ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.people,
-      'color': const Color(0xFF1A6BFF),
-      'title': 'Team Update',
-      'subtitle': 'Falcons FC roster has been updated',
-      'time': '5h ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.bar_chart,
-      'color': const Color(0xFF00C853),
-      'title': 'Performance Report',
-      'subtitle': 'Weekly performance report is ready',
-      'time': '1d ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.emoji_events,
-      'color': const Color(0xFFFFB300),
-      'title': 'Match Result',
-      'subtitle':
-      'Alpha Warriors won vs Thunder Strikers 🎉',
-      'time': '1d ago',
-      'read': true,
-    },
-  ];
+  List<Map<String, dynamic>> _notifications = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final res = await NotificationService.list();
+      final items = (res['items'] as List<dynamic>)
+          .map((n) => notificationToTile(n as Map<String, dynamic>))
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _notifications = items;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -787,6 +744,7 @@ class _CoachNotificationScreenState
               ),
               GestureDetector(
                 onTap: () {
+                  NotificationService.markAllRead();
                   setState(() {
                     _notifications = _notifications
                         .map((n) =>
@@ -811,7 +769,15 @@ class _CoachNotificationScreenState
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: ListView.separated(
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator())
+                : _notifications.isEmpty
+                    ? const Center(
+                        child: Text('No notifications yet',
+                            style: TextStyle(
+                                color: Colors.white38)))
+                    : ListView.separated(
               padding: const EdgeInsets.symmetric(
                   horizontal: 20),
               itemCount: _notifications.length,
@@ -820,12 +786,19 @@ class _CoachNotificationScreenState
               itemBuilder: (context, i) {
                 final n = _notifications[i];
                 return GestureDetector(
-                  onTap: () => setState(() {
-                    _notifications[i] = {
-                      ..._notifications[i],
-                      'read': true,
-                    };
-                  }),
+                  onTap: () {
+                    final id = _notifications[i]['id'] as String?;
+                    if (id != null &&
+                        _notifications[i]['read'] != true) {
+                      NotificationService.markRead(id);
+                    }
+                    setState(() {
+                      _notifications[i] = {
+                        ..._notifications[i],
+                        'read': true,
+                      };
+                    });
+                  },
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(

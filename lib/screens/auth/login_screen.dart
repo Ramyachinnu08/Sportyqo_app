@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../api/api_client.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import '../player/home_screen.dart';
 import '../coach/coach_home_screen.dart';
 import 'choose_role_screen.dart';
@@ -15,7 +18,46 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _submitting = false;
   String _selectedRole = 'Player';
+
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    if (email.isEmpty || password.isEmpty) {
+      showInfo(context, 'Enter your email and password.');
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      await AuthService.login(
+        email: email,
+        password: password,
+        role: _selectedRole == 'Player' ? 'player' : 'coach',
+      );
+      if (!mounted) return;
+      final home = _selectedRole == 'Player'
+          ? const HomeScreen() as Widget
+          : const CoachHomeScreen() as Widget;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => home),
+        (route) => false,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'ROLE_MISMATCH') {
+        showInfo(context,
+            '${e.message} Try switching the Player/Coach toggle.');
+      } else {
+        showApiError(context, e);
+      }
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,25 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // ── Login Button ──
               GestureDetector(
-                onTap: () {
-                  if (_selectedRole == 'Player') {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) =>
-                          const HomeScreen()),
-                          (route) => false,
-                    );
-                  } else {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) =>
-                          const CoachHomeScreen()),
-                          (route) => false,
-                    );
-                  }
-                },
+                onTap: _submitting ? null : _login,
                 child: Container(
                   width: double.infinity,
                   padding:
@@ -158,8 +182,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         : const Color(0xFF00C853),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Center(
-                    child: Text('Login',
+                  child: Center(
+                    child: _submitting
+                        ? const ButtonSpinner()
+                        : const Text('Login',
                         style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,

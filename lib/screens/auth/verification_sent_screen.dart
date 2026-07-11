@@ -3,7 +3,14 @@ import '../../theme/app_theme.dart';
 import 'access_code_screen.dart';
 
 class VerificationSentScreen extends StatelessWidget {
-  const VerificationSentScreen({super.key});
+  final String requestId;
+  final String maskedPhone;
+  final String? devCode; // echoed by the backend outside production only
+  const VerificationSentScreen(
+      {super.key,
+      required this.requestId,
+      required this.maskedPhone,
+      this.devCode});
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +83,10 @@ class VerificationSentScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const AccessCodeScreen()),
+                          builder: (_) => AccessCodeScreen(
+                                requestId: requestId,
+                                devCode: devCode,
+                              )),
                     );
                   },
                   style: ElevatedButton.styleFrom(

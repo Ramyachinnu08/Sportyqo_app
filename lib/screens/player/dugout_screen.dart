@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../api/mappers.dart';
+import '../../api/services.dart';
 
 class DugoutScreen extends StatefulWidget {
   const DugoutScreen({super.key});
@@ -13,172 +15,79 @@ class _DugoutScreenState extends State<DugoutScreen> {
   final TextEditingController _searchController =
   TextEditingController();
 
-  final List<Map<String, dynamic>> _posts = [
-    {
-      'name': 'Aarav Mehta',
-      'verified': true,
-      'role': 'Cricket • Batter • U16',
-      'time': '2h ago',
-      'avatar':
-      'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=200',
-      'content':
-      'Another day, another step forward. 🏏\nGrateful for the process and everyone who supports me. 💙\n#WorkInProgress #TeamFirst',
-      'image':
-      'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800',
-      'qoScore': 92,
-      'qoEarned': '+12',
-      'type': 'player',
-      'liked': false,
-      'likes': 124,
-      'comments': 18,
-      'posts': 124,
-      'followers': '2,845',
-      'following': 512,
-      'location': 'Bengaluru, India',
-      'sport': 'Cricket Player',
-      'bio':
-      'Aspiring cricketer | All-rounder 🏏\nTraining hard. Dreaming big. ✨\n#Believe #Perform #Achieve',
-      'images': [
-        'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=400',
-        'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=400',
-        'https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?w=400',
-        'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400',
-        'https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=400',
-        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
-        'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=400',
-        'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=400',
-        'https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?w=400',
-      ],
-    },
-    {
-      'name': 'Rahul Dravid',
-      'verified': true,
-      'role': 'Head Coach • India U19',
-      'time': '5h ago',
-      'avatar':
-      'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=200',
-      'content':
-      'Discipline today, success tomorrow.\nProud of the effort and attitude from the team. Keep building! 💪\n#TrustTheProcess',
-      'image':
-      'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800',
-      'qoScore': 95,
-      'qoEarned': '+15',
-      'type': 'coach',
-      'liked': false,
-      'likes': 287,
-      'comments': 42,
-      'posts': 89,
-      'followers': '12,450',
-      'following': 234,
-      'location': 'Mumbai, India',
-      'sport': 'Head Coach',
-      'bio':
-      'Head Coach | India U19 🏏\nDeveloping champions of tomorrow.\n#Cricket #Coaching #Excellence',
-      'images': [
-        'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=400',
-        'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=400',
-        'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400',
-        'https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?w=400',
-        'https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=400',
-        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400',
-      ],
-    },
-    {
-      'name': 'Alpha Warriors',
-      'verified': true,
-      'role': 'Cricket Team • Under16',
-      'time': '1d ago',
-      'avatar':
-      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=200',
-      'content':
-      'Match day tomorrow! 🔥 Ready to give our best.\n#AlphaWarriors #Cricket',
-      'image':
-      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800',
-      'qoScore': 88,
-      'qoEarned': '+8',
-      'type': 'team',
-      'liked': false,
-      'likes': 156,
-      'comments': 24,
-      'posts': 56,
-      'followers': '5,120',
-      'following': 89,
-      'location': 'Delhi, India',
-      'sport': 'Cricket Team',
-      'bio':
-      'Alpha Warriors Cricket Club 🏏\nU16 Champions League Team\n#AlphaWarriors #Cricket',
-      'images': [
-        'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400',
-        'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=400',
-        'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=400',
-        'https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?w=400',
-      ],
-    },
-    {
-      'name': 'Virat Singh',
-      'verified': false,
-      'role': 'Cricket • Bowler • U19',
-      'time': '2d ago',
-      'avatar':
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
-      'content':
-      'Hard work never goes to waste. 💯\n#Bowling #Cricket #NeverGiveUp',
-      'image':
-      'https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?w=800',
-      'qoScore': 78,
-      'qoEarned': '+6',
-      'type': 'player',
-      'liked': false,
-      'likes': 89,
-      'comments': 11,
-      'posts': 34,
-      'followers': '1,230',
-      'following': 445,
-      'location': 'Hyderabad, India',
-      'sport': 'Cricket Player',
-      'bio':
-      'Fast Bowler 🎯 | U19 Cricket\nOn the road to becoming the best.\n#Cricket #Bowling',
-      'images': [
-        'https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?w=400',
-        'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=400',
-        'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=400',
-      ],
-    },
-  ];
+  List<Map<String, dynamic>> _posts = [];
+  bool _loading = true;
 
-  final List<String> _tabs = [
-    'All',
-    'Players',
-    'Coaches',
-    'Teams',
-    'Following',
-  ];
-
-  List<Map<String, dynamic>> get _filteredPosts {
-    List<Map<String, dynamic>> list = _posts;
-    if (_selectedTab == 'Players') {
-      list =
-          list.where((p) => p['type'] == 'player').toList();
-    } else if (_selectedTab == 'Coaches') {
-      list =
-          list.where((p) => p['type'] == 'coach').toList();
-    } else if (_selectedTab == 'Teams') {
-      list =
-          list.where((p) => p['type'] == 'team').toList();
-    } else if (_selectedTab == 'Following') {
-      list =
-          list.where((p) => p['liked'] == true).toList();
-    }
-    if (_searchQuery.isNotEmpty) {
-      list = list
-          .where((p) => p['name']
-          .toString()
-          .toLowerCase()
-          .contains(_searchQuery.toLowerCase()))
-          .toList();
-    }
-    return list;
+  @override
+  void initState() {
+    super.initState();
+    _loadFeed();
   }
+
+  String get _apiTab {
+    switch (_selectedTab) {
+      case 'Players':
+        return 'players';
+      case 'Coaches':
+        return 'coaches';
+      case 'Teams':
+        return 'teams';
+      case 'Following':
+        return 'following';
+      default:
+        return 'all';
+    }
+  }
+
+  Future<void> _loadFeed() async {
+    setState(() => _loading = true);
+    try {
+      final res = await FeedService.feed(
+          tab: _apiTab,
+          q: _searchQuery.isEmpty ? null : _searchQuery);
+      final items = (res['items'] as List<dynamic>).map((raw) {
+        final post = raw as Map<String, dynamic>;
+        final author = post['author'] as Map<String, dynamic>? ?? {};
+        final media = (post['media'] as List<dynamic>? ?? [])
+            .map((m) => (m as Map<String, dynamic>)['url'] as String?)
+            .whereType<String>()
+            .toList();
+        return <String, dynamic>{
+          'id': post['id'],
+          'author_id': author['id'],
+          'name': author['name'] ?? '',
+          'verified': author['verified'] == true,
+          'role': author['role_line'] ?? '',
+          'time': relativeTime(post['created_at'] as String?),
+          'avatar': author['avatar_url'],
+          'content': post['content'] ?? '',
+          'image': media.isNotEmpty ? media.first : null,
+          'qoScore': author['qo_score'] ?? 0,
+          'qoEarned': '+${post['qo_points_earned'] ?? 0}',
+          'type': author['type'] ?? 'player',
+          'liked': post['viewer']?['liked'] == true,
+          'likes': post['counts']?['likes'] ?? 0,
+          'comments': post['counts']?['comments'] ?? 0,
+          'posts': 0,
+          'followers': '0',
+          'following': 0,
+          'location': '',
+          'sport': author['role_line'] ?? '',
+          'bio': '',
+          'images': media,
+        };
+      }).toList();
+      if (!mounted) return;
+      setState(() {
+        _posts = items;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  List<Map<String, dynamic>> get _filteredPosts => _posts;
 
   @override
   Widget build(BuildContext context) {
@@ -204,8 +113,10 @@ class _DugoutScreenState extends State<DugoutScreen> {
                 ),
                 child: TextField(
                   controller: _searchController,
-                  onChanged: (v) =>
-                      setState(() => _searchQuery = v),
+                  onChanged: (v) {
+                    setState(() => _searchQuery = v);
+                    _loadFeed();
+                  },
                   style: const TextStyle(
                       color: Colors.white, fontSize: 14),
                   decoration: InputDecoration(
@@ -249,8 +160,10 @@ class _DugoutScreenState extends State<DugoutScreen> {
                 children: _tabs.map((tab) {
                   final isActive = _selectedTab == tab;
                   return GestureDetector(
-                    onTap: () =>
-                        setState(() => _selectedTab = tab),
+                    onTap: () {
+                      setState(() => _selectedTab = tab);
+                      _loadFeed();
+                    },
                     child: Container(
                       margin:
                       const EdgeInsets.only(right: 8),
@@ -334,20 +247,31 @@ class _DugoutScreenState extends State<DugoutScreen> {
                   final post = _filteredPosts[i];
                   return _PostCard(
                     post: post,
-                    onLike: () {
+                    onLike: () async {
+                      final index = _posts.indexOf(post);
+                      if (index == -1) return;
+                      final id = _posts[index]['id'] as String?;
+                      final wasLiked =
+                          _posts[index]['liked'] == true;
                       setState(() {
-                        final index =
-                        _posts.indexOf(post);
-                        if (index != -1) {
-                          _posts[index]['liked'] =
-                          !_posts[index]['liked'];
-                          if (_posts[index]['liked']) {
-                            _posts[index]['likes']++;
-                          } else {
-                            _posts[index]['likes']--;
-                          }
-                        }
+                        _posts[index]['liked'] = !wasLiked;
+                        _posts[index]['likes'] += wasLiked ? -1 : 1;
                       });
+                      if (id == null) return;
+                      try {
+                        final res = wasLiked
+                            ? await FeedService.unlike(id)
+                            : await FeedService.like(id);
+                        if (!mounted) return;
+                        setState(() => _posts[index]['likes'] =
+                            res['like_count'] ?? _posts[index]['likes']);
+                      } catch (_) {
+                        if (!mounted) return;
+                        setState(() {
+                          _posts[index]['liked'] = wasLiked;
+                          _posts[index]['likes'] += wasLiked ? 1 : -1;
+                        });
+                      }
                     },
                     onTapProfile: () {
                       Navigator.push(
