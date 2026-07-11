@@ -159,33 +159,7 @@ class _HomeTabState extends State<_HomeTab> {
     }
   }
 
-  String _getTeam1(String sport) {
-    switch (sport) {
-      case 'Football': return 'Alpha FC';
-      case 'Cricket': return 'Alpha Warriors';
-      case 'Basketball': return 'Alpha Hoops';
-      case 'Volleyball': return 'Alpha VB';
-      case 'Swimming': return 'Alpha Swim';
-      case 'Badminton': return 'Alpha Badminton';
-      case 'Tennis': return 'Alpha Tennis';
-      case 'Kabaddi': return 'Alpha Raiders';
-      default: return 'Alpha Warriors';
-    }
-  }
 
-  String _getTeam2(String sport) {
-    switch (sport) {
-      case 'Football': return 'Thunder FC';
-      case 'Cricket': return 'Thunder Strikers';
-      case 'Basketball': return 'Thunder Hoops';
-      case 'Volleyball': return 'Thunder VB';
-      case 'Swimming': return 'Thunder Swim';
-      case 'Badminton': return 'Thunder Badminton';
-      case 'Tennis': return 'Thunder Tennis';
-      case 'Kabaddi': return 'Thunder Raiders';
-      default: return 'Thunder Strikers';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -537,7 +511,9 @@ class _HomeTabState extends State<_HomeTab> {
 
               const SizedBox(height: 22),
 
-              // ── Upcoming Match ──
+              // ── Upcoming Match (only shown when the backend
+              //    returns a scheduled match for this player) ──
+              if (_upcoming != null) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20),
@@ -632,8 +608,7 @@ class _HomeTabState extends State<_HomeTab> {
                                     letter: 'A'),
                                 const SizedBox(height: 8),
                                 Text(
-                                    (_upcoming?['team_a']?['name'] as String?) ??
-                                        _getTeam1(widget.selectedSport),
+                                    (_upcoming?['team_a']?['name'] as String?) ?? '',
                                     style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 13,
@@ -657,8 +632,7 @@ class _HomeTabState extends State<_HomeTab> {
                                     Colors.white),
                                 const SizedBox(height: 8),
                                 Text(
-                                    (_upcoming?['team_b']?['name'] as String?) ??
-                                        _getTeam2(widget.selectedSport),
+                                    (_upcoming?['team_b']?['name'] as String?) ?? '',
                                     style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 13,
@@ -720,6 +694,7 @@ class _HomeTabState extends State<_HomeTab> {
               ),
 
               const SizedBox(height: 16),
+              ],
 
               // ── Join League ──
               Padding(
