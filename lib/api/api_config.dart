@@ -20,6 +20,25 @@ class ApiConfig {
 
   static String get wsUrl =>
       '${baseUrl.replaceFirst('http', 'ws')}/ws';
+
+  /// Media URLs from the backend are built with the server's BASE_URL,
+  /// which in dev defaults to `http://localhost:8000`. A phone or
+  /// emulator can't reach the host machine via `localhost`, so rewrite
+  /// such URLs to use the same host/port the app already uses for the
+  /// API (e.g. 10.0.2.2 on the Android emulator, or your LAN IP when
+  /// running with --dart-define=API_BASE_URL=...).
+  static String? resolveMediaUrl(String? url) {
+    if (url == null || url.isEmpty) return url;
+    final u = Uri.tryParse(url);
+    if (u == null || !u.hasScheme) return url;
+    const localHosts = {'localhost', '127.0.0.1', '0.0.0.0'};
+    if (!localHosts.contains(u.host)) return url;
+    final api = Uri.parse(baseUrl);
+    if (localHosts.contains(api.host) && u.host == api.host) return url;
+    return u
+        .replace(scheme: api.scheme, host: api.host, port: api.port)
+        .toString();
+  }
 }
 
 /// Persists the JWT pair. The refresh token ROTATES on every refresh —

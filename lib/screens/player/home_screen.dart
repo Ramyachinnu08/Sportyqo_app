@@ -1911,6 +1911,13 @@ class _HeaderAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolved = ApiConfig.resolveMediaUrl(url);
+    final initial = Text(
+        name.isNotEmpty ? name[0].toUpperCase() : '?',
+        style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w800));
     return Container(
       width: 44,
       height: 44,
@@ -1918,20 +1925,17 @@ class _HeaderAvatar extends StatelessWidget {
         shape: BoxShape.circle,
         color: const Color(0xFF13132B),
         border: Border.all(color: AppColors.primary, width: 2),
-        image: url != null && url!.isNotEmpty
-            ? DecorationImage(
-                image: NetworkImage(url!), fit: BoxFit.cover)
-            : null,
       ),
-      child: url == null || url!.isEmpty
-          ? Center(
-              child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800)))
-          : null,
+      child: ClipOval(
+        child: resolved != null && resolved.isNotEmpty
+            ? Image.network(resolved,
+                fit: BoxFit.cover,
+                width: 44,
+                height: 44,
+                errorBuilder: (_, __, ___) =>
+                    Center(child: initial))
+            : Center(child: initial),
+      ),
     );
   }
 }
@@ -2031,32 +2035,38 @@ class _ProfileImageScreenState extends State<_ProfileImageScreen> {
           ),
           const Spacer(),
           Stack(alignment: Alignment.center, children: [
-            Container(
-              width: 160,
-              height: 160,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF13132B),
-                border:
-                    Border.all(color: AppColors.primary, width: 3),
-                image: _avatarUrl != null && _avatarUrl!.isNotEmpty
-                    ? DecorationImage(
-                        image: NetworkImage(_avatarUrl!),
-                        fit: BoxFit.cover)
-                    : null,
-              ),
-              child: _avatarUrl == null || _avatarUrl!.isEmpty
-                  ? Center(
-                      child: Text(
-                          widget.name.isNotEmpty
-                              ? widget.name[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 56,
-                              fontWeight: FontWeight.w800)))
-                  : null,
-            ),
+            Builder(builder: (context) {
+              final resolved =
+                  ApiConfig.resolveMediaUrl(_avatarUrl);
+              final initial = Text(
+                  widget.name.isNotEmpty
+                      ? widget.name[0].toUpperCase()
+                      : '?',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 56,
+                      fontWeight: FontWeight.w800));
+              return Container(
+                width: 160,
+                height: 160,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF13132B),
+                  border: Border.all(
+                      color: AppColors.primary, width: 3),
+                ),
+                child: ClipOval(
+                  child: resolved != null && resolved.isNotEmpty
+                      ? Image.network(resolved,
+                          fit: BoxFit.cover,
+                          width: 160,
+                          height: 160,
+                          errorBuilder: (_, __, ___) =>
+                              Center(child: initial))
+                      : Center(child: initial),
+                ),
+              );
+            }),
             if (_uploading)
               Container(
                 width: 160,
