@@ -11,7 +11,13 @@ class DugoutScreen extends StatefulWidget {
 
 class _DugoutScreenState extends State<DugoutScreen> {
   String _selectedTab = 'All';
-  final List<String> _tabs = ['All','Players'];
+  final List<String> _tabs = [
+    'All',
+    'Players',
+    'Coaches',
+    'Teams',
+    'Following',
+  ];
   String _searchQuery = '';
   final TextEditingController _searchController =
   TextEditingController();

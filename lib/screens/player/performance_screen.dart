@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../api/services.dart';
 import '../../theme/app_theme.dart';
 
 class PerformanceScreen extends StatefulWidget {
@@ -11,6 +12,35 @@ class PerformanceScreen extends StatefulWidget {
 
 class _PerformanceScreenState
     extends State<PerformanceScreen> {
+  Map<String, dynamic>? _perf;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final perf = await PlayerService.performance();
+      if (mounted) setState(() => _perf = perf);
+    } catch (_) {}
+  }
+
+  Map<String, dynamic> get _qo =>
+      (_perf?['qo_score'] as Map<String, dynamic>?) ?? const {};
+  Map<String, dynamic> get _progress =>
+      (_perf?['card_progress'] as Map<String, dynamic>?) ?? const {};
+  Map<String, dynamic> get _ranking =>
+      (_perf?['ranking'] as Map<String, dynamic>?) ?? const {};
+
+  String _tierLabel() {
+    final slug = _qo['card_tier'] as String? ?? 'purple';
+    final words = slug.split('_').map((w) =>
+        w.isEmpty ? w : w[0].toUpperCase() + w.substring(1));
+    return '${words.join(' ')} Card';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,8 +75,8 @@ class _PerformanceScreenState
                               style: TextStyle(
                                   color: Colors.white54,
                                   fontSize: 13)),
-                          const Text('242',
-                              style: TextStyle(
+                          Text('${_qo['current'] ?? 0}',
+                              style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 52,
                                   fontWeight:
@@ -78,8 +108,8 @@ class _PerformanceScreenState
                                       shape:
                                       BoxShape.circle)),
                               const SizedBox(width: 6),
-                              const Text('Purple Card',
-                                  style: TextStyle(
+                              Text(_tierLabel(),
+                                  style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 12,
                                       fontWeight:
@@ -87,17 +117,17 @@ class _PerformanceScreenState
                             ]),
                           ),
                           const SizedBox(height: 6),
-                          const Text('Elite Performer',
-                              style: TextStyle(
+                          Text((_qo['label'] as String?) ?? '',
+                              style: const TextStyle(
                                   color: Colors.white54,
                                   fontSize: 12)),
                           const SizedBox(height: 6),
-                          Row(children: const [
-                            Icon(Icons.arrow_upward,
+                          Row(children: [
+                            const Icon(Icons.arrow_upward,
                                 color: AppColors.primary,
                                 size: 14),
-                            Text('+63 points this week',
-                                style: TextStyle(
+                            Text('+${_qo['delta_week'] ?? 0} points this week',
+                                style: const TextStyle(
                                     color:
                                     AppColors.primary,
                                     fontSize: 12,
@@ -164,24 +194,24 @@ class _PerformanceScreenState
                             size: 16),
                       ),
                       const SizedBox(width: 10),
-                      const Text('Purple Card',
-                          style: TextStyle(
+                      Text(_tierLabel(),
+                          style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                               fontSize: 14)),
                       const Spacer(),
                       RichText(
-                        text: const TextSpan(children: [
+                        text: TextSpan(children: [
                           TextSpan(
-                              text: '758',
-                              style: TextStyle(
+                              text: '${_progress['current'] ?? 0}',
+                              style: const TextStyle(
                                   color: AppColors.primary,
                                   fontWeight:
                                   FontWeight.w800,
                                   fontSize: 14)),
                           TextSpan(
-                              text: ' / 1000',
-                              style: TextStyle(
+                              text: ' / ${_progress['target'] ?? 1000}',
+                              style: const TextStyle(
                                   color: Colors.white38,
                                   fontSize: 13)),
                         ]),
@@ -192,7 +222,10 @@ class _PerformanceScreenState
                       borderRadius:
                       BorderRadius.circular(6),
                       child: LinearProgressIndicator(
-                          value: 758 / 1000,
+                          value: ((_progress['current'] as num?) ?? 0) /
+                              (((_progress['target'] as num?) ?? 1000) == 0
+                                  ? 1
+                                  : ((_progress['target'] as num?) ?? 1000)),
                           backgroundColor: Colors.white10,
                           color: AppColors.primary,
                           minHeight: 8),
@@ -234,22 +267,25 @@ class _PerformanceScreenState
                     child: Column(
                       crossAxisAlignment:
                       CrossAxisAlignment.start,
-                      children: const [
-                        Text('Ranking',
+                      children: [
+                        const Text('Ranking',
                             style: TextStyle(
                                 color: Colors.white,
                                 fontWeight:
                                 FontWeight.w700,
                                 fontSize: 14)),
-                        SizedBox(height: 8),
-                        Text('#14',
-                            style: TextStyle(
+                        const SizedBox(height: 8),
+                        Text(
+                            _ranking['rank'] == null
+                                ? '—'
+                                : '#${_ranking['rank']}',
+                            style: const TextStyle(
                                 color: AppColors.primary,
                                 fontSize: 36,
                                 fontWeight:
                                 FontWeight.w800)),
-                        Text('U16 Cricket',
-                            style: TextStyle(
+                        Text((_ranking['category'] as String?) ?? '',
+                            style: const TextStyle(
                                 color: Colors.white54,
                                 fontSize: 12)),
                       ],
@@ -268,8 +304,9 @@ class _PerformanceScreenState
                             color: AppColors.primary
                                 .withOpacity(0.3)),
                       ),
-                      child: const Text('Top 5%',
-                          style: TextStyle(
+                      child: Text(
+                          (_ranking['percentile'] as String?) ?? '—',
+                          style: const TextStyle(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w700,
                               fontSize: 12)),
@@ -288,8 +325,9 @@ class _PerformanceScreenState
                           size: 26),
                     ),
                     const SizedBox(height: 4),
-                    const Text('Out of 280',
-                        style: TextStyle(
+                    Text(
+                        'Out of ${_ranking['total_players'] ?? '—'}',
+                        style: const TextStyle(
                             color: Colors.white54,
                             fontSize: 10)),
                     const Text('players',
@@ -406,40 +444,51 @@ class _PerformanceScreenState
 
               const SizedBox(height: 10),
 
-              _MatchTile(
-                teamLetter: 'W',
-                opponent: 'vs Thunder Strikers',
-                date: '18 May 2025',
-                stat1: '78 Runs',
-                stat2: '1 Catch',
-                badge: 'Won Match',
-                extraBadge: 'MOM ⭐',
-                points: '+63',
-                badgeColor: const Color(0xFF00C853),
-                extraBadgeColor: const Color(0xFFFFB300),
-              ),
-              const SizedBox(height: 10),
-              _MatchTile(
-                teamLetter: 'W',
-                opponent: 'vs Royal Challengers',
-                date: '14 May 2025',
-                stat1: '32 Runs',
-                stat2: '2 Wickets',
-                badge: 'Won Match',
-                points: '+48',
-                badgeColor: const Color(0xFF00C853),
-              ),
-              const SizedBox(height: 10),
-              _MatchTile(
-                teamLetter: 'W',
-                opponent: 'vs Super Kings',
-                date: '10 May 2025',
-                stat1: '',
-                stat2: '2 Catches',
-                badge: 'Won Match',
-                points: '+37',
-                badgeColor: const Color(0xFF00C853),
-              ),
+              if ((_perf?['recent_matches']
+                          as List<dynamic>?)
+                      ?.isEmpty ??
+                  true)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                      child: Text('No matches yet',
+                          style: TextStyle(
+                              color: Colors.white38))),
+                )
+              else
+                for (final raw in (_perf!['recent_matches']
+                    as List<dynamic>)) ...[
+                  Builder(builder: (context) {
+                    final m = raw as Map<String, dynamic>;
+                    final stats =
+                        (m['stats'] as Map<String, dynamic>?) ?? {};
+                    final badges =
+                        (m['badges'] as List<dynamic>?) ?? [];
+                    final won = m['result'] == 'won';
+                    return _MatchTile(
+                      teamLetter: won ? 'W' : 'L',
+                      opponent: 'vs ${m['opponent'] ?? ''}',
+                      date: (m['played_at'] as String?) ?? '',
+                      stat1: '${stats['runs'] ?? 0} Runs',
+                      stat2: '${stats['wickets'] ?? 0} Wkts • ${stats['catches'] ?? 0} Ct',
+                      badge: won
+                          ? 'Won Match'
+                          : (m['result'] == 'draw' ? 'Draw' : 'Lost'),
+                      extraBadge:
+                          badges.contains('MOM') ? 'MOM ⭐' : null,
+                      extraBadgeColor: badges.contains('MOM')
+                          ? const Color(0xFFFFB300)
+                          : null,
+                      points: '+${m['qo_points'] ?? 0}',
+                      badgeColor: won
+                          ? const Color(0xFF00C853)
+                          : (m['result'] == 'draw'
+                              ? const Color(0xFF7B2FFF)
+                              : Colors.redAccent),
+                    );
+                  }),
+                  const SizedBox(height: 10),
+                ],
 
               const SizedBox(height: 32),
             ],

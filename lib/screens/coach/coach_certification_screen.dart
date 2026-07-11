@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../api/api_client.dart';
+import '../../api/api_config.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 
 class CoachCertificationScreen extends StatefulWidget {
@@ -12,17 +16,68 @@ class CoachCertificationScreen extends StatefulWidget {
 class _CoachCertificationScreenState
     extends State<CoachCertificationScreen> {
   int _step = 0;
+  bool _submitting = false;
+  Map<String, dynamic>? _cert; // GET /coaches/me/certification
 
-  final _nameController =
-  TextEditingController(text: 'Rahul Sharma');
-  final _academyController = TextEditingController(
-      text: 'Falcons Cricket Academy');
-  final _mobileController =
-  TextEditingController(text: '98765 43210');
-  final _emailController = TextEditingController(
-      text: 'rahul.sharma@gmail.com');
+  late final _nameController =
+      TextEditingController(text: Session.fullName);
+  final _academyController = TextEditingController();
+  final _mobileController = TextEditingController();
+  late final _emailController = TextEditingController(
+      text: (Session.user?['email'] as String?) ?? '');
   String _selectedRole = 'Head Coach';
   String _selectedExperience = '6+ Years';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStatus();
+  }
+
+  Future<void> _loadStatus() async {
+    try {
+      final cert = await CoachService.certification();
+      if (!mounted) return;
+      final status = cert['status'] as String?;
+      setState(() {
+        _cert = cert;
+        if (status == 'under_review') _step = 6;
+        if (status == 'approved') _step = 7;
+        // rejected / not_submitted → start the flow from step 0
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _submitRequest() async {
+    setState(() => _submitting = true);
+    try {
+      final res = await CoachService.submitCertification(
+        certificationLevel:
+            '$_selectedRole • $_selectedExperience',
+        issuingBody: _academyController.text.trim().isEmpty
+            ? null
+            : _academyController.text.trim(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _cert = res;
+        _step = 4;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'ALREADY_SUBMITTED') {
+        showInfo(context,
+            'You already have a certification under review.');
+        setState(() => _step = 6);
+      } else {
+        showApiError(context, e);
+      }
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   final List<String> _roles = [
     'Head Coach',
@@ -364,7 +419,7 @@ class _CoachCertificationScreenState
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => setState(() => _step = 4),
+              onPressed: _submitting ? null : _submitRequest,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1A6BFF),
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -448,7 +503,7 @@ class _CoachCertificationScreenState
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => setState(() => _step = 5),
+                  onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1A6BFF),
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -461,7 +516,7 @@ class _CoachCertificationScreenState
               Row(children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => setState(() => _step = 6),
+                    onPressed: _loadStatus,
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.amber),
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -473,7 +528,7 @@ class _CoachCertificationScreenState
                 const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => setState(() => _step = 7),
+                    onPressed: _loadStatus,
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFF00C853)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -501,7 +556,7 @@ class _CoachCertificationScreenState
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(children: [
               GestureDetector(
-                onTap: () => setState(() => _step = level == 0 ? 4 : level + 4),
+                onTap: () => Navigator.pop(context),
                 child: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
               ),
               const Expanded(
@@ -551,7 +606,7 @@ class _CoachCertificationScreenState
                 const SizedBox(height: 12),
                 Row(children: [
                   const SizedBox(width: 80, child: Text('Name', style: TextStyle(color: Colors.white38, fontSize: 12))),
-                  Expanded(child: Text('Rahul Sharma', style: const TextStyle(color: Colors.white, fontSize: 13))),
+                  Expanded(child: Text(Session.fullName, style: const TextStyle(color: Colors.white, fontSize: 13))),
                   if (level == 2) const Icon(Icons.check_circle, color: Color(0xFF1A6BFF), size: 18),
                 ]),
                 const Divider(color: Colors.white10, height: 16),
@@ -559,7 +614,10 @@ class _CoachCertificationScreenState
                 const Divider(color: Colors.white10, height: 16),
                 _RRow('Role', 'Head Coach'),
                 const Divider(color: Colors.white10, height: 16),
-                _RRow(level == 2 ? 'Verified On' : 'Applied On', level == 2 ? '22 May 2025' : '20 May 2025'),
+                _RRow(level == 2 ? 'Verified On' : 'Applied On',
+                    ((_cert?['submitted_at'] as String?) ?? '')
+                        .split('T')
+                        .first),
               ]),
             ),
           ),

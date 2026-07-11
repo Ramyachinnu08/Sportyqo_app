@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../api/api_config.dart';
+import '../../api/mappers.dart';
+import '../../api/services.dart';
 import '../auth/choose_role_screen.dart';
 
 class PlaybookScreen extends StatefulWidget {
@@ -13,137 +16,49 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
   int _tabIndex = 0;
   bool _isFollowing = false;
 
-  final List<Map<String, dynamic>> _playingVideos = [
-    {
-      'title': 'Century vs DSO Academy',
-      'subtitle': '125 Runs',
-      'date': '12 May 2025',
-      'image':
-      'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800',
-    },
-    {
-      'title': 'Match Winning Knock',
-      'subtitle': '78 Runs',
-      'date': '5 May 2025',
-      'image':
-      'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800',
-    },
-    {
-      'title': 'Bowling Spell',
-      'subtitle': '4/18',
-      'date': '28 Apr 2025',
-      'image':
-      'https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?w=800',
-    },
-    {
-      'title': 'Brilliant Catch',
-      'subtitle': 'vs Mumbai Colts',
-      'date': '20 Apr 2025',
-      'image':
-      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800',
-    },
-  ];
+  Map<String, dynamic>? _playbook;
 
-  final List<Map<String, dynamic>> _certificatesVideos = [
-    {
-      'title': 'BCCI Level 2 Certificate',
-      'subtitle': 'Certified',
-      'date': '10 Jan 2025',
-      'image':
-      'https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800',
-    },
-    {
-      'title': 'Sports Excellence Award',
-      'subtitle': 'State Level',
-      'date': '15 Dec 2024',
-      'image':
-      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',
-    },
-    {
-      'title': 'District Championship',
-      'subtitle': 'Gold Medal',
-      'date': '20 Nov 2024',
-      'image':
-      'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800',
-    },
-    {
-      'title': 'Academy Certificate',
-      'subtitle': 'Falcons FC',
-      'date': '01 Oct 2024',
-      'image':
-      'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
-  final List<Map<String, dynamic>> _teamVideos = [
-    {
-      'title': 'Falcons FC Team',
-      'subtitle': 'U16 Division',
-      'date': '2024-25',
-      'image':
-      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800',
-    },
-    {
-      'title': 'Alpha Warriors',
-      'subtitle': 'U16 Division',
-      'date': '2023-24',
-      'image':
-      'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800',
-    },
-    {
-      'title': 'Team Practice',
-      'subtitle': 'Morning Session',
-      'date': '15 May 2025',
-      'image':
-      'https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?w=800',
-    },
-    {
-      'title': 'Match Day Prep',
-      'subtitle': 'vs Royal Strikers',
-      'date': '10 May 2025',
-      'image':
-      'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800',
-    },
-  ];
+  Future<void> _load() async {
+    try {
+      final pb = await PlayerService.playbook();
+      if (mounted) setState(() => _playbook = pb);
+    } catch (_) {}
+  }
 
-  final List<Map<String, dynamic>> _trophiesVideos = [
-    {
-      'title': 'Best Batsman Trophy',
-      'subtitle': 'DSO Academy',
-      'date': '12 May 2025',
-      'image':
-      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',
-    },
-    {
-      'title': 'MVP Award',
-      'subtitle': 'Inter School',
-      'date': '5 May 2025',
-      'image':
-      'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800',
-    },
-    {
-      'title': 'Tournament Winners',
-      'subtitle': 'U16 League',
-      'date': '28 Apr 2025',
-      'image':
-      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800',
-    },
-    {
-      'title': 'Player of the Year',
-      'subtitle': '2024 Season',
-      'date': '01 Jan 2025',
-      'image':
-      'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800',
-    },
-  ];
+  Map<String, dynamic> get _profile =>
+      (_playbook?['profile'] as Map<String, dynamic>?) ?? const {};
+  Map<String, dynamic> get _stats =>
+      (_playbook?['stats'] as Map<String, dynamic>?) ?? const {};
+  Map<String, dynamic> get _qo =>
+      (_playbook?['qo_score'] as Map<String, dynamic>?) ?? const {};
+
+  List<Map<String, dynamic>> _tab(String key) =>
+      ((_playbook?['tabs'] as Map<String, dynamic>?)?[key]
+              as List<dynamic>? ??
+          const [])
+          .map((raw) {
+        final m = raw as Map<String, dynamic>;
+        return <String, dynamic>{
+          'title': m['title'] ?? '',
+          'subtitle': m['subtitle'] ?? '',
+          'date': m['date'] ?? '',
+          'image': m['url'],
+        };
+      }).toList();
 
   List<Map<String, dynamic>> get _currentContent {
     switch (_tabIndex) {
-      case 0: return _playingVideos;
-      case 1: return _certificatesVideos;
-      case 2: return _teamVideos;
-      case 3: return _trophiesVideos;
-      default: return _playingVideos;
+      case 0: return _tab('playing');
+      case 1: return _tab('certificates');
+      case 2: return _tab('team');
+      case 3: return _tab('trophies');
+      default: return _tab('playing');
     }
   }
 
@@ -379,49 +294,55 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                         crossAxisAlignment:
                         CrossAxisAlignment.start,
                         children: [
-                          const Text('Aarav Mehta',
-                              style: TextStyle(
+                          Text(
+                              (_profile['full_name'] as String?) ??
+                                  Session.fullName,
+                              style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 20,
                                   fontWeight:
                                   FontWeight.w800)),
-                          const Text('Cricket • Batter',
-                              style: TextStyle(
+                          Text(
+                              '${_profile['sport'] ?? 'Cricket'} • ${_profile['sub_role'] ?? 'Player'}',
+                              style: const TextStyle(
                                   color: Colors.white54,
                                   fontSize: 13)),
                           const SizedBox(height: 8),
-                          Row(children: const [
-                            Icon(
-                                Icons
-                                    .calendar_today_outlined,
+                          Row(children: [
+                            const Icon(
+                                Icons.badge_outlined,
                                 color: Colors.white38,
                                 size: 13),
-                            SizedBox(width: 6),
-                            Text('16 May 2008',
-                                style: TextStyle(
+                            const SizedBox(width: 6),
+                            Text(
+                                (_profile['player_id'] as String?) ??
+                                    (Session.playerId ?? ''),
+                                style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12)),
                           ]),
                           const SizedBox(height: 4),
-                          Row(children: const [
-                            Icon(
+                          Row(children: [
+                            const Icon(
                                 Icons.location_on_outlined,
                                 color: Colors.white38,
                                 size: 13),
                             SizedBox(width: 6),
-                            Text('Mumbai, India',
+                            Text(
+                                (_profile['location'] as String?) ?? '—',
                                 style: TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12)),
                           ]),
                           const SizedBox(height: 4),
-                          Row(children: const [
-                            Icon(Icons.shield_outlined,
+                          Row(children: [
+                            const Icon(Icons.shield_outlined,
                                 color: Colors.white38,
                                 size: 13),
                             SizedBox(width: 6),
-                            Text('St. Xavier\'s School',
-                                style: TextStyle(
+                            Text(
+                                (_profile['age_group'] as String?) ?? '',
+                                style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12)),
                           ]),
@@ -447,7 +368,7 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                                 fontSize: 10,
                                 fontWeight:
                                 FontWeight.w600)),
-                        Text('92',
+                        Text('${_qo['current'] ?? 0}',
                             style: TextStyle(
                                 color: Color(0xFF7B2FFF),
                                 fontSize: 32,
@@ -457,13 +378,13 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                             style: TextStyle(
                                 color: Colors.white38,
                                 fontSize: 10)),
-                        Text('#1',
+                        Text(_qo['rank'] == null ? '—' : '#${_qo['rank']}',
                             style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
                                 fontWeight:
                                 FontWeight.w800)),
-                        Text('in U16 Cricket',
+                        Text('in ${_qo['category'] ?? 'Cricket'}',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                                 color: Colors.white38,
@@ -518,17 +439,19 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                     horizontal: 20),
                 child: Row(children: [
                   _StatItem(
-                      value: '156',
+                      value: '${_stats['followers'] ?? 0}',
                       label: 'Followers'),
                   _Divider(),
                   _StatItem(
-                      value: '89', label: 'Following'),
+                      value: '${_stats['following'] ?? 0}',
+                      label: 'Following'),
                   _Divider(),
                   _StatItem(
-                      value: '24', label: 'Teams'),
+                      value: '${_stats['teams'] ?? 0}',
+                      label: 'Teams'),
                   _Divider(),
                   _StatItem(
-                      value: '18',
+                      value: '${_stats['tournaments'] ?? 0}',
                       label: 'Tournaments'),
                   const SizedBox(width: 12),
                   GestureDetector(
@@ -907,6 +830,33 @@ class _SettingsScreenState extends State<_SettingsScreen> {
   bool _emailAlerts = true;
 
   @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final st = await UserService.settings();
+      if (!mounted) return;
+      setState(() {
+        _notificationsOn =
+            st['notifications_enabled'] as bool? ?? _notificationsOn;
+        _darkMode = st['dark_mode'] as bool? ?? _darkMode;
+        _privateProfile =
+            st['private_profile'] as bool? ?? _privateProfile;
+        _locationOn =
+            st['location_access'] as bool? ?? _locationOn;
+        _emailAlerts = st['email_alerts'] as bool? ?? _emailAlerts;
+      });
+    } catch (_) {}
+  }
+
+  void _push(String key, bool value) {
+    UserService.updateSettings({key: value});
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
@@ -1010,8 +960,10 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                     subtitle: 'Get match & league alerts',
                     trailing: Switch(
                       value: _notificationsOn,
-                      onChanged: (v) => setState(
-                              () => _notificationsOn = v),
+                      onChanged: (v) {
+                        setState(() => _notificationsOn = v);
+                        _push('notifications_enabled', v);
+                      },
                       activeColor: const Color(0xFF7B2FFF),
                     ),
                     onTap: () => setState(() =>
@@ -1026,8 +978,10 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                     subtitle: 'Switch app appearance',
                     trailing: Switch(
                       value: _darkMode,
-                      onChanged: (v) =>
-                          setState(() => _darkMode = v),
+                      onChanged: (v) {
+                        setState(() => _darkMode = v);
+                        _push('dark_mode', v);
+                      },
                       activeColor: const Color(0xFF7B2FFF),
                     ),
                     onTap: () => setState(
@@ -1042,8 +996,10 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                     'Receive updates via email',
                     trailing: Switch(
                       value: _emailAlerts,
-                      onChanged: (v) => setState(
-                              () => _emailAlerts = v),
+                      onChanged: (v) {
+                        setState(() => _emailAlerts = v);
+                        _push('email_alerts', v);
+                      },
                       activeColor: const Color(0xFF7B2FFF),
                     ),
                     onTap: () => setState(() =>
@@ -1064,8 +1020,10 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                     'Only followers can see your profile',
                     trailing: Switch(
                       value: _privateProfile,
-                      onChanged: (v) => setState(
-                              () => _privateProfile = v),
+                      onChanged: (v) {
+                        setState(() => _privateProfile = v);
+                        _push('private_profile', v);
+                      },
                       activeColor: const Color(0xFF7B2FFF),
                     ),
                     onTap: () => setState(() =>
@@ -1079,8 +1037,10 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                     subtitle: 'Share your location',
                     trailing: Switch(
                       value: _locationOn,
-                      onChanged: (v) =>
-                          setState(() => _locationOn = v),
+                      onChanged: (v) {
+                        setState(() => _locationOn = v);
+                        _push('location_access', v);
+                      },
                       activeColor: const Color(0xFF7B2FFF),
                     ),
                     onTap: () => setState(
@@ -1279,18 +1239,54 @@ class _EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState
     extends State<_EditProfileScreen> {
   final _nameCtrl =
-  TextEditingController(text: 'Aarav Mehta');
-  final _roleCtrl =
-  TextEditingController(text: 'Batsman');
-  final _teamCtrl =
-  TextEditingController(text: 'Alpha Warriors');
-  final _locationCtrl =
-  TextEditingController(text: 'Mumbai, India');
-  final _schoolCtrl =
-  TextEditingController(text: 'St. Xavier\'s School');
-  final _bioCtrl = TextEditingController(
-      text:
-      'Right-handed batter with a love for the game.\nAlways working to get better and help my team win. 🏏');
+  TextEditingController(text: Session.fullName);
+  final _roleCtrl = TextEditingController();
+  final _teamCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController();
+  final _schoolCtrl = TextEditingController();
+  final _bioCtrl = TextEditingController();
+  bool _saving = false;
+
+  Future<void> _save(BuildContext context) async {
+    if (_saving) return;
+    _saving = true;
+    try {
+      await UserService.updateProfile(
+        fullName: _nameCtrl.text.trim().isEmpty
+            ? null
+            : _nameCtrl.text.trim(),
+        rolePosition: _roleCtrl.text.trim().isEmpty
+            ? null
+            : _roleCtrl.text.trim(),
+        team: _teamCtrl.text.trim().isEmpty
+            ? null
+            : _teamCtrl.text.trim(),
+        location: _locationCtrl.text.trim().isEmpty
+            ? null
+            : _locationCtrl.text.trim(),
+        school: _schoolCtrl.text.trim().isEmpty
+            ? null
+            : _schoolCtrl.text.trim(),
+        bio: _bioCtrl.text.trim().isEmpty
+            ? null
+            : _bioCtrl.text.trim(),
+      );
+      await UserService.me();
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Profile updated! ✅'),
+          backgroundColor: Color(0xFF7B2FFF)));
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.redAccent));
+      }
+    } finally {
+      _saving = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1316,15 +1312,7 @@ class _EditProfileScreenState
                       fontWeight: FontWeight.w800)),
               const Spacer(),
               GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(const SnackBar(
-                      content:
-                      Text('Profile updated! ✅'),
-                      backgroundColor:
-                      Color(0xFF7B2FFF)));
-                },
+                onTap: () => _save(context),
                 child: const Text('Save',
                     style: TextStyle(
                         color: Color(0xFF7B2FFF),
@@ -1434,15 +1422,7 @@ class _EditProfileScreenState
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(const SnackBar(
-                          content:
-                          Text('Profile updated! ✅'),
-                          backgroundColor:
-                          Color(0xFF7B2FFF)));
-                    },
+                    onPressed: () => _save(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                       const Color(0xFF7B2FFF),
@@ -1587,74 +1567,30 @@ class _NotificationScreen extends StatefulWidget {
 
 class _NotificationScreenState
     extends State<_NotificationScreen> {
-  late List<Map<String, dynamic>> _notifications = [
-    {
-      'icon': Icons.emoji_events,
-      'color': const Color(0xFFFFB300),
-      'title': 'Points Added!',
-      'subtitle': '+52 Qo points added to your profile',
-      'time': '2m ago',
-      'read': false,
-    },
-    {
-      'icon': Icons.people,
-      'color': const Color(0xFF7B2FFF),
-      'title': 'New Follower',
-      'subtitle': 'Rahul Sharma started following you',
-      'time': '15m ago',
-      'read': false,
-    },
-    {
-      'icon': Icons.sports_cricket,
-      'color': const Color(0xFF00C853),
-      'title': 'League Update',
-      'subtitle': 'Summer League 2024 is now live!',
-      'time': '1h ago',
-      'read': false,
-    },
-    {
-      'icon': Icons.favorite,
-      'color': Colors.red,
-      'title': 'Post Liked',
-      'subtitle': 'Jason liked your match highlight',
-      'time': '2h ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.shield,
-      'color': const Color(0xFF7B2FFF),
-      'title': 'Match Scheduled',
-      'subtitle': 'Alpha Warriors vs Thunder on 24 May',
-      'time': '3h ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.star,
-      'color': const Color(0xFFFFB300),
-      'title': 'Achievement Unlocked!',
-      'subtitle':
-      'You scored 100+ in a single match 🎉',
-      'time': '1d ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.person_add,
-      'color': const Color(0xFF7B2FFF),
-      'title': 'Coach Recommended You',
-      'subtitle':
-      'Coach Rahul recommended you to a club',
-      'time': '1d ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.emoji_events,
-      'color': const Color(0xFF00C853),
-      'title': 'Rank Improved!',
-      'subtitle': 'You moved from #16 to #14',
-      'time': '2d ago',
-      'read': true,
-    },
-  ];
+  List<Map<String, dynamic>> _notifications = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final res = await NotificationService.list();
+      final items = (res['items'] as List<dynamic>)
+          .map((n) => notificationToTile(n as Map<String, dynamic>))
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _notifications = items;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1704,6 +1640,7 @@ class _NotificationScreenState
               ),
               GestureDetector(
                 onTap: () {
+                  NotificationService.markAllRead();
                   setState(() {
                     _notifications = _notifications
                         .map((n) => {...n, 'read': true})
@@ -1729,7 +1666,16 @@ class _NotificationScreenState
           const SizedBox(height: 16),
 
           Expanded(
-            child: ListView.separated(
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                        color: Color(0xFF7B2FFF)))
+                : _notifications.isEmpty
+                    ? const Center(
+                        child: Text('No notifications yet',
+                            style: TextStyle(
+                                color: Colors.white38)))
+                    : ListView.separated(
               padding: const EdgeInsets.symmetric(
                   horizontal: 20),
               itemCount: _notifications.length,
@@ -1738,12 +1684,19 @@ class _NotificationScreenState
               itemBuilder: (context, i) {
                 final n = _notifications[i];
                 return GestureDetector(
-                  onTap: () => setState(() {
-                    _notifications[i] = {
-                      ..._notifications[i],
-                      'read': true,
-                    };
-                  }),
+                  onTap: () {
+                    final id = _notifications[i]['id'] as String?;
+                    if (id != null &&
+                        _notifications[i]['read'] != true) {
+                      NotificationService.markRead(id);
+                    }
+                    setState(() {
+                      _notifications[i] = {
+                        ..._notifications[i],
+                        'read': true,
+                      };
+                    });
+                  },
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(

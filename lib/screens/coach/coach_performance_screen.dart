@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../api/api_client.dart';
+import '../../api/mappers.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 
 class CoachPerformanceScreen extends StatefulWidget {
@@ -16,16 +20,47 @@ class _CoachPerformanceScreenState
   TextEditingController();
   String _searchQuery = '';
 
-  final List<Map<String, dynamic>> _players = [
-    {'name': 'Arjun Sharma', 'sqid': 'SQID: 784512', 'role': 'Batsman', 'subRole': 'Top Order', 'rating': 4.6, 'added': '12 May 2025', 'active': true, 'emoji': '🏏'},
-    {'name': 'Rohan Mehta', 'sqid': 'SQID: 784513', 'role': 'Bowler', 'subRole': 'Fast', 'rating': 4.4, 'added': '12 May 2025', 'active': true, 'emoji': '🎯'},
-    {'name': 'Vihaan Patel', 'sqid': 'SQID: 784514', 'role': 'All Rounder', 'subRole': 'Spin', 'rating': 4.7, 'added': '11 May 2025', 'active': true, 'emoji': '⚡'},
-    {'name': 'Kabir Singh', 'sqid': 'SQID: 784515', 'role': 'Wicket Keeper', 'subRole': 'WK', 'rating': 4.5, 'added': '11 May 2025', 'active': true, 'emoji': '🧤'},
-    {'name': 'Aryan Joshi', 'sqid': 'SQID: 784516', 'role': 'Batsman', 'subRole': 'Middle Order', 'rating': 4.3, 'added': '10 May 2025', 'active': true, 'emoji': '🏏'},
-    {'name': 'Dev Sharma', 'sqid': 'SQID: 784517', 'role': 'Bowler', 'subRole': 'Spinner', 'rating': 4.6, 'added': '10 May 2025', 'active': true, 'emoji': '🎯'},
-    {'name': 'Rahul Verma', 'sqid': 'SQID: 784518', 'role': 'Batsman', 'subRole': 'Opener', 'rating': 3.9, 'added': '08 May 2025', 'active': false, 'emoji': '🏏'},
-    {'name': 'Kiran Das', 'sqid': 'SQID: 784519', 'role': 'Bowler', 'subRole': 'Medium Pace', 'rating': 3.7, 'added': '08 May 2025', 'active': false, 'emoji': '🎯'},
-  ];
+  List<Map<String, dynamic>> _players = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoster();
+  }
+
+  Map<String, dynamic> _toRow(Map<String, dynamic> raw) {
+    final active = (raw['status'] as String? ?? 'active') == 'active';
+    return <String, dynamic>{
+      'user_id': raw['user_id'],
+      'name': raw['name'] ?? '',
+      'sqid': raw['player_id'] ?? '',
+      'role': raw['sub_role'] ?? 'Player',
+      'subRole': 'Qo ${raw['qo_score'] ?? 0}',
+      'rating': ((raw['qo_score'] as num?) ?? 0) / 200.0,
+      'added': relativeTime(raw['last_active_at'] as String?),
+      'active': active,
+      'emoji': '🏏',
+    };
+  }
+
+  Future<void> _loadRoster() async {
+    try {
+      final items = await CoachService.roster();
+      if (!mounted) return;
+      setState(() {
+        _players = items
+            .map((raw) => _toRow(raw as Map<String, dynamic>))
+            .toList();
+        _loading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        showApiError(context, e);
+      }
+    }
+  }
 
   final TextEditingController _addPlayerController =
   TextEditingController();
@@ -601,36 +636,35 @@ class _CoachPerformanceScreenState
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  final id = _addPlayerController.text.trim();
+                onPressed: () async {
+                  final id = _addPlayerController.text
+                      .trim()
+                      .replaceAll('SQID:', '')
+                      .trim()
+                      .toUpperCase();
                   Navigator.pop(context);
                   _addPlayerController.clear();
-                  if (id.isNotEmpty) {
-                    setState(() {
-                      _players.add({
-                        'name': 'New Player',
-                        'sqid': id,
-                        'role': 'Batsman',
-                        'subRole': 'Unknown',
-                        'rating': 4.0,
-                        'added': 'Just now',
-                        'active': true,
-                        'emoji': '🏏',
-                      });
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Player $id added! ✅'),
-                        backgroundColor: const Color(0xFF00C853),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please enter a SportyQo ID'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                  if (id.isEmpty) {
+                    showInfo(context, 'Please enter a Player ID (e.g. P26001)');
+                    return;
+                  }
+                  try {
+                    final added = await CoachService.addPlayer(id);
+                    if (!mounted) return;
+                    setState(() =>
+                        _players.insert(0, _toRow(added)));
+                    showInfo(context,
+                        '${added['name']} added to your squad ✅');
+                  } on ApiException catch (e) {
+                    if (!mounted) return;
+                    if (e.code == 'ALREADY_ADDED') {
+                      showInfo(context,
+                          'That player is already on your roster.');
+                    } else {
+                      showApiError(context, e);
+                    }
+                  } catch (e) {
+                    if (mounted) showApiError(context, e);
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -706,15 +740,25 @@ class _CoachPerformanceScreenState
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                            '${p['name']} recommended to clubs! ✅'),
-                        backgroundColor: AppColors.primary,
-                      ),
-                    );
+                    try {
+                      await CoachService.recommend(
+                          playerUserIds: [p['user_id'] as String]);
+                      if (!mounted) return;
+                      showInfo(context,
+                          '${p['name']} recommended — +25 Qo points ✅');
+                    } on ApiException catch (e) {
+                      if (!mounted) return;
+                      if (e.code == 'ALREADY_RECOMMENDED') {
+                        showInfo(context,
+                            'You already recommended ${p['name']} recently.');
+                      } else {
+                        showApiError(context, e);
+                      }
+                    } catch (e) {
+                      if (mounted) showApiError(context, e);
+                    }
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(

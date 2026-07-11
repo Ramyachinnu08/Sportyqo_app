@@ -1,7 +1,57 @@
 import 'package:flutter/material.dart';
+import '../../api/mappers.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 
-class QoScoreCardScreen extends StatelessWidget {
+class QoScoreCardScreen extends StatefulWidget {
   const QoScoreCardScreen({super.key});
+
+  @override
+  State<QoScoreCardScreen> createState() => _QoScoreCardScreenState();
+}
+
+class _QoScoreCardScreenState extends State<QoScoreCardScreen> {
+  Map<String, dynamic>? _data; // GET /players/me/qo-score
+  List<dynamic> _tiers = []; // GET /config/card-tiers (server-owned)
+
+  static const Map<String, String> _tierEmoji = {
+    'purple': '🟣', 'green': '🟢', 'yellow': '🟡', 'orange': '🟠',
+    'red': '🔴', 'bronze_pro': '🥉', 'silver_pro': '🥈', 'golden_pro': '🥇',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final results = await Future.wait([
+        PlayerService.qoScore(),
+        ConfigService.cardTiers(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _data = results[0] as Map<String, dynamic>;
+        _tiers = results[1] as List<dynamic>;
+      });
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    }
+  }
+
+  Color _hex(String? hex, Color fallback) =>
+      hex == null ? fallback : colorFromHex(hex, fallback: fallback);
+
+  String _fmtPoints(int n) {
+    if (n >= 100000) return '${n ~/ 100000} Lakh Points';
+    if (n >= 1000) {
+      final k = n / 1000;
+      return '${k == k.roundToDouble() ? k.toInt() : k} K Points';
+    }
+    return '$n Points';
+  }
 
   // ── Get current card based on score ──
   Map<String, dynamic> _getCurrentCard(int score) {
@@ -66,8 +116,17 @@ class QoScoreCardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const int currentScore = 242;
+    final int currentScore = (_data?['score'] as int?) ?? 0;
+    final serverCard = _data?['card'] as Map<String, dynamic>?;
     final card = _getCurrentCard(currentScore);
+    if (serverCard != null) {
+      card['label'] = serverCard['label'] ?? card['label'];
+      card['level'] = 'Level ${serverCard['level'] ?? ''}';
+      card['emoji'] =
+          _tierEmoji[serverCard['tier']] ?? card['emoji'];
+      card['color'] =
+          _hex(serverCard['hex'] as String?, card['color'] as Color);
+    }
     final Color cardColor = card['color'] as Color;
 
     return Scaffold(
@@ -182,13 +241,18 @@ class QoScoreCardScreen extends StatelessWidget {
                     MainAxisAlignment.spaceAround,
                     children: [
                       _ScoreStat(
-                          label: 'Rank', value: '#12'),
+                          label: 'Level',
+                          value:
+                              '${serverCard?['level'] ?? 1}'),
                       _ScoreStat(
-                          label: 'Sport',
-                          value: 'Cricket'),
+                          label: 'Next Card',
+                          value: (serverCard?['next_tier']
+                                  ?['label'] as String?) ??
+                              'Max'),
                       _ScoreStat(
-                          label: 'This Week',
-                          value: '+12'),
+                          label: 'Points Needed',
+                          value:
+                              '${serverCard?['next_tier']?['points_needed'] ?? 0}'),
                     ],
                   ),
                 ]),
@@ -231,100 +295,37 @@ class QoScoreCardScreen extends StatelessWidget {
                               fontSize: 12)),
                       const SizedBox(height: 16),
 
-                      _CardProgress(
-                        emoji: '🟣',
-                        label: 'Purple Card',
-                        level: 'Level 1',
-                        points: '1K Points',
-                        value: currentScore,
-                        max: 1000,
-                        color: const Color(0xFF7B2FFF),
-                        isActive: currentScore < 1000,
-                      ),
-                      const SizedBox(height: 12),
-                      _CardProgress(
-                        emoji: '🟢',
-                        label: 'Green Card',
-                        level: 'Level 2',
-                        points: '2.5K Points',
-                        value: currentScore,
-                        max: 2500,
-                        color: const Color(0xFF00C853),
-                        isActive: currentScore >= 1000 &&
-                            currentScore < 2500,
-                      ),
-                      const SizedBox(height: 12),
-                      _CardProgress(
-                        emoji: '🟡',
-                        label: 'Yellow Card',
-                        level: 'Level 3',
-                        points: '5K Points',
-                        value: currentScore,
-                        max: 5000,
-                        color: const Color(0xFFFFEB3B),
-                        isActive: currentScore >= 2500 &&
-                            currentScore < 5000,
-                      ),
-                      const SizedBox(height: 12),
-                      _CardProgress(
-                        emoji: '🟠',
-                        label: 'Orange Card',
-                        level: 'Level 4',
-                        points: '15K Points',
-                        value: currentScore,
-                        max: 15000,
-                        color: const Color(0xFFFF9800),
-                        isActive: currentScore >= 5000 &&
-                            currentScore < 15000,
-                      ),
-                      const SizedBox(height: 12),
-                      _CardProgress(
-                        emoji: '🔴',
-                        label: 'Red Card',
-                        level: 'Level 5',
-                        points: '30K Points',
-                        value: currentScore,
-                        max: 30000,
-                        color: const Color(0xFFFF3B30),
-                        isActive: currentScore >= 15000 &&
-                            currentScore < 30000,
-                      ),
-                      const SizedBox(height: 12),
-                      _CardProgress(
-                        emoji: '🥉',
-                        label: 'Bronze Card',
-                        level: 'Bronze Pro',
-                        points: '50K Points',
-                        value: currentScore,
-                        max: 50000,
-                        color: const Color(0xFFCD7F32),
-                        isActive: currentScore >= 30000 &&
-                            currentScore < 50000,
-                      ),
-                      const SizedBox(height: 12),
-                      _CardProgress(
-                        emoji: '🥈',
-                        label: 'Silver Card',
-                        level: 'Silver Pro',
-                        points: '75K Points',
-                        value: currentScore,
-                        max: 75000,
-                        color: const Color(0xFF9E9E9E),
-                        isActive: currentScore >= 50000 &&
-                            currentScore < 75000,
-                      ),
-                      const SizedBox(height: 12),
-                      _CardProgress(
-                        emoji: '🥇',
-                        label: 'Gold Card',
-                        level: 'Golden Pro',
-                        points: '1 Lakh Points',
-                        value: currentScore,
-                        max: 100000,
-                        color: const Color(0xFFFFB300),
-                        isActive:
-                        currentScore >= 75000,
-                      ),
+                      if (_tiers.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                              child: CircularProgressIndicator(
+                                  color: Color(0xFF7B2FFF))),
+                        )
+                      else
+                        for (var i = 0; i < _tiers.length; i++) ...[
+                          if (i > 0) const SizedBox(height: 12),
+                          _CardProgress(
+                            emoji: _tierEmoji[
+                                    (_tiers[i] as Map)['tier']] ??
+                                '🏏',
+                            label: (_tiers[i]
+                                as Map)['label'] as String,
+                            level:
+                                'Level ${(_tiers[i] as Map)['level']}',
+                            points: _fmtPoints((_tiers[i]
+                                as Map)['threshold'] as int),
+                            value: currentScore,
+                            max: (_tiers[i]
+                                as Map)['threshold'] as int,
+                            color: _hex(
+                                (_tiers[i] as Map)['hex'] as String?,
+                                const Color(0xFF7B2FFF)),
+                            isActive: (serverCard?['level'] ??
+                                    0) ==
+                                (_tiers[i] as Map)['level'],
+                          ),
+                        ],
                     ],
                   ),
                 ),
@@ -354,29 +355,21 @@ class QoScoreCardScreen extends StatelessWidget {
                               fontWeight: FontWeight.w700,
                               fontSize: 16)),
                       const SizedBox(height: 16),
-                      _ScoreBar(
-                          label: 'Batting Performance',
-                          value: 0.85,
-                          score: 85,
-                          color: cardColor),
-                      const SizedBox(height: 12),
-                      _ScoreBar(
-                          label: 'Match Consistency',
-                          value: 0.72,
-                          score: 72,
-                          color: cardColor),
-                      const SizedBox(height: 12),
-                      _ScoreBar(
-                          label: 'League Performance',
-                          value: 0.68,
-                          score: 68,
-                          color: cardColor),
-                      const SizedBox(height: 12),
-                      _ScoreBar(
-                          label: 'Team Contribution',
-                          value: 0.78,
-                          score: 78,
-                          color: cardColor),
+                      for (final raw
+                          in (_data?['breakdown'] as List<dynamic>? ??
+                              const [])) ...[
+                        _ScoreBar(
+                            label: (raw as Map)['category'] as String,
+                            value: ((raw['max'] as num) == 0)
+                                ? 0
+                                : ((raw['points'] as num) /
+                                        (raw['max'] as num))
+                                    .clamp(0.0, 1.0)
+                                    .toDouble(),
+                            score: (raw['points'] as num).toInt(),
+                            color: cardColor),
+                        const SizedBox(height: 12),
+                      ],
                     ],
                   ),
                 ),
@@ -400,66 +393,29 @@ class QoScoreCardScreen extends StatelessWidget {
                     crossAxisAlignment:
                     CrossAxisAlignment.start,
                     children: [
-                      const Text('Score History',
+                      const Text('Improve Your Score',
                           style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                               fontSize: 16)),
                       const SizedBox(height: 16),
-                      ...[
-                        {
-                          'week': 'This Week',
-                          'score': '+12',
-                          'total': '242',
-                          'color':
-                          const Color(0xFF00C853)
-                        },
-                        {
-                          'week': 'Last Week',
-                          'score': '+8',
-                          'total': '230',
-                          'color':
-                          const Color(0xFF00C853)
-                        },
-                        {
-                          'week': '2 Weeks Ago',
-                          'score': '-3',
-                          'total': '222',
-                          'color': Colors.red
-                        },
-                        {
-                          'week': '3 Weeks Ago',
-                          'score': '+15',
-                          'total': '225',
-                          'color':
-                          const Color(0xFF00C853)
-                        },
-                      ].map((h) => Padding(
+                      ...((_data?['improve_tips']
+                                  as List<dynamic>?) ??
+                              const [])
+                          .map((tip) => Padding(
                         padding: const EdgeInsets
                             .only(bottom: 12),
                         child: Row(children: [
+                          Icon(Icons.bolt,
+                              color: cardColor, size: 16),
+                          const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                                h['week'] as String,
+                            child: Text(tip as String,
                                 style: const TextStyle(
                                     color:
-                                    Colors.white54,
+                                    Colors.white70,
                                     fontSize: 13)),
                           ),
-                          Text(h['score'] as String,
-                              style: TextStyle(
-                                  color: h['color']
-                                  as Color,
-                                  fontWeight:
-                                  FontWeight.w700,
-                                  fontSize: 14)),
-                          const SizedBox(width: 16),
-                          Text(h['total'] as String,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight:
-                                  FontWeight.w700,
-                                  fontSize: 14)),
                         ]),
                       )),
                     ],

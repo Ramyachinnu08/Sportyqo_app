@@ -79,8 +79,33 @@ class _CoachHomeScreenState
 
 // ── Coach Home Tab ────────────────────────────────────────────────────
 
-class _CoachHomeTab extends StatelessWidget {
+class _CoachHomeTab extends StatefulWidget {
   const _CoachHomeTab();
+
+  @override
+  State<_CoachHomeTab> createState() => _CoachHomeTabState();
+}
+
+class _CoachHomeTabState extends State<_CoachHomeTab> {
+  Map<String, dynamic>? _dash;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final dash = await CoachService.dashboard();
+      if (mounted) setState(() => _dash = dash);
+    } catch (_) {}
+  }
+
+  Map<String, dynamic> get _coach =>
+      (_dash?['coach'] as Map<String, dynamic>?) ?? const {};
+  Map<String, dynamic> get _stats =>
+      (_dash?['quick_stats'] as Map<String, dynamic>?) ?? const {};
 
   @override
   Widget build(BuildContext context) {
@@ -202,8 +227,8 @@ class _CoachHomeTab extends StatelessWidget {
                   CrossAxisAlignment.start,
                   children: [
                     Row(children: [
-                      const Text('Coach Suneeth',
-                          style: TextStyle(
+                      Text((_coach['full_name'] as String?) ?? 'Coach',
+                          style: const TextStyle(
                               color: Colors.white,
                               fontSize: 26,
                               fontWeight:
@@ -221,19 +246,22 @@ class _CoachHomeTab extends StatelessWidget {
                       ),
                     ]),
                     const SizedBox(height: 4),
-                    Row(children: const [
-                      Text('Head Coach',
-                          style: TextStyle(
+                    Row(children: [
+                      Text((_coach['role_title'] as String?) ?? 'Coach',
+                          style: const TextStyle(
                               color: Colors.white54,
                               fontSize: 14)),
-                      Text(' • ',
+                      const Text(' • ',
                           style: TextStyle(
                               color: Colors.white24,
                               fontSize: 14)),
-                      Text('Falcons Cricket Academy',
-                          style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 14)),
+                      Flexible(
+                        child: Text((_coach['academy'] as String?) ?? '',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 14)),
+                      ),
                     ]),
                   ],
                 ),
@@ -629,26 +657,30 @@ class _CoachHomeTab extends StatelessWidget {
                   size: 36, color: Colors.white38),
             ),
             const SizedBox(height: 12),
-            const Text('Coach Suneeth',
-                style: TextStyle(
+            Text((_coach['full_name'] as String?) ?? 'Coach',
+                style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w800)),
-            const Text(
-                'Head Coach • Falcons Cricket Academy',
-                style: TextStyle(
+            Text(
+                '${_coach['role_title'] ?? 'Coach'} • ${_coach['academy'] ?? ''}',
+                style: const TextStyle(
                     color: Colors.white54, fontSize: 13)),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment:
               MainAxisAlignment.spaceAround,
-              children: const [
+              children: [
                 _StatChip(
-                    label: 'Players', value: '24'),
+                    label: 'Players',
+                    value: '${_stats['players'] ?? 0}'),
                 _StatChip(
-                    label: 'Matches', value: '12'),
+                    label: 'Matches',
+                    value: '${_stats['matches'] ?? 0}'),
                 _StatChip(
-                    label: 'Win Rate', value: '75%'),
+                    label: 'Win Rate',
+                    value:
+                        '${(((_stats['win_rate'] as num?) ?? 0) * 100).round()}%'),
               ],
             ),
             const SizedBox(height: 16),
