@@ -1,12 +1,97 @@
 import 'package:flutter/material.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
-import 'select_players_screen.dart';
+import 'select_match_screen.dart';
 
-class CoachLeaguesScreen extends StatelessWidget {
+class CoachLeaguesScreen extends StatefulWidget {
   const CoachLeaguesScreen({super.key});
 
   @override
+  State<CoachLeaguesScreen> createState() => _CoachLeaguesScreenState();
+}
+
+class _CoachLeaguesScreenState extends State<CoachLeaguesScreen> {
+  Map<String, dynamic>? _league; // most recent league
+  Map<String, dynamic>? _detail; // GET /leagues/{id}
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final leagues = await LeagueService.myLeagues();
+      if (leagues.isEmpty) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+      final league = leagues.first as Map<String, dynamic>;
+      final detail = await LeagueService.detail(league['id'] as String);
+      if (!mounted) return;
+      setState(() {
+        _league = league;
+        _detail = detail;
+        _loading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        showApiError(context, e);
+      }
+    }
+  }
+
+  int get _playersCount => (_league?['players_count'] as int?) ?? 0;
+  int get _teamsCount =>
+      ((_detail?['teams'] as List<dynamic>?) ?? const []).length;
+  int get _matchesCount =>
+      (_detail?['stats']?['matches'] as int?) ?? 0;
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0A0A0A),
+        body: Center(
+            child: CircularProgressIndicator(color: Color(0xFF1A6BFF))),
+      );
+    }
+    if (_league == null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF0A0A0A),
+        body: SafeArea(
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Row(children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.arrow_back_ios,
+                      color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 16),
+                const Text('View League',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800)),
+              ]),
+            ),
+            const Expanded(
+              child: Center(
+                child: Text('No leagues yet.\nCreate one from the home screen.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white38, height: 1.6)),
+              ),
+            ),
+          ]),
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       body: SafeArea(
@@ -88,10 +173,10 @@ class CoachLeaguesScreen extends StatelessWidget {
                                 .start,
                             children: [
                               Row(children: [
-                                const Expanded(
+                                Expanded(
                                   child: Text(
-                                      'Falcons U16 Premier League',
-                                      style: TextStyle(
+                                      (_league?['name'] as String?) ?? '',
+                                      style: const TextStyle(
                                           color: Colors
                                               .white,
                                           fontWeight:
@@ -136,18 +221,18 @@ class CoachLeaguesScreen extends StatelessWidget {
                               ]),
                               const SizedBox(
                                   height: 4),
-                              const Text(
-                                  'U16  •  Cricket  •  T20',
-                                  style: TextStyle(
+                              Text(
+                                  'Code: ${_league?['league_code'] ?? ''}  •  ${_league?['cricket_type'] ?? ''}',
+                                  style: const TextStyle(
                                       color: Colors
                                           .white54,
                                       fontSize:
                                       13)),
                               const SizedBox(
                                   height: 2),
-                              const Text(
-                                  '8 Teams  •  Bangalore, Karnataka',
-                                  style: TextStyle(
+                              Text(
+                                  '$_teamsCount Teams  •  ${_detail?['location'] ?? ''}',
+                                  style: const TextStyle(
                                       color: Colors
                                           .white38,
                                       fontSize:
@@ -164,24 +249,28 @@ class CoachLeaguesScreen extends StatelessWidget {
                     _LeagueMenuItem(
                       icon: Icons.people_outline,
                       title: 'Teams',
-                      subtitle: '8 Teams',
+                      subtitle: '$_teamsCount Teams',
                       onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) =>
-                              const _TeamsScreen())),
+                              builder: (_) => _TeamsScreen(
+                                  standings: (_detail?['standings']
+                                          as List<dynamic>?) ??
+                                      const []))),
                     ),
                     const SizedBox(height: 10),
                     _LeagueMenuItem(
                       icon: Icons
                           .calendar_today_outlined,
                       title: 'Matches',
-                      subtitle: '12 Matches',
+                      subtitle: '$_matchesCount Matches',
                       onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) =>
-                              const _MatchesScreen())),
+                              builder: (_) => SelectMatchScreen(
+                                  leagueId: _league!['id'] as String,
+                                  leagueName:
+                                      _league!['name'] as String))),
                     ),
                     const SizedBox(height: 10),
                     _LeagueMenuItem(
@@ -193,23 +282,23 @@ class CoachLeaguesScreen extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                               builder: (_) =>
-                              const _StandingsScreen())),
+                              _StandingsScreen(
+                                  standings: (_detail?['standings']
+                                          as List<dynamic>?) ??
+                                      const []))),
                     ),
                     const SizedBox(height: 10),
                     _LeagueMenuItem(
                       icon: Icons.person_outline,
-                      title: 'Players',
-                      subtitle: '64 Players',
+                      title: 'Players & Points',
+                      subtitle: '$_playersCount Players',
                       onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) =>
-                              const SelectPlayersScreen(
-                                teamName:
-                                'Falcons FC',
-                                matchName:
-                                'Falcons FC vs Warriors United',
-                              ))),
+                              builder: (_) => SelectMatchScreen(
+                                  leagueId: _league!['id'] as String,
+                                  leagueName:
+                                      _league!['name'] as String))),
                     ),
 
                     const SizedBox(height: 32),
@@ -281,19 +370,20 @@ class _LeagueMenuItem extends StatelessWidget {
 // ── Teams Screen ──────────────────────────────────────────────────────
 
 class _TeamsScreen extends StatelessWidget {
-  const _TeamsScreen();
+  final List<dynamic> standings;
+  const _TeamsScreen({required this.standings});
 
-  final List<Map<String, dynamic>> _teams =
-  const [
-    {'name': 'Falcons FC', 'players': 8, 'wins': 5, 'emoji': '🦅'},
-    {'name': 'Warriors United', 'players': 8, 'wins': 4, 'emoji': '⚔️'},
-    {'name': 'Royal Strikers', 'players': 8, 'wins': 4, 'emoji': '👑'},
-    {'name': 'Blaze Cricket Club', 'players': 8, 'wins': 3, 'emoji': '🔥'},
-    {'name': 'Titans Academy', 'players': 8, 'wins': 3, 'emoji': '⚡'},
-    {'name': 'Rising Stars', 'players': 8, 'wins': 2, 'emoji': '⭐'},
-    {'name': 'Victory XI', 'players': 8, 'wins': 2, 'emoji': '🏆'},
-    {'name': 'Eagle Hearts', 'players': 8, 'wins': 1, 'emoji': '🦅'},
-  ];
+  List<Map<String, dynamic>> get _teams => standings
+      .map((raw) {
+        final row = raw as Map<String, dynamic>;
+        return <String, dynamic>{
+          'name': row['team_name'] ?? '',
+          'players': row['played'] ?? 0,
+          'wins': row['won'] ?? 0,
+          'emoji': '🏏',
+        };
+      })
+      .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -428,182 +518,24 @@ class _TeamsScreen extends StatelessWidget {
   }
 }
 
-// ── Matches Screen ────────────────────────────────────────────────────
-
-class _MatchesScreen extends StatelessWidget {
-  const _MatchesScreen();
-
-  final List<Map<String, dynamic>> _matches =
-  const [
-    {'team1': 'Falcons FC', 'team2': 'Warriors United', 'date': '24 May 2025', 'time': '06:00 PM', 'status': 'Upcoming', 'statusColor': Color(0xFF1A6BFF)},
-    {'team1': 'Royal Strikers', 'team2': 'Blaze Cricket Club', 'date': '22 May 2025', 'time': '04:00 PM', 'status': 'Completed', 'statusColor': Color(0xFF00C853)},
-    {'team1': 'Titans Academy', 'team2': 'Rising Stars', 'date': '20 May 2025', 'time': '05:00 PM', 'status': 'Completed', 'statusColor': Color(0xFF00C853)},
-    {'team1': 'Victory XI', 'team2': 'Eagle Hearts', 'date': '18 May 2025', 'time': '03:00 PM', 'status': 'Completed', 'statusColor': Color(0xFF00C853)},
-    {'team1': 'Falcons FC', 'team2': 'Royal Strikers', 'date': '26 May 2025', 'time': '06:00 PM', 'status': 'Upcoming', 'statusColor': Color(0xFF1A6BFF)},
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  16, 16, 16, 0),
-              child: Row(children: [
-                GestureDetector(
-                    onTap: () =>
-                        Navigator.pop(context),
-                    child: const Icon(
-                        Icons.arrow_back_ios,
-                        color: Colors.white,
-                        size: 20)),
-                const SizedBox(width: 16),
-                const Text('Matches',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight:
-                        FontWeight.w800)),
-              ]),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.separated(
-                padding:
-                const EdgeInsets.symmetric(
-                    horizontal: 16),
-                itemCount: _matches.length,
-                separatorBuilder: (_, __) =>
-                const SizedBox(height: 10),
-                itemBuilder: (context, i) {
-                  final m = _matches[i];
-                  return Container(
-                    padding:
-                    const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color:
-                      const Color(0xFF111111),
-                      borderRadius:
-                      BorderRadius.circular(
-                          14),
-                      border: Border.all(
-                          color: Colors.white10),
-                    ),
-                    child: Column(children: [
-                      Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment
-                            .spaceBetween,
-                        children: [
-                          Expanded(
-                              child: Text(
-                                  m['team1']
-                                  as String,
-                                  style: const TextStyle(
-                                      color: Colors
-                                          .white,
-                                      fontWeight:
-                                      FontWeight
-                                          .w700),
-                                  textAlign:
-                                  TextAlign
-                                      .center)),
-                          const Text('VS',
-                              style: TextStyle(
-                                  color: Colors
-                                      .white38,
-                                  fontWeight:
-                                  FontWeight
-                                      .w800)),
-                          Expanded(
-                              child: Text(
-                                  m['team2']
-                                  as String,
-                                  style: const TextStyle(
-                                      color: Colors
-                                          .white,
-                                      fontWeight:
-                                      FontWeight
-                                          .w700),
-                                  textAlign:
-                                  TextAlign
-                                      .center)),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      const Divider(
-                          color: Colors.white10,
-                          height: 1),
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment
-                            .spaceBetween,
-                        children: [
-                          Text(
-                              '${m['date']}  •  ${m['time']}',
-                              style: const TextStyle(
-                                  color:
-                                  Colors.white38,
-                                  fontSize: 12)),
-                          Container(
-                            padding: const EdgeInsets
-                                .symmetric(
-                                horizontal: 10,
-                                vertical: 4),
-                            decoration: BoxDecoration(
-                              color: (m['statusColor']
-                              as Color)
-                                  .withOpacity(0.15),
-                              borderRadius:
-                              BorderRadius
-                                  .circular(20),
-                            ),
-                            child: Text(
-                                m['status']
-                                as String,
-                                style: TextStyle(
-                                    color: m[
-                                    'statusColor']
-                                    as Color,
-                                    fontSize: 11,
-                                    fontWeight:
-                                    FontWeight
-                                        .w700)),
-                          ),
-                        ],
-                      ),
-                    ]),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Standings Screen ──────────────────────────────────────────────────
-
 class _StandingsScreen extends StatelessWidget {
-  const _StandingsScreen();
+  final List<dynamic> standings;
+  const _StandingsScreen({required this.standings});
 
-  final List<Map<String, dynamic>> _standings =
-  const [
-    {'pos': 1, 'team': 'Falcons FC', 'p': 10, 'w': 7, 'l': 2, 'pts': 14, 'emoji': '🦅'},
-    {'pos': 2, 'team': 'Warriors United', 'p': 10, 'w': 6, 'l': 3, 'pts': 12, 'emoji': '⚔️'},
-    {'pos': 3, 'team': 'Royal Strikers', 'p': 10, 'w': 5, 'l': 4, 'pts': 10, 'emoji': '👑'},
-    {'pos': 4, 'team': 'Blaze Cricket Club', 'p': 10, 'w': 4, 'l': 5, 'pts': 8, 'emoji': '🔥'},
-    {'pos': 5, 'team': 'Titans Academy', 'p': 10, 'w': 3, 'l': 6, 'pts': 6, 'emoji': '⚡'},
-    {'pos': 6, 'team': 'Rising Stars', 'p': 10, 'w': 3, 'l': 6, 'pts': 6, 'emoji': '⭐'},
-    {'pos': 7, 'team': 'Victory XI', 'p': 10, 'w': 2, 'l': 7, 'pts': 4, 'emoji': '🏆'},
-    {'pos': 8, 'team': 'Eagle Hearts', 'p': 10, 'w': 1, 'l': 8, 'pts': 2, 'emoji': '🦅'},
-  ];
+  List<Map<String, dynamic>> get _standings => standings
+      .map((raw) {
+        final row = raw as Map<String, dynamic>;
+        return <String, dynamic>{
+          'pos': row['position'] ?? 0,
+          'team': row['team_name'] ?? '',
+          'p': row['played'] ?? 0,
+          'w': row['won'] ?? 0,
+          'l': row['lost'] ?? 0,
+          'pts': row['points'] ?? 0,
+          'emoji': '🏏',
+        };
+      })
+      .toList();
 
   @override
   Widget build(BuildContext context) {

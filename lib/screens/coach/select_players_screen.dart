@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
+import '../../api/api_client.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 
 class SelectPlayersScreen extends StatefulWidget {
+  final String? leagueId;
+  final String? matchId;
+  final String? teamAId;
+  final String? teamBId;
+  final bool completed;
   final String teamName;
   final String matchName;
   const SelectPlayersScreen({
     super.key,
+    this.leagueId,
+    this.matchId,
+    this.teamAId,
+    this.teamBId,
+    this.completed = false,
     required this.teamName,
     required this.matchName,
   });
@@ -19,16 +32,178 @@ class _SelectPlayersScreenState
     extends State<SelectPlayersScreen> {
   int _tabIndex = 0;
 
-  final List<Map<String, dynamic>> _players = [
-    {'name': 'Rahul Sharma', 'initials': 'RS', 'role': 'Top Order', 'runs': 42, 'wkts': 0, 'pts': 18.0, 'color': const Color(0xFF1A3A5C)},
-    {'name': 'Arjun Kumar', 'initials': 'AK', 'role': 'Top Order', 'runs': 28, 'wkts': 0, 'pts': 12.5, 'color': const Color(0xFF1A5C3A)},
-    {'name': 'Vivaan Patel', 'initials': 'VP', 'role': 'Middle Order', 'runs': 15, 'wkts': 0, 'pts': 7.0, 'color': const Color(0xFF3A1A5C)},
-    {'name': 'Siddharth K', 'initials': 'SK', 'role': 'Middle Order', 'runs': 34, 'wkts': 0, 'pts': 15.0, 'color': const Color(0xFF5C3A1A)},
-    {'name': 'Manan Kapoor', 'initials': 'MK', 'role': 'All Rounder', 'runs': 22, 'wkts': 1, 'pts': 14.5, 'color': const Color(0xFF1A5C5C)},
-    {'name': 'Yash Desai', 'initials': 'YD', 'role': 'All Rounder', 'runs': 12, 'wkts': 2, 'pts': 16.0, 'color': const Color(0xFF5C1A3A)},
-    {'name': 'Aarav Tiwari', 'initials': 'AT', 'role': 'Bowler', 'runs': 6, 'wkts': 3, 'pts': 17.5, 'color': const Color(0xFF3A5C1A)},
-    {'name': 'Rohan Das', 'initials': 'RD', 'role': 'Bowler', 'runs': 2, 'wkts': 1, 'pts': 8.0, 'color': const Color(0xFF5C5C1A)},
-  ];
+  List<Map<String, dynamic>> _players = [];
+  bool _loading = true;
+  bool _submitting = false;
+
+  static final List<Color> _avatarColors = [const Color(0xFF1A3A5C), const Color(0xFF1A5C3A), const Color(0xFF3A1A5C), const Color(0xFF5C3A1A), const Color(0xFF1A5C5C), const Color(0xFF5C1A3A), const Color(0xFF3A5C1A), const Color(0xFF5C5C1A)];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return '?';
+    if (parts.length == 1) return parts.first[0].toUpperCase();
+    return (parts.first[0] + parts.last[0]).toUpperCase();
+  }
+
+  Future<void> _load() async {
+    if (widget.leagueId == null) {
+      setState(() => _loading = false);
+      return;
+    }
+    try {
+      final futures = <Future<List<dynamic>>>[];
+      if (widget.teamAId != null) {
+        futures.add(LeagueService.players(widget.leagueId!,
+            teamId: widget.teamAId));
+      }
+      if (widget.teamBId != null) {
+        futures.add(LeagueService.players(widget.leagueId!,
+            teamId: widget.teamBId));
+      }
+      if (futures.isEmpty) {
+        futures.add(LeagueService.players(widget.leagueId!));
+      }
+      final lists = await Future.wait(futures);
+      final all = lists.expand((l) => l).toList();
+      final items = <Map<String, dynamic>>[];
+      for (var i = 0; i < all.length; i++) {
+        final raw = all[i] as Map<String, dynamic>;
+        items.add(<String, dynamic>{
+          'user_id': raw['id'],
+          'team_id': raw['team_id'],
+          'name': raw['name'] ?? '',
+          'initials': _initials(raw['name'] as String? ?? ''),
+          'role': raw['sub_role'] ?? 'Player',
+          'runs': 0,
+          'wkts': 0,
+          'catches': 0,
+          'is_mom': false,
+          'pts': 0.0,
+          'color': _avatarColors[i % _avatarColors.length],
+        });
+      }
+      if (!mounted) return;
+      setState(() {
+        _players = items;
+        _loading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        showApiError(context, e);
+      }
+    }
+  }
+
+  /// Submit match points. The server computes Qo points from the stats and
+  /// the result; the Idempotency-Key guarantees no double-award on retry.
+  Future<void> _submitPoints() async {
+    if (widget.matchId == null) {
+      showInfo(context, 'Open this match from the matches list to submit points.');
+      return;
+    }
+    if (widget.completed) {
+      showInfo(context, 'Points were already submitted for this match.');
+      return;
+    }
+    final withStats = _players
+        .where((p) =>
+            (p['runs'] as int) > 0 ||
+            (p['wkts'] as int) > 0 ||
+            (p['catches'] as int) > 0 ||
+            p['is_mom'] == true)
+        .toList();
+    if (withStats.isEmpty) {
+      showInfo(context, 'Edit at least one player\'s stats first.');
+      return;
+    }
+
+    // pick the result
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF111111),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('Match Result',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800)),
+          ),
+          ListTile(
+              title: Text('${widget.matchName.split(' vs ').first} won',
+                  style: const TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(ctx, 'team_a_won')),
+          ListTile(
+              title: Text('${widget.matchName.split(' vs ').last} won',
+                  style: const TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(ctx, 'team_b_won')),
+          ListTile(
+              title: const Text('Draw',
+                  style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(ctx, 'draw')),
+          ListTile(
+              title: const Text('Abandoned',
+                  style: TextStyle(color: Colors.white54)),
+              onTap: () => Navigator.pop(ctx, 'abandoned')),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+    if (result == null) return;
+
+    setState(() => _submitting = true);
+    final idempotencyKey =
+        'sub-${widget.matchId}-${DateTime.now().millisecondsSinceEpoch}';
+    try {
+      final res = await LeagueService.submitPoints(
+        matchId: widget.matchId!,
+        result: result,
+        idempotencyKey: idempotencyKey,
+        playerStats: withStats
+            .map((p) => <String, dynamic>{
+                  'user_id': p['user_id'],
+                  'runs': p['runs'],
+                  'wickets': p['wkts'],
+                  'catches': p['catches'],
+                  'is_mom': p['is_mom'] == true,
+                })
+            .toList(),
+      );
+      if (!mounted) return;
+      final awarded =
+          res['qo_points_awarded'] as Map<String, dynamic>? ?? {};
+      setState(() {
+        for (final p in _players) {
+          final pts = awarded[p['user_id']];
+          if (pts != null) p['pts'] = (pts as num).toDouble();
+        }
+      });
+      showInfo(context,
+          'Points submitted — Qo scores updated for ${awarded.length} players ✅');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'ALREADY_SUBMITTED') {
+        showInfo(context, 'Points were already submitted for this match.');
+      } else {
+        showApiError(context, e);
+      }
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +295,11 @@ class _SelectPlayersScreenState
         const Divider(color: Colors.white10, height: 1),
 
         Expanded(
-          child: ListView.separated(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF1A6BFF)))
+              : _players.isEmpty
+                  ? const Center(child: Text('No players have joined these teams yet', style: TextStyle(color: Colors.white38)))
+                  : ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: _players.length,
             separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 16),
@@ -264,16 +443,15 @@ class _SelectPlayersScreenState
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Match Saved! ✅'), backgroundColor: Color(0xFF1A6BFF)));
-                Navigator.pop(context);
-              },
+              onPressed: _submitting ? null : _submitPoints,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1A6BFF),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: const Text('Save Match', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+              child: _submitting
+                  ? const ButtonSpinner()
+                  : const Text('Submit Points', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
             ),
           ),
           const SizedBox(height: 12),
@@ -320,10 +498,10 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
   void initState() {
     super.initState();
     _runs = widget.player['runs'] as int;
-    _fours = 5;
-    _sixes = 2;
+    _fours = 0;
+    _sixes = 0;
     _wickets = widget.player['wkts'] as int;
-    _catches = 1;
+    _catches = (widget.player['catches'] as int?) ?? 0;
     _runOuts = 0;
   }
 
@@ -470,6 +648,7 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                     final updated = Map<String, dynamic>.from(widget.player);
                     updated['runs'] = _runs;
                     updated['wkts'] = _wickets;
+                    updated['catches'] = _catches;
                     updated['pts'] = _calculatePts();
                     widget.onSave(updated);
                     Navigator.push(
