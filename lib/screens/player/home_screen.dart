@@ -409,7 +409,7 @@ class _HomeTabState extends State<_HomeTab> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Row(children: const [
+                        Row(children:  [
                           Icon(Icons.arrow_upward,
                               color: Color(0xFF7B2FFF),
                               size: 14),
