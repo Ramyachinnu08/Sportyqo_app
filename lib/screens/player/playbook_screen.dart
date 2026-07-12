@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../api/api_config.dart';
 import '../../api/mappers.dart';
 import '../../api/services.dart';
@@ -37,6 +40,11 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
       (_playbook?['stats'] as Map<String, dynamic>?) ?? const {};
   Map<String, dynamic> get _qo =>
       (_playbook?['qo_score'] as Map<String, dynamic>?) ?? const {};
+
+  List<Map<String, dynamic>> get _recos =>
+      ((_playbook?['coach_recommendations'] as List<dynamic>?) ??
+              const [])
+          .cast<Map<String, dynamic>>();
 
   List<Map<String, dynamic>> _tab(String key) =>
       ((_playbook?['tabs'] as Map<String, dynamic>?)?[key]
@@ -231,19 +239,40 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                               width: 2.5),
                         ),
                         child: ClipOval(
-                          child: Image.network(
-                            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                Container(
-                                  color:
-                                  const Color(0xFF1A1A1A),
-                                  child: const Icon(
-                                      Icons.person,
-                                      color: Colors.white,
-                                      size: 48),
-                                ),
-                          ),
+                          child: Builder(builder: (context) {
+                            final u = ApiConfig.resolveMediaUrl(
+                                _profile['avatar_url']
+                                    as String?);
+                            final initial = Container(
+                              color:
+                              const Color(0xFF1A1A1A),
+                              child: Center(
+                                  child: Text(
+                                      ((_profile['full_name']
+                                                      as String?) ??
+                                                  '')
+                                              .isNotEmpty
+                                          ? (_profile['full_name']
+                                                  as String)[0]
+                                              .toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 34,
+                                          fontWeight:
+                                              FontWeight
+                                                  .w800))),
+                            );
+                            return u != null && u.isNotEmpty
+                                ? Image.network(
+                                    u,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (_, __, ___) =>
+                                            initial,
+                                  )
+                                : initial;
+                          }),
                         ),
                       ),
                       Positioned(
@@ -303,7 +332,13 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                                   fontWeight:
                                   FontWeight.w800)),
                           Text(
-                              '${_profile['sport'] ?? 'Cricket'} • ${_profile['sub_role'] ?? 'Player'}',
+                              [
+                                _profile['sport'],
+                                _profile['sub_role'],
+                              ]
+                                  .whereType<String>()
+                                  .where((e) => e.isNotEmpty)
+                                  .join(' • '),
                               style: const TextStyle(
                                   color: Colors.white54,
                                   fontSize: 13)),
@@ -397,7 +432,10 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
 
               const SizedBox(height: 16),
 
-              // ── About ──
+              // ── About (real bio; hidden when empty) ──
+              if (((_profile['about'] as String?) ?? '')
+                  .trim()
+                  .isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20),
@@ -413,16 +451,16 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                   child: Column(
                     crossAxisAlignment:
                     CrossAxisAlignment.start,
-                    children: const [
-                      Text('About',
+                    children: [
+                      const Text('About',
                           style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                               fontSize: 14)),
-                      SizedBox(height: 6),
+                      const SizedBox(height: 6),
                       Text(
-                          'Right-handed batter with a love for the game.\nAlways working to get better and help my team win. 🏏',
-                          style: TextStyle(
+                          (_profile['about'] as String).trim(),
+                          style: const TextStyle(
                               color: Colors.white54,
                               fontSize: 13,
                               height: 1.5)),
@@ -432,6 +470,7 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
               ),
 
               const SizedBox(height: 16),
+              ],
 
               // ── Stats + Follow ──
               Padding(
@@ -532,7 +571,9 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
 
               const SizedBox(height: 16),
 
-              // ── Coach Recommendation ──
+              // ── Coach Recommendations (from backend;
+              //    hidden until a coach writes one) ──
+              if (_recos.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20),
@@ -540,176 +581,24 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                   crossAxisAlignment:
                   CrossAxisAlignment.start,
                   children: [
-                    Row(children: const [
-                      Text('Coach Recommendations',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15)),
-                      Spacer(),
-                      Text('View All',
-                          style: TextStyle(
-                              color: Color(0xFF7B2FFF),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13)),
-                    ]),
+                    const Text('Coach Recommendations',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15)),
                     const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF111111),
-                        borderRadius:
-                        BorderRadius.circular(14),
-                        border: Border.all(
-                            color: Colors.white10),
-                      ),
-                      child: Row(
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                        children: [
-                          Stack(children: [
-                            ClipOval(
-                              child: Image.network(
-                                'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=100',
-                                width: 52,
-                                height: 52,
-                                fit: BoxFit.cover,
-                                errorBuilder:
-                                    (_, __, ___) =>
-                                    Container(
-                                      width: 52,
-                                      height: 52,
-                                      color: const Color(
-                                          0xFF1A1A1A),
-                                      child: const Icon(
-                                          Icons.person,
-                                          color: Colors.white,
-                                          size: 28),
-                                    ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                width: 18,
-                                height: 18,
-                                decoration:
-                                const BoxDecoration(
-                                  color:
-                                  Color(0xFF7B2FFF),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                    Icons.star,
-                                    color: Colors.white,
-                                    size: 10),
-                              ),
-                            ),
-                          ]),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                Row(children: [
-                                  const Text(
-                                      'Rahul Dravid',
-                                      style: TextStyle(
-                                          color:
-                                          Colors.white,
-                                          fontWeight:
-                                          FontWeight
-                                              .w700,
-                                          fontSize: 14)),
-                                  const SizedBox(
-                                      width: 6),
-                                  Container(
-                                    padding: const EdgeInsets
-                                        .symmetric(
-                                        horizontal: 8,
-                                        vertical: 3),
-                                    decoration:
-                                    BoxDecoration(
-                                      color: const Color(
-                                          0xFF7B2FFF)
-                                          .withOpacity(
-                                          0.2),
-                                      borderRadius:
-                                      BorderRadius
-                                          .circular(
-                                          20),
-                                    ),
-                                    child: Row(
-                                        children: const [
-                                          Icon(Icons.verified,
-                                              color: Color(
-                                                  0xFF7B2FFF),
-                                              size: 10),
-                                          SizedBox(width: 3),
-                                          Text(
-                                              'Verified Coach',
-                                              style: TextStyle(
-                                                  color: Color(
-                                                      0xFF7B2FFF),
-                                                  fontSize: 9,
-                                                  fontWeight:
-                                                  FontWeight
-                                                      .w600)),
-                                        ]),
-                                  ),
-                                ]),
-                                const Text(
-                                    'Head Coach • India U19',
-                                    style: TextStyle(
-                                        color:
-                                        Colors.white38,
-                                        fontSize: 11)),
-                                const SizedBox(height: 6),
-                                const Text(
-                                    '"Aarav is a dedicated and hard-working player with great technique and a strong cricketing mindset."',
-                                    style: TextStyle(
-                                        color:
-                                        Colors.white60,
-                                        fontSize: 12,
-                                        height: 1.4,
-                                        fontStyle: FontStyle
-                                            .italic)),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.end,
-                            children: const [
-                              Text('5.0',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight:
-                                      FontWeight.w800,
-                                      fontSize: 18)),
-                              Icon(Icons.star,
-                                  color:
-                                  Color(0xFF7B2FFF),
-                                  size: 16),
-                              SizedBox(height: 4),
-                              Text('12 May 2025',
-                                  style: TextStyle(
-                                      color:
-                                      Colors.white38,
-                                      fontSize: 10)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                    ..._recos.map((r) => Padding(
+                          padding: const EdgeInsets.only(
+                              bottom: 12),
+                          child: _RecommendationCard(
+                              reco: r),
+                        )),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 4),
+              ],
 
               // ── Content Grid ──
               Padding(
@@ -778,24 +667,28 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                             size: 22),
                       ),
                       const SizedBox(width: 14),
-                      Column(
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                        children: const [
-                          Text('Add New',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight:
-                                  FontWeight.w700,
-                                  fontSize: 14)),
-                          Text(
-                              'Add match videos, highlights and performances',
-                              style: TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 11)),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                          children: const [
+                            Text('Add New',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight:
+                                    FontWeight.w700,
+                                    fontSize: 14)),
+                            Text(
+                                'Add match videos, highlights and performances',
+                                maxLines: 2,
+                                overflow:
+                                    TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 11)),
+                          ],
+                        ),
                       ),
-                      const Spacer(),
                       const Icon(Icons.chevron_right,
                           color: Colors.white38),
                     ]),
@@ -1238,6 +1131,9 @@ class _EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState
     extends State<_EditProfileScreen> {
+  final _picker = ImagePicker();
+  String? _avatarUrl = Session.avatarUrl;
+  bool _uploadingPhoto = false;
   final _nameCtrl =
   TextEditingController(text: Session.fullName);
   final _roleCtrl = TextEditingController();
@@ -1343,17 +1239,30 @@ class _EditProfileScreenState
                             width: 3),
                       ),
                       child: ClipOval(
-                        child: Image.network(
-                          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              Container(
+                        child: Builder(builder: (context) {
+                          if (_uploadingPhoto) {
+                            return Container(
                                 color: const Color(0xFF1A1A1A),
-                                child: const Icon(Icons.person,
-                                    color: Colors.white,
-                                    size: 52),
-                              ),
-                        ),
+                                child: const Center(
+                                    child:
+                                        CircularProgressIndicator(
+                                            color: Color(
+                                                0xFF7B2FFF))));
+                          }
+                          final u = ApiConfig.resolveMediaUrl(
+                              _avatarUrl);
+                          final fallback = Container(
+                              color: const Color(0xFF1A1A1A),
+                              child: const Icon(Icons.person,
+                                  color: Colors.white,
+                                  size: 52));
+                          return u != null && u.isNotEmpty
+                              ? Image.network(u,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (_, __, ___) => fallback)
+                              : fallback;
+                        }),
                       ),
                     ),
                     Positioned(
@@ -1449,6 +1358,51 @@ class _EditProfileScreenState
     );
   }
 
+  Future<void> _pickPhoto(ImageSource source) async {
+    if (_uploadingPhoto) return;
+    try {
+      final x = await _picker.pickImage(
+          source: source,
+          maxWidth: 1080,
+          maxHeight: 1080,
+          imageQuality: 85);
+      if (x == null) return;
+      setState(() => _uploadingPhoto = true);
+      final bytes = await x.readAsBytes();
+      var mime = x.mimeType ?? '';
+      if (mime.isEmpty) {
+        final n = x.name.toLowerCase();
+        mime = n.endsWith('.png')
+            ? 'image/png'
+            : n.endsWith('.webp')
+                ? 'image/webp'
+                : 'image/jpeg';
+      }
+      final parts = mime.split('/');
+      final res = await UserService.updateProfile(
+        avatar: http.MultipartFile.fromBytes('avatar', bytes,
+            filename:
+                x.name.isNotEmpty ? x.name : 'avatar.jpg',
+            contentType: MediaType(parts[0], parts[1])),
+      );
+      await UserService.me(); // refresh cached session
+      if (!mounted) return;
+      setState(() {
+        _avatarUrl = res['avatar_url'] as String?;
+        _uploadingPhoto = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Profile photo updated'),
+          backgroundColor: Color(0xFF7B2FFF)));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _uploadingPhoto = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not update photo: $e'),
+          backgroundColor: Colors.redAccent));
+    }
+  }
+
   void _showPhotoOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -1472,12 +1426,7 @@ class _EditProfileScreenState
                 child: GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(const SnackBar(
-                        content:
-                        Text('Camera opened 📷'),
-                        backgroundColor:
-                        Color(0xFF7B2FFF)));
+                    _pickPhoto(ImageSource.camera);
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -1509,12 +1458,7 @@ class _EditProfileScreenState
                 child: GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(const SnackBar(
-                        content:
-                        Text('Gallery opened 🖼️'),
-                        backgroundColor:
-                        Color(0xFF7B2FFF)));
+                    _pickPhoto(ImageSource.gallery);
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -2142,9 +2086,13 @@ class _StatItem extends StatelessWidget {
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
                 fontSize: 16)),
-        Text(label,
-            style: const TextStyle(
-                color: Colors.white38, fontSize: 10)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(label,
+              maxLines: 1,
+              style: const TextStyle(
+                  color: Colors.white38, fontSize: 10)),
+        ),
       ]),
     );
   }
@@ -2246,6 +2194,108 @@ class _UploadOption extends StatelessWidget {
                   color: Color(0xFF7B2FFF),
                   fontSize: 12)),
         ]),
+      ),
+    );
+  }
+}
+/// One coach recommendation, rendered from backend data.
+class _RecommendationCard extends StatelessWidget {
+  final Map<String, dynamic> reco;
+  const _RecommendationCard({required this.reco});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (reco['name'] as String?) ?? 'Coach';
+    final title = (reco['title'] as String?) ?? '';
+    final quote = (reco['quote'] as String?) ?? '';
+    final rating = reco['rating'];
+    final date = (reco['recommended_at'] as String?) ?? '';
+    final verified = reco['verified'] == true;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111111),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: const BoxDecoration(
+                color: Color(0xFF1A1A1A),
+                shape: BoxShape.circle),
+            child: Center(
+                child: Text(
+                    name.isNotEmpty
+                        ? name[0].toUpperCase()
+                        : '?',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800))),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Flexible(
+                    child: Text(name,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14)),
+                  ),
+                  if (verified) ...[
+                    const SizedBox(width: 6),
+                    const Icon(Icons.verified,
+                        color: Color(0xFF7B2FFF), size: 14),
+                  ],
+                ]),
+                if (title.isNotEmpty)
+                  Text(title,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11)),
+                if (quote.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text('"$quote"',
+                      style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 12,
+                          height: 1.4,
+                          fontStyle: FontStyle.italic)),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (rating != null) ...[
+                Text('$rating',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18)),
+                const Icon(Icons.star,
+                    color: Color(0xFF7B2FFF), size: 16),
+                const SizedBox(height: 4),
+              ],
+              Text(date,
+                  style: const TextStyle(
+                      color: Colors.white38, fontSize: 10)),
+            ],
+          ),
+        ],
       ),
     );
   }
