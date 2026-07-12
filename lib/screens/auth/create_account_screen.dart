@@ -1,7 +1,9 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../../api/services.dart';
 import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
+import '../legal/legal_screen.dart';
 import 'create_profile_screen.dart';
 import 'login_screen.dart';
 
@@ -183,21 +185,32 @@ class _CreateAccountScreenState
                   ),
                   Expanded(
                     child: RichText(
-                      text: const TextSpan(
+                      text: TextSpan(
                         children: [
-                          TextSpan(
+                          const TextSpan(
                             text: 'I agree to the ',
                             style: TextStyle(
                                 color: AppColors.textGrey,
                                 fontSize: 13),
                           ),
                           TextSpan(
-                            text: 'Terms of Service',
-                            style: TextStyle(
+                            text: 'Terms & Conditions',
+                            style: const TextStyle(
                                 color: AppColors.primary,
-                                fontSize: 13),
+                                fontSize: 13,
+                                decoration:
+                                    TextDecoration.underline,
+                                decorationColor:
+                                    AppColors.primary),
+                            recognizer:
+                                TapGestureRecognizer()
+                                  ..onTap = () =>
+                                      Navigator.push(
+                                          context,
+                                          LegalScreen
+                                              .termsRoute()),
                           ),
-                          TextSpan(
+                          const TextSpan(
                             text: ' and ',
                             style: TextStyle(
                                 color: AppColors.textGrey,
@@ -205,9 +218,20 @@ class _CreateAccountScreenState
                           ),
                           TextSpan(
                             text: 'Privacy Policy',
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: AppColors.primary,
-                                fontSize: 13),
+                                fontSize: 13,
+                                decoration:
+                                    TextDecoration.underline,
+                                decorationColor:
+                                    AppColors.primary),
+                            recognizer:
+                                TapGestureRecognizer()
+                                  ..onTap = () =>
+                                      Navigator.push(
+                                          context,
+                                          LegalScreen
+                                              .privacyRoute()),
                           ),
                         ],
                       ),

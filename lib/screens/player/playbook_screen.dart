@@ -8,6 +8,7 @@ import '../../api/api_config.dart';
 import '../../api/mappers.dart';
 import '../../api/services.dart';
 import '../../widgets/app_video_player.dart';
+import '../legal/legal_screen.dart';
 import '../auth/choose_role_screen.dart';
 
 class PlaybookScreen extends StatefulWidget {
@@ -979,13 +980,8 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                     trailing: const Icon(
                         Icons.chevron_right,
                         color: Colors.white24),
-                    onTap: () =>
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                            content: Text(
-                                'Opening Privacy Policy...'),
-                            backgroundColor:
-                            Color(0xFF7B2FFF))),
+                    onTap: () => Navigator.push(
+                        context, LegalScreen.privacyRoute()),
                   ),
 
                   _SettingsTile(
@@ -996,13 +992,8 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                     trailing: const Icon(
                         Icons.chevron_right,
                         color: Colors.white24),
-                    onTap: () =>
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                            content: Text(
-                                'Opening Terms of Service...'),
-                            backgroundColor:
-                            Color(0xFF7B2FFF))),
+                    onTap: () => Navigator.push(
+                        context, LegalScreen.termsRoute()),
                   ),
 
                   const SizedBox(height: 20),
