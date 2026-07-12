@@ -358,9 +358,13 @@ class FeedService {
           query: {'page': '$page'}) as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> addComment(
-          {required String postId, required String body}) async =>
-      await ApiClient.post('/posts/$postId/comments', body: {'body': body})
-          as Map<String, dynamic>;
+          {required String postId,
+          required String body,
+          String? parentId}) async =>
+      await ApiClient.post('/posts/$postId/comments', body: {
+        'body': body,
+        if (parentId != null) 'parent_id': parentId,
+      }) as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> share(String postId) async =>
       await ApiClient.post('/posts/$postId/share') as Map<String, dynamic>;

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../api/api_config.dart';
 import '../../api/mappers.dart';
 import '../../widgets/app_video_player.dart';
+import '../../widgets/comments_sheet.dart';
 import '../../api/services.dart';
 
 class DugoutScreen extends StatefulWidget {
@@ -93,6 +95,7 @@ class _DugoutScreenState extends State<DugoutScreen> {
           'qoEarned': '+${post['qo_points_earned'] ?? 0}',
           'type': author['type'] ?? 'player',
           'liked': post['viewer']?['liked'] == true,
+          'bookmarked': post['viewer']?['bookmarked'] == true,
           'likes': post['counts']?['likes'] ?? 0,
           'comments': post['counts']?['comments'] ?? 0,
           'posts': 0,
@@ -300,6 +303,56 @@ class _DugoutScreenState extends State<DugoutScreen> {
                         });
                       }
                     },
+                    onComment: () {
+                      final id = post['id'] as String?;
+                      if (id == null) return;
+                      CommentsSheet.open(context, id,
+                          onCountChanged: (total) {
+                        final index = _posts.indexOf(post);
+                        if (index == -1 || !mounted) return;
+                        setState(() =>
+                            _posts[index]['comments'] = total);
+                      });
+                    },
+                    onShare: () async {
+                      final id = post['id'] as String?;
+                      if (id == null) return;
+                      try {
+                        final res =
+                            await FeedService.share(id);
+                        final url =
+                            res['share_url'] as String? ?? '';
+                        await Clipboard.setData(
+                            ClipboardData(text: url));
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(const SnackBar(
+                                content: Text(
+                                    'Link copied to clipboard'),
+                                backgroundColor:
+                                    Color(0xFF7B2FFF)));
+                      } catch (_) {}
+                    },
+                    onBookmark: () async {
+                      final index = _posts.indexOf(post);
+                      if (index == -1) return;
+                      final id =
+                          _posts[index]['id'] as String?;
+                      final was =
+                          _posts[index]['bookmarked'] == true;
+                      setState(() => _posts[index]
+                          ['bookmarked'] = !was);
+                      if (id == null) return;
+                      try {
+                        was
+                            ? await FeedService.unbookmark(id)
+                            : await FeedService.bookmark(id);
+                      } catch (_) {
+                        if (!mounted) return;
+                        setState(() => _posts[index]
+                            ['bookmarked'] = was);
+                      }
+                    },
                     onTapProfile: () {
                       Navigator.push(
                         context,
@@ -326,10 +379,16 @@ class _DugoutScreenState extends State<DugoutScreen> {
 class _PostCard extends StatelessWidget {
   final Map<String, dynamic> post;
   final VoidCallback onLike;
+  final VoidCallback onComment;
+  final VoidCallback onShare;
+  final VoidCallback onBookmark;
   final VoidCallback onTapProfile;
   const _PostCard({
     required this.post,
     required this.onLike,
+    required this.onComment,
+    required this.onShare,
+    required this.onBookmark,
     required this.onTapProfile,
   });
 
@@ -550,21 +609,39 @@ class _PostCard extends StatelessWidget {
                 ]),
               ),
               const SizedBox(width: 20),
-              Row(children: [
-                const Icon(Icons.chat_bubble_outline,
-                    color: Colors.white38, size: 20),
-                const SizedBox(width: 4),
-                Text('${post['comments']}',
-                    style: const TextStyle(
-                        color: Colors.white38,
-                        fontSize: 13)),
-              ]),
+              GestureDetector(
+                onTap: onComment,
+                behavior: HitTestBehavior.opaque,
+                child: Row(children: [
+                  const Icon(Icons.chat_bubble_outline,
+                      color: Colors.white38, size: 20),
+                  const SizedBox(width: 4),
+                  Text('${post['comments']}',
+                      style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 13)),
+                ]),
+              ),
               const SizedBox(width: 20),
-              const Icon(Icons.ios_share_outlined,
-                  color: Colors.white38, size: 20),
+              GestureDetector(
+                onTap: onShare,
+                behavior: HitTestBehavior.opaque,
+                child: const Icon(Icons.ios_share_outlined,
+                    color: Colors.white38, size: 20),
+              ),
               const Spacer(),
-              const Icon(Icons.bookmark_border,
-                  color: Colors.white38, size: 20),
+              GestureDetector(
+                onTap: onBookmark,
+                behavior: HitTestBehavior.opaque,
+                child: Icon(
+                    post['bookmarked'] == true
+                        ? Icons.bookmark
+                        : Icons.bookmark_border,
+                    color: post['bookmarked'] == true
+                        ? const Color(0xFF7B2FFF)
+                        : Colors.white38,
+                    size: 20),
+              ),
             ]),
           ),
         ],
