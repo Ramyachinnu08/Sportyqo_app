@@ -2010,6 +2010,45 @@ class _VideoPlayerScreenState
   }
 }
 
+class _EditField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final int maxLines;
+  const _EditField({
+    required this.label,
+    required this.controller,
+    this.maxLines = 1,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                color: Colors.white54, fontSize: 12)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          maxLines: maxLines,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 14),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color(0xFF1A1A1A),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14, vertical: 12),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _StatItem extends StatelessWidget {
   final String value, label;
   const _StatItem(
@@ -2297,7 +2336,7 @@ class _CreatePostScreenState extends State<_CreatePostScreen> {
     setState(() => _posting = true);
     try {
       final parts = _mime.split('/');
-      await PostService.createPost(
+      await FeedService.createPost(
         content: _captionCtrl.text.trim(),
         category: _category,
         media: [
