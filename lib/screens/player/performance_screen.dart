@@ -20,12 +20,29 @@ class _PerformanceScreenState
     _load();
   }
 
+  String _period = 'this_season';
+  static const _periodLabels = <String, String>{
+    'this_season': 'This Season',
+    'last_season': 'Last Season',
+    'all_time': 'All Time',
+  };
+
   Future<void> _load() async {
     try {
-      final perf = await PlayerService.performance();
+      final perf =
+          await PlayerService.performance(period: _period);
       if (mounted) setState(() => _perf = perf);
     } catch (_) {}
   }
+
+  List<String> get _graphLabels =>
+      ((_perf?['journey_graph']?['labels'] as List<dynamic>?) ??
+              const [])
+          .cast<String>();
+  List<num> get _graphValues =>
+      ((_perf?['journey_graph']?['values'] as List<dynamic>?) ??
+              const [])
+          .cast<num>();
 
   Map<String, dynamic> get _qo =>
       (_perf?['qo_score'] as Map<String, dynamic>?) ?? const {};
@@ -231,17 +248,20 @@ class _PerformanceScreenState
                           minHeight: 8),
                     ),
                     const SizedBox(height: 8),
+                    if (_progress['next_tier'] != null)
                     RichText(
-                      text: const TextSpan(children: [
+                      text: TextSpan(children: [
                         TextSpan(
-                            text: '242 points to ',
-                            style: TextStyle(
+                            text:
+                                '${_progress['points_needed'] ?? 0} points to ',
+                            style: const TextStyle(
                                 color: Colors.white38,
                                 fontSize: 12)),
                         TextSpan(
-                            text: 'Blue Card',
-                            style: TextStyle(
-                                color: Colors.blueAccent,
+                            text:
+                                '${_progress['next_tier']}',
+                            style: const TextStyle(
+                                color: AppColors.primary,
                                 fontSize: 12,
                                 fontWeight:
                                 FontWeight.w600)),
@@ -360,22 +380,49 @@ class _PerformanceScreenState
                               fontWeight: FontWeight.w700,
                               fontSize: 14)),
                       const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                            color: Colors.white10,
-                            borderRadius:
-                            BorderRadius.circular(20)),
-                        child: Row(children: const [
-                          Text('This Season',
-                              style: TextStyle(
-                                  color: Colors.white60,
-                                  fontSize: 12)),
-                          Icon(Icons.keyboard_arrow_down,
-                              color: Colors.white38,
-                              size: 16),
-                        ]),
+                      PopupMenuButton<String>(
+                        color: const Color(0xFF15152E),
+                        onSelected: (v) {
+                          setState(() => _period = v);
+                          _load();
+                        },
+                        itemBuilder: (_) => _periodLabels
+                            .entries
+                            .map((e) => PopupMenuItem(
+                                value: e.key,
+                                child: Text(e.value,
+                                    style: const TextStyle(
+                                        color:
+                                            Colors.white))))
+                            .toList(),
+                        child: Container(
+                          padding:
+                              const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4),
+                          decoration: BoxDecoration(
+                              color: Colors.white10,
+                              borderRadius:
+                                  BorderRadius.circular(
+                                      20)),
+                          child: Row(
+                              mainAxisSize:
+                                  MainAxisSize.min,
+                              children: [
+                                Text(
+                                    _periodLabels[
+                                        _period]!,
+                                    style: const TextStyle(
+                                        color: Colors
+                                            .white60,
+                                        fontSize: 12)),
+                                const Icon(
+                                    Icons
+                                        .keyboard_arrow_down,
+                                    color: Colors.white38,
+                                    size: 16),
+                              ]),
+                        ),
                       ),
                     ]),
                     const SizedBox(height: 16),
@@ -383,7 +430,9 @@ class _PerformanceScreenState
                       height: 140,
                       child: CustomPaint(
                           painter:
-                          _PerformanceGraphPainter(),
+                              _PerformanceGraphPainter(
+                                  values: _graphValues,
+                                  labels: _graphLabels),
                           size: const Size(
                               double.infinity, 140)),
                     ),
@@ -391,32 +440,12 @@ class _PerformanceScreenState
                     Row(
                       mainAxisAlignment:
                       MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text('Jan',
-                            style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 10)),
-                        Text('Feb',
-                            style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 10)),
-                        Text('Mar',
-                            style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 10)),
-                        Text('Apr',
-                            style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 10)),
-                        Text('May',
-                            style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 10)),
-                        Text('Jun',
-                            style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 10)),
-                      ],
+                      children: _graphLabels
+                          .map((l) => Text(l,
+                              style: const TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 10)))
+                          .toList(),
                     ),
                   ],
                 ),
@@ -645,10 +674,13 @@ class _MatchTile extends StatelessWidget {
 // ── Graph Painter ─────────────────────────────────────────────────────
 
 class _PerformanceGraphPainter extends CustomPainter {
+  final List<num> values;
+  final List<String> labels;
+  _PerformanceGraphPainter(
+      {required this.values, required this.labels});
+
   @override
   void paint(Canvas canvas, Size size) {
-    final points = [0.9, 0.75, 0.65, 0.5, 0.35, 0.1];
-
     final gridPaint = Paint()
       ..color = Colors.white10
       ..strokeWidth = 0.5;
@@ -656,6 +688,20 @@ class _PerformanceGraphPainter extends CustomPainter {
       final y = size.height * (1 - i / 3);
       canvas.drawLine(
           Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+    if (values.isEmpty) return;
+
+    // normalise the real cumulative scores into 0–1 canvas space
+    final maxV = values
+        .fold<num>(0, (a, b) => b > a ? b : a)
+        .toDouble();
+    final top = maxV <= 0 ? 1.0 : maxV;
+    // 0.9 = bottom padding, 0.12 = top padding
+    List<double> points = values
+        .map((v) => 0.9 - (v.toDouble() / top) * 0.78)
+        .toList();
+    if (points.length == 1) {
+      points = [points.first, points.first];
     }
 
     final fillPaint = Paint()
@@ -677,72 +723,74 @@ class _PerformanceGraphPainter extends CustomPainter {
 
     final path = Path();
     final fillPath = Path();
-    final xOffset = 20.0;
-    final usableWidth = size.width - xOffset;
+    const xOffset = 20.0;
+    final usableWidth = size.width - xOffset * 2;
 
+    final xs = <double>[];
+    final ys = <double>[];
     for (int i = 0; i < points.length; i++) {
-      final x =
-          xOffset + i * usableWidth / (points.length - 1);
+      final x = xOffset +
+          i * usableWidth / (points.length - 1);
       final y = points[i] * size.height;
+      xs.add(x);
+      ys.add(y);
       if (i == 0) {
         path.moveTo(x, y);
         fillPath.moveTo(x, size.height);
         fillPath.lineTo(x, y);
       } else {
-        final prevX = xOffset +
-            (i - 1) * usableWidth / (points.length - 1);
-        final prevY = points[i - 1] * size.height;
-        final cpX = (prevX + x) / 2;
-        path.cubicTo(cpX, prevY, cpX, y, x, y);
-        fillPath.cubicTo(cpX, prevY, cpX, y, x, y);
+        final cx = (xs[i - 1] + x) / 2;
+        path.cubicTo(cx, ys[i - 1], cx, y, x, y);
+        fillPath.cubicTo(cx, ys[i - 1], cx, y, x, y);
       }
     }
-
-    fillPath.lineTo(size.width, size.height);
+    fillPath.lineTo(xs.last, size.height);
     fillPath.close();
     canvas.drawPath(fillPath, fillPaint);
     canvas.drawPath(path, linePaint);
 
-    for (int i = 0; i < points.length; i++) {
-      final x =
-          xOffset + i * usableWidth / (points.length - 1);
-      final y = points[i] * size.height;
+    for (int i = 0; i < xs.length; i++) {
       canvas.drawCircle(
-          Offset(x, y),
+          Offset(xs[i], ys[i]),
           5,
           Paint()
             ..color = AppColors.primary
             ..style = PaintingStyle.fill);
       canvas.drawCircle(
-          Offset(x, y),
+          Offset(xs[i], ys[i]),
           5,
           Paint()
             ..color = Colors.white
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1.5);
-      if (i == points.length - 1) {
-        final tp = TextPainter(
-          text: const TextSpan(children: [
-            TextSpan(
-                text: '242\n',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700)),
-            TextSpan(
-                text: '18 May',
-                style: TextStyle(
-                    color: Colors.white38,
-                    fontSize: 9)),
-          ]),
-          textDirection: TextDirection.ltr,
-        )..layout();
-        tp.paint(canvas, Offset(x - 20, y - 36));
-      }
     }
+
+    // label the latest real value
+    final lastLabel =
+        labels.isNotEmpty ? labels.last : '';
+    final tp = TextPainter(
+      text: TextSpan(children: [
+        TextSpan(
+            text: '${values.last}\n',
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700)),
+        TextSpan(
+            text: lastLabel,
+            style: const TextStyle(
+                color: Colors.white38, fontSize: 9)),
+      ]),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final lx =
+        (xs.last - 20).clamp(0.0, size.width - tp.width);
+    final ly = (ys.last - 36).clamp(0.0, size.height);
+    tp.paint(canvas, Offset(lx, ly));
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) =>
-      false;
+  bool shouldRepaint(
+          covariant _PerformanceGraphPainter old) =>
+      old.values != values || old.labels != labels;
 }

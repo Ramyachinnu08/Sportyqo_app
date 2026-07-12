@@ -151,8 +151,10 @@ class PlayerService {
   static Future<Map<String, dynamic>> qoScore() async =>
       await ApiClient.get('/players/me/qo-score') as Map<String, dynamic>;
 
-  static Future<Map<String, dynamic>> performance() async =>
-      await ApiClient.get('/players/me/performance') as Map<String, dynamic>;
+  static Future<Map<String, dynamic>> performance(
+          {String period = 'this_season'}) async =>
+      await ApiClient.get('/players/me/performance',
+          query: {'period': period}) as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> matches({int page = 1}) async =>
       await ApiClient.get('/players/me/matches',
