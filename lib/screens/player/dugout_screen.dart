@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../api/api_config.dart';
 import '../../api/mappers.dart';
+import '../../widgets/app_video_player.dart';
 import '../../api/services.dart';
 
 class DugoutScreen extends StatefulWidget {
@@ -56,10 +57,22 @@ class _DugoutScreenState extends State<DugoutScreen> {
       final items = (res['items'] as List<dynamic>).map((raw) {
         final post = raw as Map<String, dynamic>;
         final author = post['author'] as Map<String, dynamic>? ?? {};
-        final media = (post['media'] as List<dynamic>? ?? [])
-            .map((m) => ApiConfig.resolveMediaUrl(
-                (m as Map<String, dynamic>)['url'] as String?))
-            .whereType<String>()
+        final mediaItems = (post['media'] as List<dynamic>? ?? [])
+            .map((m) {
+              final mm = m as Map<String, dynamic>;
+              final u = ApiConfig.resolveMediaUrl(
+                  mm['url'] as String?);
+              return u == null
+                  ? null
+                  : <String, dynamic>{
+                      'url': u,
+                      'type': mm['type'] ?? 'image',
+                    };
+            })
+            .whereType<Map<String, dynamic>>()
+            .toList();
+        final media = mediaItems
+            .map((m) => m['url'] as String)
             .toList();
         return <String, dynamic>{
           'id': post['id'],
@@ -72,6 +85,10 @@ class _DugoutScreenState extends State<DugoutScreen> {
               author['avatar_url'] as String?),
           'content': post['content'] ?? '',
           'image': media.isNotEmpty ? media.first : null,
+          'image_type': mediaItems.isNotEmpty
+              ? mediaItems.first['type']
+              : 'image',
+          'media_items': mediaItems,
           'qoScore': author['qo_score'] ?? 0,
           'qoEarned': '+${post['qo_points_earned'] ?? 0}',
           'type': author['type'] ?? 'player',
@@ -440,37 +457,41 @@ class _PostCard extends StatelessWidget {
             child: _buildContent(post['content']),
           ),
 
-          // ── Image ──
-          GestureDetector(
-            onTap: onTapProfile,
-            child: Image.network(
-              post['image'],
-              width: double.infinity,
-              height: 240,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return Container(
-                  height: 240,
-                  color: const Color(0xFF1A1A1A),
-                  child: const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF7B2FFF),
-                      strokeWidth: 2,
+          // ── Media (photo or playable video) ──
+          if (post['image'] != null)
+            post['image_type'] == 'video'
+                ? AppVideoPlayer.network(post['image'])
+                : GestureDetector(
+                    onTap: onTapProfile,
+                    child: Image.network(
+                      post['image'],
+                      width: double.infinity,
+                      height: 240,
+                      fit: BoxFit.cover,
+                      loadingBuilder:
+                          (context, child, progress) {
+                        if (progress == null) return child;
+                        return Container(
+                          height: 240,
+                          color: const Color(0xFF1A1A1A),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF7B2FFF),
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 240,
+                        color: const Color(0xFF1A1A1A),
+                        child: const Center(
+                          child: Icon(Icons.image_outlined,
+                              color: Colors.white24, size: 48),
+                        ),
+                      ),
                     ),
                   ),
-                );
-              },
-              errorBuilder: (_, __, ___) => Container(
-                height: 240,
-                color: const Color(0xFF1A1A1A),
-                child: const Center(
-                  child: Icon(Icons.image_outlined,
-                      color: Colors.white24, size: 48),
-                ),
-              ),
-            ),
-          ),
 
           // ── Qo Score Earned ──
           Padding(

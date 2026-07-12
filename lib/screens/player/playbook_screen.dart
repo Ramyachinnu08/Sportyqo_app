@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../api/api_config.dart';
 import '../../api/mappers.dart';
 import '../../api/services.dart';
+import '../../widgets/app_video_player.dart';
 import '../auth/choose_role_screen.dart';
 
 class PlaybookScreen extends StatefulWidget {
@@ -58,7 +59,10 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
           'title': m['title'] ?? '',
           'subtitle': m['subtitle'] ?? '',
           'date': m['date'] ?? '',
+          'type': m['type'] ?? 'image',
           'image': ApiConfig.resolveMediaUrl(m['url'] as String?),
+          'thumbnail': ApiConfig.resolveMediaUrl(
+              m['thumbnail_url'] as String?),
         };
       }).toList();
 
@@ -1831,12 +1835,19 @@ class _VideoCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: Stack(children: [
         Positioned.fill(
-          child: Image.network(
-            item['image'],
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                Container(color: const Color(0xFF1A1A1A)),
-          ),
+          child: item['type'] == 'video'
+              ? Container(
+                  color: const Color(0xFF15152A),
+                  child: const Center(
+                      child: Icon(Icons.movie_outlined,
+                          color: Colors.white24, size: 40)))
+              : Image.network(
+                  item['image'] ?? '',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      Container(
+                          color: const Color(0xFF1A1A1A)),
+                ),
         ),
         Positioned.fill(
           child: Container(
@@ -1852,6 +1863,7 @@ class _VideoCard extends StatelessWidget {
             ),
           ),
         ),
+        if (item['type'] == 'video')
         Positioned(
           top: 10, left: 10,
           child: Container(
@@ -1913,188 +1925,87 @@ class _VideoPlayerScreen extends StatefulWidget {
 
 class _VideoPlayerScreenState
     extends State<_VideoPlayerScreen> {
-  bool _isPlaying = false;
-  double _progress = 0.0;
+  bool get _isVideo => widget.item['type'] == 'video';
 
   @override
   Widget build(BuildContext context) {
+    final url = widget.item['image'] as String?;
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(children: [
-          GestureDetector(
-            onTap: () =>
-                setState(() => _isPlaying = !_isPlaying),
-            child: SizedBox(
+          Stack(children: [
+            SizedBox(
               width: double.infinity,
-              height: MediaQuery.of(context).size.height *
-                  0.4,
-              child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Image.network(
-                      widget.item['image'],
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          Container(
-                              color:
-                              const Color(0xFF1A1A1A)),
-                    ),
-                    Container(
-                        color:
-                        Colors.black.withOpacity(0.3)),
-                    Container(
-                      width: 64, height: 64,
-                      decoration: const BoxDecoration(
-                          color: Colors.black54,
-                          shape: BoxShape.circle),
-                      child: Icon(
-                          _isPlaying
-                              ? Icons.pause
-                              : Icons.play_arrow,
-                          color: Colors.white,
-                          size: 36),
-                    ),
-                    Positioned(
-                      top: 16, left: 16,
-                      child: GestureDetector(
-                        onTap: () =>
-                            Navigator.pop(context),
-                        child: Container(
-                          width: 36, height: 36,
-                          decoration: const BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle),
-                          child: const Icon(
-                              Icons.arrow_back_ios,
-                              color: Colors.white,
-                              size: 18),
+              child: url == null
+                  ? Container(
+                      height: 260,
+                      color: const Color(0xFF1A1A1A))
+                  : _isVideo
+                      ? AppVideoPlayer.network(url,
+                          autoPlay: true)
+                      : InteractiveViewer(
+                          child: Image.network(url,
+                              width: double.infinity,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) =>
+                                  Container(
+                                      height: 260,
+                                      color: const Color(
+                                          0xFF1A1A1A))),
                         ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0, left: 0, right: 0,
-                      child: LinearProgressIndicator(
-                        value: _progress,
-                        backgroundColor: Colors.white24,
-                        color: const Color(0xFF7B2FFF),
-                        minHeight: 3,
-                      ),
-                    ),
-                  ]),
             ),
-          ),
+            Positioned(
+              top: 12, left: 12,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 36, height: 36,
+                  decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle),
+                  child: const Icon(Icons.arrow_back_ios,
+                      color: Colors.white, size: 18),
+                ),
+              ),
+            ),
+          ]),
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.item['title'],
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800)),
+                if (((widget.item['title'] as String?) ?? '')
+                    .isNotEmpty)
+                  Text(widget.item['title'],
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800)),
                 const SizedBox(height: 6),
                 Row(children: [
-                  Text(widget.item['subtitle'],
-                      style: const TextStyle(
-                          color: Color(0xFF7B2FFF),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600)),
-                  const Text(' • ',
-                      style: TextStyle(
-                          color: Colors.white38)),
-                  Text(widget.item['date'],
+                  if (((widget.item['subtitle'] as String?) ??
+                          '')
+                      .isNotEmpty) ...[
+                    Text(widget.item['subtitle'],
+                        style: const TextStyle(
+                            color: Color(0xFF7B2FFF),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600)),
+                    const Text(' • ',
+                        style:
+                            TextStyle(color: Colors.white38)),
+                  ],
+                  Text((widget.item['date'] as String?) ?? '',
                       style: const TextStyle(
                           color: Colors.white38,
                           fontSize: 13)),
                 ]),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.spaceAround,
-                  children: [
-                    GestureDetector(
-                      onTap: () => setState(() =>
-                      _progress = (_progress - 0.1)
-                          .clamp(0.0, 1.0)),
-                      child: const Icon(Icons.replay_10,
-                          color: Colors.white, size: 32),
-                    ),
-                    GestureDetector(
-                      onTap: () => setState(() =>
-                      _isPlaying = !_isPlaying),
-                      child: Container(
-                        width: 60, height: 60,
-                        decoration: const BoxDecoration(
-                            color: Color(0xFF7B2FFF),
-                            shape: BoxShape.circle),
-                        child: Icon(
-                            _isPlaying
-                                ? Icons.pause
-                                : Icons.play_arrow,
-                            color: Colors.white,
-                            size: 32),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => setState(() =>
-                      _progress = (_progress + 0.1)
-                          .clamp(0.0, 1.0)),
-                      child: const Icon(Icons.forward_10,
-                          color: Colors.white, size: 32),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
         ]),
       ),
-    );
-  }
-}
-
-// ── Widgets ───────────────────────────────────────────────────────────
-
-class _EditField extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final int maxLines;
-  const _EditField({
-    required this.label,
-    required this.controller,
-    this.maxLines = 1,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(
-                color: Colors.white54, fontSize: 12)),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          style: const TextStyle(
-              color: Colors.white, fontSize: 14),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: const Color(0xFF1A1A1A),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 12),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -2469,33 +2380,9 @@ class _CreatePostScreenState extends State<_CreatePostScreen> {
                       height: 280,
                       color: const Color(0xFF111111),
                       child: widget.isVideo
-                          ? Column(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                    Icons
-                                        .play_circle_outline,
-                                    color: Color(0xFF7B2FFF),
-                                    size: 64),
-                                const SizedBox(height: 12),
-                                Text(widget.file.name,
-                                    maxLines: 1,
-                                    overflow:
-                                        TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        color:
-                                            Colors.white54,
-                                        fontSize: 13)),
-                                if (_bytes != null)
-                                  Text(
-                                      '${(_bytes!.length / (1024 * 1024)).toStringAsFixed(1)} MB video',
-                                      style: const TextStyle(
-                                          color:
-                                              Colors.white38,
-                                          fontSize: 11)),
-                              ],
-                            )
+                          ? AppVideoPlayer.file(
+                              widget.file.path,
+                              loop: true)
                           : _bytes == null
                               ? const Center(
                                   child:
