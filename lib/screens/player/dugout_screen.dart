@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../api/api_config.dart';
 import '../../api/mappers.dart';
 import '../../api/services.dart';
 
@@ -56,7 +57,8 @@ class _DugoutScreenState extends State<DugoutScreen> {
         final post = raw as Map<String, dynamic>;
         final author = post['author'] as Map<String, dynamic>? ?? {};
         final media = (post['media'] as List<dynamic>? ?? [])
-            .map((m) => (m as Map<String, dynamic>)['url'] as String?)
+            .map((m) => ApiConfig.resolveMediaUrl(
+                (m as Map<String, dynamic>)['url'] as String?))
             .whereType<String>()
             .toList();
         return <String, dynamic>{
@@ -66,7 +68,8 @@ class _DugoutScreenState extends State<DugoutScreen> {
           'verified': author['verified'] == true,
           'role': author['role_line'] ?? '',
           'time': relativeTime(post['created_at'] as String?),
-          'avatar': author['avatar_url'],
+          'avatar': ApiConfig.resolveMediaUrl(
+              author['avatar_url'] as String?),
           'content': post['content'] ?? '',
           'image': media.isNotEmpty ? media.first : null,
           'qoScore': author['qo_score'] ?? 0,
