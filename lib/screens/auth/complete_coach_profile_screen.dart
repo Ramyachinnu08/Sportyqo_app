@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../api/api_config.dart';
 import '../../api/services.dart';
+import '../../widgets/avatar_picker.dart';
 import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 import '../coach/select_coach_sport_screen.dart';
@@ -59,6 +62,12 @@ class _CompleteCoachProfileScreenState
     }
   }
 
+  String? _avatarUrl;
+
+  void _onAvatarPicked(String url) {
+    if (mounted) setState(() => _avatarUrl = url);
+  }
+
   void _showPhotoOptions() {
     showModalBottomSheet(
       context: context,
@@ -84,14 +93,11 @@ class _CompleteCoachProfileScreenState
                   color: Color(0xFF00C853)),
               title: const Text('Take Photo',
                   style: TextStyle(color: Colors.white)),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Camera opened! 📷'),
-                    backgroundColor: Color(0xFF00C853),
-                  ),
-                );
+                final url = await pickAndUploadAvatar(
+                    context, ImageSource.camera);
+                if (url != null) _onAvatarPicked(url);
               },
             ),
             ListTile(
@@ -100,14 +106,11 @@ class _CompleteCoachProfileScreenState
                   color: Color(0xFF00C853)),
               title: const Text('Choose from Gallery',
                   style: TextStyle(color: Colors.white)),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Gallery opened! 🖼️'),
-                    backgroundColor: Color(0xFF00C853),
-                  ),
-                );
+                final url = await pickAndUploadAvatar(
+                    context, ImageSource.gallery);
+                if (url != null) _onAvatarPicked(url);
               },
             ),
             const SizedBox(height: 8),
@@ -176,8 +179,24 @@ class _CompleteCoachProfileScreenState
                               color: const Color(0xFF00C853), width: 3),
                           color: AppColors.darkCard,
                         ),
-                        child: const Icon(Icons.person,
-                            size: 44, color: AppColors.textGrey),
+                        child: ClipOval(
+                          child: _avatarUrl != null
+                              ? Image.network(
+                                  ApiConfig.resolveMediaUrl(
+                                          _avatarUrl) ??
+                                      _avatarUrl!,
+                                  width: 90,
+                                  height: 90,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      const Icon(Icons.person,
+                                          size: 44,
+                                          color: AppColors
+                                              .textGrey))
+                              : const Icon(Icons.person,
+                                  size: 44,
+                                  color: AppColors.textGrey),
+                        ),
                       ),
                       Positioned(
                         bottom: 0,
