@@ -1,7 +1,10 @@
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
+import '../../api/api_config.dart';
+import '../../widgets/avatar_picker.dart';
 import '../auth/choose_role_screen.dart';
 
 class CoachProfileScreen extends StatefulWidget {
@@ -14,6 +17,12 @@ class CoachProfileScreen extends StatefulWidget {
 
 class _CoachProfileScreenState
     extends State<CoachProfileScreen> {
+  String? _avatarUrl = Session.avatarUrl;
+
+  void _onAvatarPicked(String url) {
+    if (mounted) setState(() => _avatarUrl = url);
+  }
+
   bool _notificationsOn = true;
   bool _darkMode = true;
   bool _privateProfile = false;
@@ -121,10 +130,29 @@ class _CoachProfileScreenState
                                   color:
                                   const Color(0xFF1A1A1A),
                                 ),
-                                child: const Center(
-                                    child: Text('👤',
-                                        style: TextStyle(
-                                            fontSize: 40))),
+                                child: ClipOval(
+                                  child: Builder(
+                                      builder: (context) {
+                                    final u = ApiConfig
+                                        .resolveMediaUrl(
+                                            _avatarUrl);
+                                    const fallback = Center(
+                                        child: Text('👤',
+                                            style: TextStyle(
+                                                fontSize:
+                                                    40)));
+                                    return u != null &&
+                                            u.isNotEmpty
+                                        ? Image.network(u,
+                                            width: 80,
+                                            height: 80,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_,
+                                                    __, ___) =>
+                                                fallback)
+                                        : fallback;
+                                  }),
+                                ),
                               ),
                               Positioned(
                                 bottom: 0,
@@ -1026,13 +1054,11 @@ class _CoachProfileScreenState
                   color: Color(0xFF00C853)),
               title: const Text('Take Photo',
                   style: TextStyle(color: Colors.white)),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Camera opened 📷'),
-                      backgroundColor: Color(0xFF00C853)),
-                );
+                final url = await pickAndUploadAvatar(
+                    context, ImageSource.camera);
+                if (url != null) _onAvatarPicked(url);
               },
             ),
             ListTile(
@@ -1041,13 +1067,11 @@ class _CoachProfileScreenState
                   color: Color(0xFF00C853)),
               title: const Text('Choose from Gallery',
                   style: TextStyle(color: Colors.white)),
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Gallery opened 🖼️'),
-                      backgroundColor: Color(0xFF00C853)),
-                );
+                final url = await pickAndUploadAvatar(
+                    context, ImageSource.gallery);
+                if (url != null) _onAvatarPicked(url);
               },
             ),
             TextButton(

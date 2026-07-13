@@ -1,9 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
 import 'coach_home_screen.dart';
 
 class ShareLeagueCodeScreen extends StatelessWidget {
+  String get _inviteMessage =>
+      'Join my league on SportyQo! Use league code: $leagueCode';
+
+  Future<void> _shareVia(BuildContext context, Uri uri,
+      {required String appName}) async {
+    try {
+      final ok = await launchUrl(uri,
+          mode: LaunchMode.externalApplication);
+      if (!ok && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('$appName is not available on this device'),
+            backgroundColor: Colors.redAccent));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Could not open $appName'),
+            backgroundColor: Colors.redAccent));
+      }
+    }
+  }
+
   final String leagueName;
   final String leagueCode;
 
@@ -164,7 +187,11 @@ class ShareLeagueCodeScreen extends StatelessWidget {
                       child: Row(children: [
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Opening WhatsApp...'), backgroundColor: Color(0xFF25D366))),
+                            onTap: () => _shareVia(
+                              context,
+                              Uri.parse(
+                                  'https://wa.me/?text=${Uri.encodeComponent(_inviteMessage)}'),
+                              appName: 'WhatsApp'),
                             child: Column(children: [
                               Container(
                                 width: 56, height: 56,
@@ -179,7 +206,14 @@ class ShareLeagueCodeScreen extends StatelessWidget {
                         Container(height: 50, width: 1, color: Colors.white10),
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Opening SMS...'), backgroundColor: Color(0xFF1A6BFF))),
+                            onTap: () => _shareVia(
+                              context,
+                              Uri(
+                                  scheme: 'sms',
+                                  queryParameters: {
+                                    'body': _inviteMessage
+                                  }),
+                              appName: 'SMS'),
                             child: Column(children: [
                               Container(
                                 width: 56, height: 56,

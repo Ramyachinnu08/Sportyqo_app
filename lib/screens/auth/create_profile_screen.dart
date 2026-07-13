@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../api/api_config.dart';
 import '../../api/services.dart';
+import '../../widgets/avatar_picker.dart';
 import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 import 'select_sport_screen.dart';
@@ -53,6 +56,12 @@ class _CreateProfileScreenState
     super.dispose();
   }
 
+  String? _avatarUrl;
+
+  void _onAvatarPicked(String url) {
+    if (mounted) setState(() => _avatarUrl = url);
+  }
+
   void _showPhotoOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -88,14 +97,11 @@ class _CreateProfileScreenState
 
             // ── Camera ──
             GestureDetector(
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Camera opened 📷'),
-                    backgroundColor: AppColors.primary,
-                  ),
-                );
+                final url = await pickAndUploadAvatar(
+                    context, ImageSource.camera);
+                if (url != null) _onAvatarPicked(url);
               },
               child: Container(
                 width: double.infinity,
@@ -147,14 +153,11 @@ class _CreateProfileScreenState
 
             // ── Gallery ──
             GestureDetector(
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Gallery opened 🖼️'),
-                    backgroundColor: Color(0xFF00C853),
-                  ),
-                );
+                final url = await pickAndUploadAvatar(
+                    context, ImageSource.gallery);
+                if (url != null) _onAvatarPicked(url);
               },
               child: Container(
                 width: double.infinity,
@@ -277,9 +280,27 @@ class _CreateProfileScreenState
                               width: 3),
                           color: AppColors.darkCard,
                         ),
-                        child: const Icon(Icons.person,
-                            size: 50,
-                            color: AppColors.textGrey),
+                        child: ClipOval(
+                          child: _avatarUrl != null
+                              ? Image.network(
+                                  ApiConfig.resolveMediaUrl(
+                                          _avatarUrl) ??
+                                      _avatarUrl!,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __,
+                                          ___) =>
+                                      const Icon(
+                                          Icons.person,
+                                          size: 50,
+                                          color: AppColors
+                                              .textGrey))
+                              : const Icon(Icons.person,
+                                  size: 50,
+                                  color:
+                                      AppColors.textGrey),
+                        ),
                       ),
                       Positioned(
                         bottom: 0,

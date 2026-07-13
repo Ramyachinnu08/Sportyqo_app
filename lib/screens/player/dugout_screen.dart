@@ -83,6 +83,7 @@ class _DugoutScreenState extends State<DugoutScreen> {
           'verified': author['verified'] == true,
           'role': author['role_line'] ?? '',
           'time': relativeTime(post['created_at'] as String?),
+          'author_id': author['id'],
           'avatar': ApiConfig.resolveMediaUrl(
               author['avatar_url'] as String?),
           'content': post['content'] ?? '',
@@ -118,6 +119,24 @@ class _DugoutScreenState extends State<DugoutScreen> {
   }
 
   List<Map<String, dynamic>> get _filteredPosts => _posts;
+
+  /// Instagram-style "latest" row: exactly ONE story per user —
+  /// their most recent post that has a photo or video.
+  List<Map<String, dynamic>> get _stories {
+    final seen = <String>{};
+    final out = <Map<String, dynamic>>[];
+    for (final p in _posts) {
+      final authorId = p['author_id'] as String?;
+      final items =
+          (p['media_items'] as List<dynamic>? ?? const [])
+              .cast<Map<String, dynamic>>();
+      if (authorId == null || items.isEmpty) continue;
+      if (seen.contains(authorId)) continue; // one per user
+      seen.add(authorId);
+      out.add(p);
+    }
+    return out;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -259,6 +278,33 @@ class _DugoutScreenState extends State<DugoutScreen> {
             const SizedBox(height: 12),
 
             // ── Posts ──
+            if (_stories.isNotEmpty) ...[
+              SizedBox(
+                height: 96,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20),
+                  itemCount: _stories.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(width: 14),
+                  itemBuilder: (context, i) => _StoryBubble(
+                    post: _stories[i],
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => _StoryViewScreen(
+                              post: _stories[i])),
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                  height: 1,
+                  margin:
+                      const EdgeInsets.only(bottom: 12),
+                  color: Colors.white10),
+            ],
             Expanded(
               child: _filteredPosts.isEmpty
                   ? const Center(
@@ -1133,6 +1179,192 @@ class _StatCol extends StatelessWidget {
             style: const TextStyle(
                 color: Colors.white38, fontSize: 11)),
       ],
+    );
+  }
+}
+
+/// One circle in the "latest" row — the user's newest photo/video post.
+class _StoryBubble extends StatelessWidget {
+  final Map<String, dynamic> post;
+  final VoidCallback onTap;
+  const _StoryBubble({required this.post, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = (post['media_items'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
+    final first = items.first;
+    final isVideo = first['type'] == 'video';
+    final name = (post['name'] as String?) ?? '';
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(children: [
+        Container(
+          width: 64,
+          height: 64,
+          padding: const EdgeInsets.all(2.5),
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF7B2FFF), Color(0xFFB16CEA)]),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(2),
+            decoration: const BoxDecoration(
+                color: Color(0xFF0A0A0A), shape: BoxShape.circle),
+            child: ClipOval(
+              child: isVideo
+                  ? Container(
+                      color: const Color(0xFF15152A),
+                      child: const Icon(Icons.play_arrow,
+                          color: Colors.white70, size: 26))
+                  : Image.network(first['url'] as String,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                          color: const Color(0xFF1A1A1A),
+                          child: const Icon(Icons.image_outlined,
+                              color: Colors.white24, size: 22))),
+            ),
+          ),
+        ),
+        const SizedBox(height: 5),
+        SizedBox(
+          width: 66,
+          child: Text(name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: Colors.white60, fontSize: 11)),
+        ),
+      ]),
+    );
+  }
+}
+
+/// Full-screen viewer for a user's latest post (photo or video).
+class _StoryViewScreen extends StatelessWidget {
+  final Map<String, dynamic> post;
+  const _StoryViewScreen({required this.post});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = (post['media_items'] as List<dynamic>)
+        .cast<Map<String, dynamic>>();
+    final first = items.first;
+    final isVideo = first['type'] == 'video';
+    final avatar = post['avatar'] as String?;
+    final name = (post['name'] as String?) ?? '';
+    final content = (post['content'] as String?) ?? '';
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(children: [
+          Center(
+            child: isVideo
+                ? AppVideoPlayer.network(first['url'] as String,
+                    autoPlay: true, loop: true)
+                : InteractiveViewer(
+                    child: Image.network(first['url'] as String,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.white24,
+                            size: 64)),
+                  ),
+          ),
+          // header
+          Positioned(
+            top: 10,
+            left: 16,
+            right: 16,
+            child: Row(children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                    color: Color(0xFF1E1E3A),
+                    shape: BoxShape.circle),
+                child: ClipOval(
+                  child: avatar != null && avatar.isNotEmpty
+                      ? Image.network(avatar,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                  name.isNotEmpty
+                                      ? name[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight:
+                                          FontWeight.w800))))
+                      : Center(
+                          child: Text(
+                              name.isNotEmpty
+                                  ? name[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800))),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14)),
+                      Text((post['time'] as String?) ?? '',
+                          style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 11)),
+                    ]),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle),
+                  child: const Icon(Icons.close,
+                      color: Colors.white, size: 20),
+                ),
+              ),
+            ]),
+          ),
+          // caption
+          if (content.isNotEmpty)
+            Positioned(
+              bottom: 24,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(12)),
+                child: Text(content,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        height: 1.4)),
+              ),
+            ),
+        ]),
+      ),
     );
   }
 }
