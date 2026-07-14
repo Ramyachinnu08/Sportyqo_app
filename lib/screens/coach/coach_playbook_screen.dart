@@ -9,6 +9,7 @@ import '../../api/ui_helpers.dart';
 import '../../widgets/app_video_player.dart';
 import '../../widgets/avatar_picker.dart';
 import '../../widgets/create_post_screen.dart';
+import '../../widgets/recommend_dialog.dart';
 import '../auth/choose_role_screen.dart';
 
 class CoachPlaybookScreen extends StatefulWidget {
@@ -189,11 +190,16 @@ class _CoachPlaybookScreenState
                 GestureDetector(
                   onTap: () async {
                     Navigator.pop(context);
+                    final input = await showRecommendDialog(
+                        context, p['name'] as String);
+                    if (input == null) return;
                     try {
                       await CoachService.recommend(
                           playerUserIds: [
                             p['user_id'] as String
-                          ]);
+                          ],
+                          note: input.note,
+                          rating: input.rating);
                       if (!mounted) return;
                       showInfo(context,
                           '${p['name']} recommended — +25 Qo points ✅');

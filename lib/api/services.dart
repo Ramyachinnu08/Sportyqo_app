@@ -204,6 +204,10 @@ class CoachService {
       (await ApiClient.get('/coaches/me/players')
           as Map<String, dynamic>)['items'] as List<dynamic>;
 
+  static Future<Map<String, dynamic>> removePlayer(String userId) async =>
+      await ApiClient.delete('/coaches/me/players/$userId')
+          as Map<String, dynamic>;
+
   static Future<Map<String, dynamic>> addPlayer(String playerId) async =>
       await ApiClient.post('/coaches/me/players', body: {'player_id': playerId})
           as Map<String, dynamic>;

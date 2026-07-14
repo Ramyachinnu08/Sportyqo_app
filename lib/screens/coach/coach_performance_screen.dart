@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../api/api_config.dart';
+import '../../widgets/recommend_dialog.dart';
 import '../../api/api_client.dart';
 import '../../api/mappers.dart';
 import '../../api/services.dart';
@@ -123,6 +124,51 @@ class _CoachPerformanceScreenState
       });
     }
     return out;
+  }
+
+  Future<void> _confirmKick(Map<String, dynamic> p) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF141414),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: const Text('Remove player?',
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w800)),
+        content: Text(
+            '${p['name']} will be removed from your squad. You can add them back any time from Registered Students.',
+            style: const TextStyle(
+                color: Colors.white54, fontSize: 13, height: 1.4)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Colors.white38))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent),
+            child: const Text('Remove',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await CoachService.removePlayer(
+          (p['user_id'] as String?) ?? '');
+      if (!mounted) return;
+      showInfo(context, '${p['name']} removed from your squad');
+      _loadRoster();
+    } catch (e) {
+      if (mounted) showApiError(context, e);
+    }
   }
 
   Future<void> _addFromDirectory(
@@ -464,7 +510,10 @@ class _CoachPerformanceScreenState
                       ..._filtered.map((p) => GestureDetector(
                         onTap: () =>
                             _showPlayerDetail(context, p),
-                        child: _PlayerTile(player: p),
+                        child: _PlayerTile(
+                          player: p,
+                          onKick: () => _confirmKick(p),
+                        ),
                       )),
 
                     // ── Registered Students directory ──
@@ -841,9 +890,14 @@ class _CoachPerformanceScreenState
                 GestureDetector(
                   onTap: () async {
                     Navigator.pop(context);
+                    final input = await showRecommendDialog(
+                        context, p['name'] as String);
+                    if (input == null) return;
                     try {
                       await CoachService.recommend(
-                          playerUserIds: [p['user_id'] as String]);
+                          playerUserIds: [p['user_id'] as String],
+                          note: input.note,
+                          rating: input.rating);
                       if (!mounted) return;
                       showInfo(context,
                           '${p['name']} recommended — +25 Qo points ✅');
@@ -955,7 +1009,8 @@ class _PlayerTab extends StatelessWidget {
 
 class _PlayerTile extends StatelessWidget {
   final Map<String, dynamic> player;
-  const _PlayerTile({required this.player});
+  final VoidCallback? onKick;
+  const _PlayerTile({required this.player, this.onKick});
 
   @override
   Widget build(BuildContext context) {
@@ -1046,7 +1101,19 @@ class _PlayerTile extends StatelessWidget {
           ],
         ),
         const SizedBox(width: 8),
-        const Icon(Icons.chevron_right, color: Colors.white24, size: 18),
+        if (onKick != null)
+          GestureDetector(
+            onTap: onKick,
+            behavior: HitTestBehavior.opaque,
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(Icons.person_remove_outlined,
+                  color: Colors.redAccent, size: 18),
+            ),
+          )
+        else
+          const Icon(Icons.chevron_right,
+              color: Colors.white24, size: 18),
       ]),
     );
   }
