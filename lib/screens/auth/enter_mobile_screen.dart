@@ -59,6 +59,12 @@ class _EnterMobileScreenState extends State<EnterMobileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
               const SizedBox(height: 16),
               GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -161,7 +167,11 @@ class _EnterMobileScreenState extends State<EnterMobileScreen> {
                   style: TextStyle(color: AppColors.textGrey, fontSize: 13),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -180,7 +190,7 @@ class _EnterMobileScreenState extends State<EnterMobileScreen> {
                           fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
             ],
           ),
         ),

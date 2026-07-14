@@ -75,7 +75,13 @@ class _AccessCodeScreenState extends State<AccessCodeScreen> {
                     color:
                     isDark ? AppColors.textWhite : AppColors.textDark),
               ),
-              const Spacer(),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+              const SizedBox(height: 60),
               Center(
                 child: Text(
                   'Enter Access Code',
@@ -160,7 +166,11 @@ class _AccessCodeScreenState extends State<AccessCodeScreen> {
                   style: TextStyle(color: AppColors.textGrey, fontSize: 13),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -179,7 +189,7 @@ class _AccessCodeScreenState extends State<AccessCodeScreen> {
                           fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
             ],
           ),
         ),
