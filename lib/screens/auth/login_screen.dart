@@ -194,43 +194,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
 
-              const SizedBox(height: 24),
-
-              // ── Divider ──
-              Row(children: [
-                const Expanded(
-                    child: Divider(color: Colors.white10)),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text('or continue with',
-                      style: TextStyle(
-                          color: Colors.white38, fontSize: 12)),
-                ),
-                const Expanded(
-                    child: Divider(color: Colors.white10)),
-              ]),
-
-              const SizedBox(height: 24),
-
-              // ── Social Buttons ──
-              Row(children: [
-                Expanded(
-                  child: _SocialButton(
-                    label: 'Google',
-                    emoji: '🌐',
-                    onTap: () {},
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _SocialButton(
-                    label: 'Apple',
-                    emoji: '🍎',
-                    onTap: () {},
-                  ),
-                ),
-              ]),
-
               const SizedBox(height: 32),
 
               // ── Register ──
@@ -298,42 +261,6 @@ class _RoleTab extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     fontSize: 14)),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final String label, emoji;
-  final VoidCallback onTap;
-  const _SocialButton(
-      {required this.label,
-        required this.emoji,
-        required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF111111),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white10),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 18)),
-            const SizedBox(width: 8),
-            Text(label,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14)),
-          ],
         ),
       ),
     );
