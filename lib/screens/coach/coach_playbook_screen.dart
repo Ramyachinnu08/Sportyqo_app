@@ -246,6 +246,15 @@ class _CoachPlaybookScreenState
     'trophies': 'Trophies',
   };
 
+  String get _activeTabCategory {
+    switch (_tabIndex) {
+      case 1: return 'certificates';
+      case 2: return 'team';
+      case 3: return 'trophies';
+      default: return 'playing';
+    }
+  }
+
   Future<void> _startPost(XFile? file,
       {required bool isVideo}) async {
     if (file == null || !mounted) return;
@@ -255,7 +264,8 @@ class _CoachPlaybookScreenState
           builder: (_) => CreatePostScreen(
               file: file,
               isVideo: isVideo,
-              categories: _coachCategories)),
+              categories: _coachCategories,
+              initialCategory: _activeTabCategory)),
     );
     if (posted == true && mounted) {
       _load();

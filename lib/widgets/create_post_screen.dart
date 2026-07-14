@@ -14,11 +14,13 @@ class CreatePostScreen extends StatefulWidget {
   final XFile file;
   final bool isVideo;
   final Map<String, String>? categories;
+  final String? initialCategory;
   const CreatePostScreen(
       {super.key,
       required this.file,
       required this.isVideo,
-      this.categories});
+      this.categories,
+      this.initialCategory});
 
   @override
   State<CreatePostScreen> createState() =>
@@ -27,7 +29,8 @@ class CreatePostScreen extends StatefulWidget {
 
 class CreatePostScreenState extends State<CreatePostScreen> {
   final _captionCtrl = TextEditingController();
-  String _category = 'playing';
+  late String _category =
+      widget.initialCategory ?? 'playing';
   bool _posting = false;
   Uint8List? _bytes;
 

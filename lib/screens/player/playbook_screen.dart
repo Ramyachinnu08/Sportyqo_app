@@ -97,6 +97,15 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
   }
 
   // ── Upload Dialog ──
+  String get _activeTabCategory {
+    switch (_tabIndex) {
+      case 1: return 'certificates';
+      case 2: return 'team';
+      case 3: return 'trophies';
+      default: return 'playing';
+    }
+  }
+
   Future<void> _startPost(XFile? file,
       {required bool isVideo}) async {
     if (file == null || !mounted) return;
@@ -104,7 +113,9 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
       context,
       MaterialPageRoute(
           builder: (_) => CreatePostScreen(
-              file: file, isVideo: isVideo)),
+              file: file,
+              isVideo: isVideo,
+              initialCategory: _activeTabCategory)),
     );
     if (posted == true && mounted) {
       _load(); // refresh grids so the new post appears
