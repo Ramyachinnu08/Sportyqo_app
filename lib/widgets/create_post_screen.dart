@@ -6,6 +6,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../api/services.dart';
+import 'app_video_player.dart';
 
 /// Instagram-style "new post" screen: media preview, caption,
 /// category, then multipart upload to POST /posts.

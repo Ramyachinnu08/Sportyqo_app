@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../api/api_client.dart';
 import '../../api/api_config.dart';
 import '../../api/mappers.dart';
 import '../../api/services.dart';
