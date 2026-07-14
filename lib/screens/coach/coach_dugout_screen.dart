@@ -3,6 +3,7 @@ import '../../api/api_config.dart';
 import '../../api/mappers.dart';
 import '../../api/services.dart';
 import '../../widgets/app_video_player.dart';
+import '../../widgets/author_posts_swiper.dart';
 import '../../widgets/post_media_carousel.dart';
 
 class CoachDugoutScreen extends StatefulWidget {
@@ -218,6 +219,21 @@ class _CoachDugoutScreenState
 
   List<Map<String, dynamic>> get _filteredPosts => _posts;
 
+  /// One entry per author: their posts newest-first. Feed order is
+  /// already newest-first, so the first time we meet an author defines
+  /// their slot position (their latest activity).
+  List<List<Map<String, dynamic>>> get _groupedFeed {
+    final order = <String>[];
+    final byAuthor = <String, List<Map<String, dynamic>>>{};
+    for (final p in _filteredPosts) {
+      final key = (p['author_id'] as String?) ??
+          'anon-${identityHashCode(p)}';
+      if (!byAuthor.containsKey(key)) order.add(key);
+      (byAuthor[key] ??= []).add(p);
+    }
+    return [for (final k in order) byAuthor[k]!];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -365,12 +381,15 @@ class _CoachDugoutScreenState
                   : ListView.separated(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20),
-                itemCount: _filteredPosts.length,
+                itemCount: _groupedFeed.length,
                 separatorBuilder: (_, __) =>
                 const SizedBox(height: 16),
                 itemBuilder: (context, i) {
-                  final post = _filteredPosts[i];
-                  return _PostCard(
+                  final group = _groupedFeed[i];
+                  return AuthorPostsSwiper(
+                    posts: group,
+                    accent: const Color(0xFF00C853),
+                    buildCard: (post) => _PostCard(
                     post: post,
                     onLike: () async {
                       final index = _posts.indexOf(post);
@@ -410,6 +429,7 @@ class _CoachDugoutScreenState
                         ),
                       );
                     },
+                    ),
                   );
                 },
               ),
