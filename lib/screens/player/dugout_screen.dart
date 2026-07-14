@@ -50,6 +50,95 @@ class _DugoutScreenState extends State<DugoutScreen> {
     }
   }
 
+    void _showPostMenu(
+      BuildContext context, Map<String, dynamic> post) {
+    final isMine =
+        post['author_id'] == Session.userId;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF111111),
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetCtx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (isMine)
+            ListTile(
+              leading: const Icon(Icons.delete_outline,
+                  color: Colors.redAccent),
+              title: const Text('Delete Post',
+                  style: TextStyle(color: Colors.redAccent)),
+              onTap: () {
+                Navigator.pop(sheetCtx);
+                _confirmDeletePost(post);
+              },
+            )
+          else
+            const ListTile(
+              leading:
+                  Icon(Icons.info_outline, color: Colors.white38),
+              title: Text('You can only delete your own posts',
+                  style: TextStyle(
+                      color: Colors.white38, fontSize: 13)),
+            ),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeletePost(
+      Map<String, dynamic> post) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF141414),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete this post?',
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w800)),
+        content: const Text(
+            'This will remove it from the Dugout and your Playbook. This cannot be undone.',
+            style: TextStyle(
+                color: Colors.white54, fontSize: 13, height: 1.4)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Colors.white38))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent),
+            child: const Text('Delete',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await FeedService.deletePost(
+          (post['id'] as String?) ?? '');
+      if (!mounted) return;
+      setState(() => _posts.remove(post));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Post deleted'),
+          backgroundColor: Color(0xFF7B2FFF)));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Could not delete: $e'),
+            backgroundColor: Colors.redAccent));
+      }
+    }
+  }
+
   Future<void> _loadFeed() async {
     setState(() => _loading = true);
     try {
@@ -399,6 +488,8 @@ class _DugoutScreenState extends State<DugoutScreen> {
                             ['bookmarked'] = was);
                       }
                     },
+                    onMenu: () =>
+                        _showPostMenu(context, post),
                     onTapProfile: () {
                       Navigator.push(
                         context,
@@ -429,6 +520,7 @@ class _PostCard extends StatelessWidget {
   final VoidCallback onShare;
   final VoidCallback onBookmark;
   final VoidCallback onTapProfile;
+  final VoidCallback? onMenu;
   const _PostCard({
     required this.post,
     required this.onLike,
@@ -436,6 +528,7 @@ class _PostCard extends StatelessWidget {
     required this.onShare,
     required this.onBookmark,
     required this.onTapProfile,
+    this.onMenu,
   });
 
   @override
@@ -547,8 +640,12 @@ class _PostCard extends StatelessWidget {
                       ]),
                     ),
                     const SizedBox(height: 8),
-                    const Icon(Icons.more_horiz,
-                        color: Colors.white38, size: 20),
+                    GestureDetector(
+                      onTap: onMenu,
+                      behavior: HitTestBehavior.opaque,
+                      child: const Icon(Icons.more_horiz,
+                          color: Colors.white38, size: 20),
+                    ),
                   ],
                 ),
               ],

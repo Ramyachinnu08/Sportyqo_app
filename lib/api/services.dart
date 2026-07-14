@@ -361,6 +361,9 @@ class FeedService {
   static Future<Map<String, dynamic>> unbookmark(String postId) async =>
       await ApiClient.delete('/posts/$postId/bookmark') as Map<String, dynamic>;
 
+  static Future<Map<String, dynamic>> deletePost(String postId) async =>
+      await ApiClient.delete('/posts/$postId') as Map<String, dynamic>;
+
   static Future<Map<String, dynamic>> comments(String postId,
           {int page = 1}) async =>
       await ApiClient.get('/posts/$postId/comments',
