@@ -1,4 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../../api/services.dart';
 import '../../api/ui_helpers.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +20,41 @@ class CreateLeagueScreen extends StatefulWidget {
 
 class _CreateLeagueScreenState
     extends State<CreateLeagueScreen> {
+  XFile? _logoFile;
+  Uint8List? _logoBytes;
+
+  Future<void> _pickLogo() async {
+    final x = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85);
+    if (x == null) return;
+    final bytes = await x.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _logoFile = x;
+      _logoBytes = bytes;
+    });
+  }
+
+  http.MultipartFile? get _logoMultipart {
+    if (_logoFile == null || _logoBytes == null) return null;
+    final n = _logoFile!.name.toLowerCase();
+    final mime = _logoFile!.mimeType ??
+        (n.endsWith('.png')
+            ? 'image/png'
+            : n.endsWith('.webp')
+                ? 'image/webp'
+                : 'image/jpeg');
+    final parts = mime.split('/');
+    return http.MultipartFile.fromBytes('logo', _logoBytes!,
+        filename: _logoFile!.name.isNotEmpty
+            ? _logoFile!.name
+            : 'league_logo.jpg',
+        contentType: MediaType(parts[0], parts[1]));
+  }
+
   int _step = 1;
   bool _busy = false;
   Map<String, dynamic>? _created; // POST /leagues response (server code)
@@ -134,6 +175,7 @@ class _CreateLeagueScreenState
             ? null
             : _locationCtrl.text.trim(),
         teamNames: teamNames,
+        logo: _logoMultipart,
       );
       if (!mounted) return;
       setState(() {
@@ -311,6 +353,56 @@ class _CreateLeagueScreenState
                   color: Colors.white54, fontSize: 13)),
 
           const SizedBox(height: 24),
+
+          // ── League Logo ──
+          Center(
+            child: GestureDetector(
+              onTap: _pickLogo,
+              child: Stack(children: [
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF15251A),
+                    border: Border.all(
+                        color: const Color(0xFF00C853),
+                        width: 2),
+                  ),
+                  child: ClipOval(
+                    child: _logoBytes != null
+                        ? Image.memory(_logoBytes!,
+                            width: 88,
+                            height: 88,
+                            fit: BoxFit.cover)
+                        : const Icon(Icons.shield_outlined,
+                            color: Colors.white38, size: 36),
+                  ),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: const BoxDecoration(
+                        color: Color(0xFF00C853),
+                        shape: BoxShape.circle),
+                    child: const Icon(Icons.add_a_photo,
+                        color: Colors.white, size: 14),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Center(
+            child: Text('League logo (optional)',
+                style: TextStyle(
+                    color: Colors.white38, fontSize: 11)),
+          ),
+
+          const SizedBox(height: 20),
 
           // ── League Name ──
           _FieldLabel(

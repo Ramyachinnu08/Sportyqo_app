@@ -7,6 +7,15 @@ import 'api_config.dart';
 /// JSON (`Map<String, dynamic>` / `List`) — screens map these into their
 /// existing view structures.
 class AuthService {
+  static Future<void> forgotPassword(String email) async =>
+      await ApiClient.post('/auth/password/forgot',
+          body: {'email': email});
+
+  static Future<void> resetPassword(
+          {required String token, required String newPassword}) async =>
+      await ApiClient.post('/auth/password/reset',
+          body: {'token': token, 'new_password': newPassword});
+
   static Future<Map<String, dynamic>> register({
     required String fullName,
     required String email,
@@ -88,6 +97,11 @@ class AuthService {
 }
 
 class UserService {
+  /// Public profile of another user (followers/following counts,
+  /// viewer_following flag, etc.).
+  static Future<Map<String, dynamic>> profile(String userId) async =>
+      await ApiClient.get('/users/$userId/profile') as Map<String, dynamic>;
+
   static Future<Map<String, dynamic>> me() async {
     final me = await ApiClient.get('/users/me') as Map<String, dynamic>;
     Session.user = me;

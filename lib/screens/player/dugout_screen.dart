@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../api/api_config.dart';
 import '../../api/mappers.dart';
 import '../../widgets/app_video_player.dart';
+import '../../widgets/post_media_carousel.dart';
 import '../../widgets/comments_sheet.dart';
 import '../../api/services.dart';
 
@@ -659,41 +660,14 @@ class _PostCard extends StatelessWidget {
             child: _buildContent(post['content']),
           ),
 
-          // ── Media (photo or playable video) ──
-          if (post['image'] != null)
-            post['image_type'] == 'video'
-                ? AppVideoPlayer.network(post['image'])
-                : GestureDetector(
-                    onTap: onTapProfile,
-                    child: Image.network(
-                      post['image'],
-                      width: double.infinity,
-                      height: 240,
-                      fit: BoxFit.cover,
-                      loadingBuilder:
-                          (context, child, progress) {
-                        if (progress == null) return child;
-                        return Container(
-                          height: 240,
-                          color: const Color(0xFF1A1A1A),
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              color: Color(0xFF7B2FFF),
-                              strokeWidth: 2,
-                            ),
-                          ),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => Container(
-                        height: 240,
-                        color: const Color(0xFF1A1A1A),
-                        child: const Center(
-                          child: Icon(Icons.image_outlined,
-                              color: Colors.white24, size: 48),
-                        ),
-                      ),
-                    ),
-                  ),
+          // ── Media: swipeable strip (multiple photos/videos slide) ──
+          if ((post['media_items'] as List?)?.isNotEmpty ?? false)
+            PostMediaCarousel(
+              items: (post['media_items'] as List)
+                  .cast<Map<String, dynamic>>(),
+              accent: const Color(0xFF7B2FFF),
+              onTapImage: onTapProfile,
+            ),
 
           // ── Qo Score Earned ──
           Padding(
@@ -828,7 +802,62 @@ class _ProfileDetailScreen extends StatefulWidget {
 class _ProfileDetailScreenState
     extends State<_ProfileDetailScreen> {
   bool _isFollowing = false;
+  bool _followBusy = false;
+  int _followers = 0;
+  int _followingCount = 0;
   int _tabIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final id = widget.person['author_id'] as String?;
+    if (id == null || id.isEmpty) return;
+    try {
+      final res = await UserService.profile(id);
+      if (!mounted) return;
+      final counts =
+          (res['counts'] as Map<String, dynamic>?) ?? const {};
+      final viewer =
+          (res['viewer'] as Map<String, dynamic>?) ?? const {};
+      setState(() {
+        _followers =
+            (counts['followers'] as num?)?.toInt() ?? 0;
+        _followingCount =
+            (counts['following'] as num?)?.toInt() ?? 0;
+        _isFollowing = viewer['following'] == true;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _toggleFollow() async {
+    final id = widget.person['author_id'] as String?;
+    if (id == null || _followBusy) return;
+    final was = _isFollowing;
+    setState(() {
+      _followBusy = true;
+      _isFollowing = !was;
+      _followers += was ? -1 : 1;
+      if (_followers < 0) _followers = 0;
+    });
+    try {
+      was
+          ? await UserService.untrack(id)
+          : await UserService.track(id);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isFollowing = was;
+          _followers += was ? 1 : -1;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _followBusy = false);
+    }
+  }
 
   final List<Map<String, String>> _tabs = [
     {'icon': 'playing', 'label': 'Playing'},
@@ -1009,12 +1038,12 @@ class _ProfileDetailScreenState
                                 label: 'Posts'),
                             const SizedBox(width: 20),
                             _StatCol(
-                                value: p['followers'],
+                                value: '$_followers',
                                 label: 'Followers'),
                             const SizedBox(width: 20),
                             _StatCol(
                                 value:
-                                '${p['following']}',
+                                '$_followingCount',
                                 label: 'Following'),
                           ]),
                         ],
@@ -1044,8 +1073,7 @@ class _ProfileDetailScreenState
                   Expanded(
                     flex: 3,
                     child: GestureDetector(
-                      onTap: () => setState(() =>
-                      _isFollowing = !_isFollowing),
+                      onTap: _toggleFollow,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             vertical: 12),

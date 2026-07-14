@@ -42,6 +42,59 @@ class _CoachPlaybookScreenState
     _load();
   }
 
+  Future<void> _deleteTabItem(
+      Map<String, dynamic> item) async {
+    final pid = item['post_id'] as String?;
+    if (pid == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF141414),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete this post?',
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w800)),
+        content: const Text(
+            'This removes it from your Playbook and the Dugout feed. This cannot be undone.',
+            style: TextStyle(
+                color: Colors.white54, fontSize: 13, height: 1.4)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Colors.white38))),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent),
+            child: const Text('Delete',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await FeedService.deletePost(pid);
+      if (!mounted) return;
+      _load();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Post deleted'),
+          backgroundColor: Color(0xFF00C853)));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Could not delete: $e'),
+            backgroundColor: Colors.redAccent));
+      }
+    }
+  }
+
   Future<void> _load() async {
     try {
       final pb = await CoachService.playbook();
@@ -77,6 +130,7 @@ class _CoachPlaybookScreenState
           'subtitle': m['subtitle'] ?? '',
           'date': m['date'] ?? '',
           'type': m['type'] ?? 'image',
+          'post_id': m['post_id'],
           'image': ApiConfig.resolveMediaUrl(m['url'] as String?),
         };
       }).toList();
@@ -922,6 +976,8 @@ class _CoachPlaybookScreenState
                                   item: item),
                         ),
                       ),
+                      onLongPress: () =>
+                          _deleteTabItem(item),
                       child: _VideoCard(item: item),
                     );
                   },
