@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Where the SportyQo backend lives.
@@ -10,12 +8,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiConfig {
   static const _fromEnv = String.fromEnvironment('API_BASE_URL');
 
+  /// Production backend (Render). Local development can still override
+  /// with: flutter run --dart-define=API_BASE_URL=http://<lan-ip>:8000/v1
+  static const productionBaseUrl =
+      'https://backendforsportsapp.onrender.com/v1';
+
   static String get baseUrl {
     if (_fromEnv.isNotEmpty) return _fromEnv;
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8000/v1';
-    }
-    return 'http://localhost:8000/v1';
+    return productionBaseUrl;
   }
 
   static String get wsUrl =>
