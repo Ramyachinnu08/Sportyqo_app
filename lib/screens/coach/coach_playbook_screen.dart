@@ -1,4 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../../api/api_config.dart';
+import '../../api/mappers.dart';
+import '../../api/services.dart';
+import '../../api/ui_helpers.dart';
+import '../../widgets/app_video_player.dart';
+import '../../widgets/avatar_picker.dart';
+import '../../widgets/create_post_screen.dart';
 import '../auth/choose_role_screen.dart';
 
 class CoachPlaybookScreen extends StatefulWidget {
@@ -14,175 +23,67 @@ class _CoachPlaybookScreenState
   int _tabIndex = 0;
   bool _isFollowing = false;
 
-  final List<Map<String, dynamic>> _playingVideos = [
-    {
-      'title': 'Training Session Highlights',
-      'subtitle': 'Batting Drills',
-      'date': '12 May 2025',
-      'image':
-      'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800',
-    },
-    {
-      'title': 'Match Strategy Session',
-      'subtitle': 'Team Tactics',
-      'date': '5 May 2025',
-      'image':
-      'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800',
-    },
-    {
-      'title': 'Bowling Coaching',
-      'subtitle': 'Speed Drills',
-      'date': '28 Apr 2025',
-      'image':
-      'https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?w=800',
-    },
-    {
-      'title': 'Fielding Practice',
-      'subtitle': 'Ground Fielding',
-      'date': '20 Apr 2025',
-      'image':
-      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800',
-    },
-  ];
+  Map<String, dynamic>? _playbook;
+  List<Map<String, dynamic>> _directory = [];
+  String? _avatarUrl;
 
-  final List<Map<String, dynamic>> _certificatesVideos = [
-    {
-      'title': 'BCCI Level 3 Certificate',
-      'subtitle': 'Certified Coach',
-      'date': '10 Jan 2025',
-      'image':
-      'https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=800',
-    },
-    {
-      'title': 'ICC Coaching Award',
-      'subtitle': 'International Level',
-      'date': '15 Dec 2024',
-      'image':
-      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',
-    },
-    {
-      'title': 'State Coaching Badge',
-      'subtitle': 'Karnataka',
-      'date': '20 Nov 2024',
-      'image':
-      'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800',
-    },
-    {
-      'title': 'Academy Certificate',
-      'subtitle': 'Falcons Academy',
-      'date': '01 Oct 2024',
-      'image':
-      'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800',
-    },
-  ];
+  Map<String, dynamic> get _profile =>
+      (_playbook?['profile'] as Map<String, dynamic>?) ?? const {};
+  Map<String, dynamic> get _score =>
+      (_playbook?['coach_score'] as Map<String, dynamic>?) ?? const {};
+  Map<String, dynamic> get _stats =>
+      (_playbook?['stats'] as Map<String, dynamic>?) ?? const {};
 
-  final List<Map<String, dynamic>> _teamVideos = [
-    {
-      'title': 'Falcons U16 Team',
-      'subtitle': 'Season 2024-25',
-      'date': '2024-25',
-      'image':
-      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800',
-    },
-    {
-      'title': 'Alpha Warriors',
-      'subtitle': 'U19 Division',
-      'date': '2023-24',
-      'image':
-      'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800',
-    },
-    {
-      'title': 'Team Building Day',
-      'subtitle': 'Group Activity',
-      'date': '15 May 2025',
-      'image':
-      'https://images.unsplash.com/photo-1594470117722-de4b9a02ebed?w=800',
-    },
-    {
-      'title': 'Pre Match Meeting',
-      'subtitle': 'vs Royal Strikers',
-      'date': '10 May 2025',
-      'image':
-      'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
-  final List<Map<String, dynamic>> _trophiesVideos = [
-    {
-      'title': 'Best Coach Award',
-      'subtitle': 'State Level 2024',
-      'date': '12 May 2025',
-      'image':
-      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800',
-    },
-    {
-      'title': 'Tournament Champions',
-      'subtitle': 'U16 League 2024',
-      'date': '5 May 2025',
-      'image':
-      'https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=800',
-    },
-    {
-      'title': 'Excellence Award',
-      'subtitle': 'Cricket Association',
-      'date': '28 Apr 2025',
-      'image':
-      'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800',
-    },
-    {
-      'title': 'Coach of the Year',
-      'subtitle': '2024 Season',
-      'date': '01 Jan 2025',
-      'image':
-      'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800',
-    },
-  ];
+  Future<void> _load() async {
+    try {
+      final results = await Future.wait([
+        CoachService.playbook(),
+        CoachService.playerDirectory(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _playbook = results[0] as Map<String, dynamic>;
+        _avatarUrl = (_playbook?['profile']
+            as Map<String, dynamic>?)?['avatar_url'] as String?;
+        _directory = ((results[1]
+                    as Map<String, dynamic>)['items'] as List<dynamic>)
+            .cast<Map<String, dynamic>>();
+      });
+    } catch (_) {}
+  }
 
-  final List<Map<String, dynamic>> _recommendedPlayers = [
-    {
-      'name': 'Rahul Sharma',
-      'role': 'Batsman',
-      'emoji': '🏏',
-      'pts': 242,
-      'team': 'Alpha Warriors',
-    },
-    {
-      'name': 'Arjun Mehta',
-      'role': 'All Rounder',
-      'emoji': '⚡',
-      'pts': 198,
-      'team': 'Rising Stars',
-    },
-    {
-      'name': 'Kabir Sen',
-      'role': 'Bowler',
-      'emoji': '🎯',
-      'pts': 176,
-      'team': 'Thunder Strikers',
-    },
-    {
-      'name': 'Vikram Reddy',
-      'role': 'Wicket Keeper',
-      'emoji': '🧤',
-      'pts': 154,
-      'team': 'Falcons FC',
-    },
-    {
-      'name': 'Aryan Patel',
-      'role': 'Batsman',
-      'emoji': '🏏',
-      'pts': 132,
-      'team': 'Victory XI',
-    },
-  ];
+  void _onAvatarPicked(String url) {
+    if (mounted) setState(() => _avatarUrl = url);
+  }
+
+  List<Map<String, dynamic>> _tab(String key) =>
+      ((_playbook?['tabs'] as Map<String, dynamic>?)?[key]
+                  as List<dynamic>? ??
+              const [])
+          .map((raw) {
+        final m = raw as Map<String, dynamic>;
+        return <String, dynamic>{
+          'title': m['title'] ?? '',
+          'subtitle': m['subtitle'] ?? '',
+          'date': m['date'] ?? '',
+          'type': m['type'] ?? 'image',
+          'image': ApiConfig.resolveMediaUrl(m['url'] as String?),
+        };
+      }).toList();
 
   List<Map<String, dynamic>> get _currentContent {
     switch (_tabIndex) {
-      case 0: return _playingVideos;
-      case 1: return _certificatesVideos;
-      case 2: return _teamVideos;
-      case 3: return _trophiesVideos;
-      default: return _playingVideos;
+      case 0: return _tab('coaching');
+      case 1: return _tab('certificates');
+      case 2: return _tab('teams');
+      case 3: return _tab('trophies');
+      default: return _tab('coaching');
     }
   }
 
@@ -231,7 +132,7 @@ class _CoachPlaybookScreenState
                 style: TextStyle(
                     color: Colors.white54, fontSize: 13)),
             const SizedBox(height: 20),
-            ..._recommendedPlayers.map((p) => Container(
+            ..._directory.map((p) => Container(
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -248,7 +149,12 @@ class _CoachPlaybookScreenState
                     shape: BoxShape.circle,
                   ),
                   child: Center(
-                      child: Text(p['emoji'],
+                      child: Text(
+                          ((p['name'] as String?) ?? '?')
+                                  .isNotEmpty
+                              ? (p['name'] as String)[0]
+                                  .toUpperCase()
+                              : '?',
                           style: const TextStyle(
                               fontSize: 24))),
                 ),
@@ -264,29 +170,44 @@ class _CoachPlaybookScreenState
                               fontWeight: FontWeight.w700,
                               fontSize: 14)),
                       Text(
-                          '${p['role']} • ${p['team']}',
+                          '${p['sub_role'] ?? 'Player'} • ${p['player_id'] ?? ''}',
                           style: const TextStyle(
                               color: Colors.white38,
                               fontSize: 12)),
                     ],
                   ),
                 ),
-                Text('${p['pts']} pts',
+                Text('Qo ${p['qo_score'] ?? 0}',
                     style: const TextStyle(
                         color: Color(0xFF00C853),
                         fontWeight: FontWeight.w700,
                         fontSize: 12)),
                 const SizedBox(width: 10),
                 GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(
-                      content: Text(
-                          '${p['name']} recommended! ✅'),
-                      backgroundColor:
-                      const Color(0xFF00C853),
-                    ));
+                    try {
+                      await CoachService.recommend(
+                          playerUserIds: [
+                            p['user_id'] as String
+                          ]);
+                      if (!mounted) return;
+                      showInfo(context,
+                          '${p['name']} recommended — +25 Qo points ✅');
+                    } on ApiException catch (e) {
+                      if (!mounted) return;
+                      if (e.code ==
+                          'ALREADY_RECOMMENDED') {
+                        showInfo(context,
+                            'You already recommended ${p['name']} recently.');
+                      } else {
+                        showApiError(context, e);
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        showApiError(context, e);
+                      }
+                    }
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -317,6 +238,72 @@ class _CoachPlaybookScreenState
   }
 
   // ── Upload Dialog ──
+  static const _coachCategories = <String, String>{
+    'playing': 'Coaching',
+    'certificates': 'Certificates',
+    'team': 'Teams',
+    'trophies': 'Trophies',
+  };
+
+  Future<void> _startPost(XFile? file,
+      {required bool isVideo}) async {
+    if (file == null || !mounted) return;
+    final posted = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+          builder: (_) => CreatePostScreen(
+              file: file,
+              isVideo: isVideo,
+              categories: _coachCategories)),
+    );
+    if (posted == true && mounted) {
+      _load();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Posted! It now shows in your Playbook and in the Dugout feed.'),
+          backgroundColor: Color(0xFF00C853)));
+    }
+  }
+
+  void _showAvatarSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF111111),
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(Icons.camera_alt,
+                color: Color(0xFF00C853)),
+            title: const Text('Take Photo',
+                style: TextStyle(color: Colors.white)),
+            onTap: () async {
+              Navigator.pop(context);
+              final url = await pickAndUploadAvatar(
+                  context, ImageSource.camera);
+              if (url != null) _onAvatarPicked(url);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library,
+                color: Color(0xFF00C853)),
+            title: const Text('Choose from Gallery',
+                style: TextStyle(color: Colors.white)),
+            onTap: () async {
+              Navigator.pop(context);
+              final url = await pickAndUploadAvatar(
+                  context, ImageSource.gallery);
+              if (url != null) _onAvatarPicked(url);
+            },
+          ),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+  }
+
   void _showUploadDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -340,42 +327,49 @@ class _CoachPlaybookScreenState
                   child: _UploadOption(
                       icon: Icons.camera_alt,
                       label: 'Camera',
-                      onTap: () {
+                      onTap: () async {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                            content: Text(
-                                'Camera opened 📷'),
-                            backgroundColor:
-                            Color(0xFF00C853)));
+                        final x = await ImagePicker()
+                            .pickImage(
+                                source: ImageSource.camera,
+                                maxWidth: 1920,
+                                imageQuality: 88);
+                        _startPost(x, isVideo: false);
                       })),
               const SizedBox(width: 12),
               Expanded(
                   child: _UploadOption(
                       icon: Icons.photo_library,
                       label: 'Gallery',
-                      onTap: () {
+                      onTap: () async {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                            content: Text(
-                                'Gallery opened 🖼️'),
-                            backgroundColor:
-                            Color(0xFF00C853)));
+                        final x = await ImagePicker()
+                            .pickMedia(
+                                maxWidth: 1920,
+                                imageQuality: 88);
+                        if (x == null) return;
+                        final n = x.name.toLowerCase();
+                        final vid = (x.mimeType ?? '')
+                                .startsWith('video/') ||
+                            n.endsWith('.mp4') ||
+                            n.endsWith('.mov') ||
+                            n.endsWith('.webm');
+                        _startPost(x, isVideo: vid);
                       })),
               const SizedBox(width: 12),
               Expanded(
                   child: _UploadOption(
                       icon: Icons.videocam,
                       label: 'Video',
-                      onTap: () {
+                      onTap: () async {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                            content:
-                            Text('Video opened 🎥'),
-                            backgroundColor:
-                            Color(0xFF00C853)));
+                        final x = await ImagePicker()
+                            .pickVideo(
+                                source: ImageSource.camera,
+                                maxDuration:
+                                    const Duration(
+                                        minutes: 3));
+                        _startPost(x, isVideo: true);
                       })),
             ]),
             const SizedBox(height: 8),
@@ -466,19 +460,24 @@ class _CoachPlaybookScreenState
                               width: 2.5),
                         ),
                         child: ClipOval(
-                          child: Image.network(
-                            'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=200',
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                Container(
+                          child: Builder(builder: (context) {
+                            final u = ApiConfig
+                                .resolveMediaUrl(_avatarUrl);
+                            final fb = Container(
                                   color:
                                   const Color(0xFF1A1A1A),
                                   child: const Icon(
                                       Icons.person,
                                       color: Colors.white,
                                       size: 48),
-                                ),
-                          ),
+                                );
+                            return u != null && u.isNotEmpty
+                                ? Image.network(u,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (_, __, ___) => fb)
+                                : fb;
+                          }),
                         ),
                       ),
                       Positioned(
@@ -502,14 +501,7 @@ class _CoachPlaybookScreenState
                         bottom: 0, right: 0,
                         child: GestureDetector(
                           onTap: () =>
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          'Camera opened 📷'),
-                                      backgroundColor:
-                                      Color(
-                                          0xFF00C853))),
+                              _showAvatarSheet(context),
                           child: Container(
                             width: 28, height: 28,
                             decoration: BoxDecoration(
@@ -537,68 +529,111 @@ class _CoachPlaybookScreenState
                         CrossAxisAlignment.start,
                         children: [
                           Row(children: [
-                            const Text('Coach Suneeth',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight:
-                                    FontWeight.w800)),
+                            Flexible(
+                              child: Text(
+                                  (_profile['full_name']
+                                          as String?) ??
+                                      Session.fullName ??
+                                      '',
+                                  overflow:
+                                      TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight:
+                                      FontWeight.w800)),
+                            ),
+                            if (_profile['verified'] ==
+                                true) ...[
                             const SizedBox(width: 6),
                             const Icon(Icons.verified,
                                 color: Color(0xFF00C853),
                                 size: 18),
+                            ],
                           ]),
-                          const Text('Head Coach',
-                              style: TextStyle(
+                          Text(
+                              (_profile['role_title']
+                                      as String?) ??
+                                  'Coach',
+                              style: const TextStyle(
                                   color: Color(0xFF00C853),
                                   fontSize: 13,
                                   fontWeight:
                                   FontWeight.w600)),
                           const SizedBox(height: 8),
-                          Row(children: const [
-                            Icon(
+                          if (((_profile['certification']
+                                      as String?) ??
+                                  '')
+                              .isNotEmpty)
+                          Row(children: [
+                            const Icon(
                                 Icons
                                     .workspace_premium_outlined,
                                 color: Colors.white38,
                                 size: 13),
-                            SizedBox(width: 6),
-                            Text('BCCI Level 3 Certified',
-                                style: TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 12)),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                  _profile['certification'],
+                                  overflow:
+                                      TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 12)),
+                            ),
                           ]),
                           const SizedBox(height: 4),
-                          Row(children: const [
-                            Icon(
+                          if (((_profile['location']
+                                      as String?) ??
+                                  '')
+                              .isNotEmpty)
+                          Row(children: [
+                            const Icon(
                                 Icons.location_on_outlined,
                                 color: Colors.white38,
                                 size: 13),
-                            SizedBox(width: 6),
-                            Text('Bangalore, Karnataka',
-                                style: TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 12)),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                  _profile['location'],
+                                  overflow:
+                                      TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 12)),
+                            ),
                           ]),
                           const SizedBox(height: 4),
-                          Row(children: const [
-                            Icon(Icons.shield_outlined,
+                          if (((_profile['academy']
+                                      as String?) ??
+                                  '')
+                              .isNotEmpty)
+                          Row(children: [
+                            const Icon(Icons.shield_outlined,
                                 color: Colors.white38,
                                 size: 13),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                  _profile['academy'],
+                                  overflow:
+                                      TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 12)),
+                            ),
+                          ]),
+                          const SizedBox(height: 4),
+                          if (_stats['experience_years'] !=
+                              null)
+                          Row(children: [
+                            const Icon(Icons.access_time,
+                                color: Colors.white38,
+                                size: 13),
+                            const SizedBox(width: 6),
                             Text(
-                                'Falcons Cricket Academy',
-                                style: TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 12)),
-                          ]),
-                          const SizedBox(height: 4),
-                          Row(children: const [
-                            Icon(Icons.access_time,
-                                color: Colors.white38,
-                                size: 13),
-                            SizedBox(width: 6),
-                            Text('6+ Years Experience',
-                                style: TextStyle(
+                                '${_stats['experience_years']}+ Years Experience',
+                                style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12)),
                           ]),
@@ -617,32 +652,38 @@ class _CoachPlaybookScreenState
                             color: const Color(0xFF00C853)
                                 .withOpacity(0.5)),
                       ),
-                      child: Column(children: const [
-                        Text('Coach Score',
+                      child: Column(children: [
+                        const Text('Coach Score',
                             style: TextStyle(
                                 color: Color(0xFF00C853),
                                 fontSize: 9,
                                 fontWeight:
                                 FontWeight.w600)),
-                        Text('92',
-                            style: TextStyle(
+                        Text('${_score['current'] ?? 0}',
+                            style: const TextStyle(
                                 color: Color(0xFF00C853),
                                 fontSize: 32,
                                 fontWeight: FontWeight.w900,
                                 height: 1.1)),
-                        Text('Rank',
+                        const Text('Rank',
                             style: TextStyle(
                                 color: Colors.white38,
                                 fontSize: 10)),
-                        Text('#3',
-                            style: TextStyle(
+                        Text(
+                            _score['rank'] != null
+                                ? '#${_score['rank']}'
+                                : '—',
+                            style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
                                 fontWeight:
                                 FontWeight.w800)),
-                        Text('Karnataka\nCoaches',
+                        Text(
+                            (_score['rank_scope']
+                                    as String?) ??
+                                'Coaches',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: Colors.white38,
                                 fontSize: 9)),
                       ]),
@@ -653,7 +694,10 @@ class _CoachPlaybookScreenState
 
               const SizedBox(height: 16),
 
-              // ── About ──
+              // ── About (real bio; hidden when empty) ──
+              if (((_profile['about'] as String?) ?? '')
+                  .trim()
+                  .isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20),
@@ -669,16 +713,17 @@ class _CoachPlaybookScreenState
                   child: Column(
                     crossAxisAlignment:
                     CrossAxisAlignment.start,
-                    children: const [
-                      Text('About',
+                    children: [
+                      const Text('About',
                           style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
                               fontSize: 14)),
-                      SizedBox(height: 6),
+                      const SizedBox(height: 6),
                       Text(
-                          'Building champions on and off the field. Passionate about developing young talent and creating winning teams. 🏏',
-                          style: TextStyle(
+                          (_profile['about'] as String)
+                              .trim(),
+                          style: const TextStyle(
                               color: Colors.white54,
                               fontSize: 13,
                               height: 1.5)),
@@ -688,6 +733,7 @@ class _CoachPlaybookScreenState
               ),
 
               const SizedBox(height: 16),
+              ],
 
               // ── Stats + Follow ──
               Padding(
@@ -695,18 +741,25 @@ class _CoachPlaybookScreenState
                     horizontal: 20),
                 child: Row(children: [
                   _StatItem(
-                      value: '342',
+                      value:
+                          '${_stats['players_trained'] ?? 0}',
                       label: 'Players'),
                   _Divider(),
                   _StatItem(
-                      value: '48',
+                      value:
+                          '${_stats['tournaments'] ?? 0}',
                       label: 'Tournaments'),
                   _Divider(),
                   _StatItem(
-                      value: '26', label: 'Awards'),
+                      value: '${_stats['followers'] ?? 0}',
+                      label: 'Followers'),
                   _Divider(),
                   _StatItem(
-                      value: '6+', label: 'Years'),
+                      value: _stats['experience_years'] !=
+                              null
+                          ? '${_stats['experience_years']}+'
+                          : '—',
+                      label: 'Years'),
                   const SizedBox(width: 12),
                   GestureDetector(
                     onTap: () => setState(() =>
@@ -987,11 +1040,28 @@ class _CoachSettingsScreenState
                     trailing: const Icon(
                         Icons.chevron_right,
                         color: Colors.white24),
-                    onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) =>
-                            const _CoachEditProfileScreen())),
+                    onTap: () async {
+                      Map<String, dynamic> prof = const {};
+                      Map<String, dynamic> st = const {};
+                      try {
+                        final pb =
+                            await CoachService.playbook();
+                        prof = (pb['profile']
+                                as Map<String, dynamic>?) ??
+                            const {};
+                        st = (pb['stats']
+                                as Map<String, dynamic>?) ??
+                            const {};
+                      } catch (_) {}
+                      if (!mounted) return;
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  _CoachEditProfileScreen(
+                                      profile: prof,
+                                      stats: st)));
+                    },
                   ),
 
                   _SettingsTile(
@@ -1298,7 +1368,10 @@ class _CoachSettingsScreenState
 // ── Coach Edit Profile Screen ─────────────────────────────────────────
 
 class _CoachEditProfileScreen extends StatefulWidget {
-  const _CoachEditProfileScreen();
+  final Map<String, dynamic> profile;
+  final Map<String, dynamic> stats;
+  const _CoachEditProfileScreen(
+      {this.profile = const {}, this.stats = const {}});
 
   @override
   State<_CoachEditProfileScreen> createState() =>
@@ -1307,21 +1380,28 @@ class _CoachEditProfileScreen extends StatefulWidget {
 
 class _CoachEditProfileScreenState
     extends State<_CoachEditProfileScreen> {
-  final _nameCtrl =
-  TextEditingController(text: 'Coach Suneeth');
-  final _roleCtrl =
-  TextEditingController(text: 'Head Coach');
-  final _academyCtrl =
-  TextEditingController(text: 'Falcons Cricket Academy');
-  final _locationCtrl =
-  TextEditingController(text: 'Bangalore, Karnataka');
-  final _certCtrl =
-  TextEditingController(text: 'BCCI Level 3');
-  final _expCtrl =
-  TextEditingController(text: '6+ Years');
-  final _bioCtrl = TextEditingController(
+  String? _avatarUrl = Session.avatarUrl;
+
+  void _onAvatarPicked(String url) {
+    if (mounted) setState(() => _avatarUrl = url);
+  }
+
+  late final _nameCtrl = TextEditingController(
+      text: (widget.profile['full_name'] as String?) ?? '');
+  late final _roleCtrl = TextEditingController(
+      text: (widget.profile['role_title'] as String?) ?? '');
+  late final _academyCtrl = TextEditingController(
+      text: (widget.profile['academy'] as String?) ?? '');
+  late final _locationCtrl = TextEditingController(
+      text: (widget.profile['location'] as String?) ?? '');
+  late final _certCtrl = TextEditingController(
       text:
-      'Building champions on and off the field. Passionate about developing young talent and creating winning teams. 🏏');
+          (widget.profile['certification'] as String?) ?? '');
+  late final _expCtrl = TextEditingController(
+      text: widget.stats['experience_years']?.toString() ?? '');
+  late final _bioCtrl = TextEditingController(
+      text: (widget.profile['about'] as String?) ?? '');
+  bool _saving = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1385,31 +1465,84 @@ class _CoachEditProfileScreenState
                             width: 3),
                       ),
                       child: ClipOval(
-                        child: Image.network(
-                          'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=200',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              Container(
-                                color: const Color(0xFF1A1A1A),
-                                child: const Icon(Icons.person,
-                                    color: Colors.white,
-                                    size: 52),
-                              ),
-                        ),
+                        child: Builder(builder: (context) {
+                          final u = ApiConfig
+                              .resolveMediaUrl(_avatarUrl);
+                          final fb = Container(
+                              color:
+                                  const Color(0xFF1A1A1A),
+                              child: const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 52));
+                          return u != null && u.isNotEmpty
+                              ? Image.network(u,
+                                  fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (_, __, ___) => fb)
+                              : fb;
+                        }),
                       ),
                     ),
                     Positioned(
                       bottom: 0, right: 0,
                       child: GestureDetector(
-                        onTap: () =>
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        'Camera opened 📷'),
-                                    backgroundColor:
-                                    Color(
-                                        0xFF00C853))),
+                        onTap: () async {
+                          final source =
+                              await showModalBottomSheet<
+                                  ImageSource>(
+                            context: context,
+                            backgroundColor:
+                                const Color(0xFF111111),
+                            builder: (_) => SafeArea(
+                              child: Column(
+                                  mainAxisSize:
+                                      MainAxisSize.min,
+                                  children: [
+                                    ListTile(
+                                      leading: const Icon(
+                                          Icons.camera_alt,
+                                          color: Color(
+                                              0xFF00C853)),
+                                      title: const Text(
+                                          'Take Photo',
+                                          style: TextStyle(
+                                              color: Colors
+                                                  .white)),
+                                      onTap: () =>
+                                          Navigator.pop(
+                                              context,
+                                              ImageSource
+                                                  .camera),
+                                    ),
+                                    ListTile(
+                                      leading: const Icon(
+                                          Icons
+                                              .photo_library,
+                                          color: Color(
+                                              0xFF00C853)),
+                                      title: const Text(
+                                          'Choose from Gallery',
+                                          style: TextStyle(
+                                              color: Colors
+                                                  .white)),
+                                      onTap: () =>
+                                          Navigator.pop(
+                                              context,
+                                              ImageSource
+                                                  .gallery),
+                                    ),
+                                  ]),
+                            ),
+                          );
+                          if (source == null) return;
+                          final url =
+                              await pickAndUploadAvatar(
+                                  context, source);
+                          if (url != null) {
+                            _onAvatarPicked(url);
+                          }
+                        },
                         child: Container(
                           width: 34, height: 34,
                           decoration: const BoxDecoration(
@@ -1470,15 +1603,47 @@ class _CoachEditProfileScreenState
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(const SnackBar(
-                          content: Text(
-                              'Profile updated! ✅'),
-                          backgroundColor:
-                          Color(0xFF00C853)));
-                    },
+                    onPressed: _saving
+                        ? null
+                        : () async {
+                            setState(() => _saving = true);
+                            try {
+                              await CoachService
+                                  .updateProfile(
+                                fullName: _nameCtrl.text
+                                    .trim(),
+                                roleTitle: _roleCtrl.text
+                                    .trim(),
+                                academy: _academyCtrl.text
+                                    .trim(),
+                                location: _locationCtrl
+                                    .text
+                                    .trim(),
+                                certification: _certCtrl
+                                    .text
+                                    .trim(),
+                                experienceYears: int
+                                    .tryParse(_expCtrl
+                                        .text
+                                        .replaceAll(
+                                            RegExp(
+                                                r'[^0-9]'),
+                                            '')),
+                                bio:
+                                    _bioCtrl.text.trim(),
+                              );
+                              if (!mounted) return;
+                              Navigator.pop(context);
+                              showInfo(context,
+                                  'Profile updated ✅');
+                            } catch (e) {
+                              if (mounted) {
+                                setState(() =>
+                                    _saving = false);
+                                showApiError(context, e);
+                              }
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                       const Color(0xFF00C853),
@@ -1518,75 +1683,33 @@ class _CoachNotificationScreen extends StatefulWidget {
 
 class _CoachNotificationScreenState
     extends State<_CoachNotificationScreen> {
-  late List<Map<String, dynamic>> _notifications = [
-    {
-      'icon': Icons.person_add,
-      'color': const Color(0xFF00C853),
-      'title': 'New Player Joined!',
-      'subtitle': 'Rahul Sharma joined Alpha Warriors',
-      'time': '2m ago',
-      'read': false,
-    },
-    {
-      'icon': Icons.emoji_events,
-      'color': const Color(0xFFFFB300),
-      'title': 'Points Updated',
-      'subtitle': 'Match points uploaded successfully',
-      'time': '15m ago',
-      'read': false,
-    },
-    {
-      'icon': Icons.sports_cricket,
-      'color': const Color(0xFF1A6BFF),
-      'title': 'Match Scheduled',
-      'subtitle':
-      'Alpha Warriors vs Royal Challengers — 24 May',
-      'time': '1h ago',
-      'read': false,
-    },
-    {
-      'icon': Icons.shield,
-      'color': const Color(0xFF00C853),
-      'title': 'League Created',
-      'subtitle': 'Under16 Pro League is now live!',
-      'time': '2h ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.star,
-      'color': const Color(0xFFFFB300),
-      'title': 'Certification Update',
-      'subtitle':
-      'Your coach certification is under review',
-      'time': '3h ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.people,
-      'color': const Color(0xFF1A6BFF),
-      'title': 'Team Update',
-      'subtitle': 'Falcons FC roster has been updated',
-      'time': '5h ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.bar_chart,
-      'color': const Color(0xFF00C853),
-      'title': 'Performance Report',
-      'subtitle': 'Weekly performance report is ready',
-      'time': '1d ago',
-      'read': true,
-    },
-    {
-      'icon': Icons.emoji_events,
-      'color': const Color(0xFFFFB300),
-      'title': 'Match Result',
-      'subtitle':
-      'Alpha Warriors won vs Thunder Strikers 🎉',
-      'time': '1d ago',
-      'read': true,
-    },
-  ];
+  List<Map<String, dynamic>> _notifications = [];
+  bool _loadingNotifs = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotifs();
+  }
+
+  Future<void> _loadNotifs() async {
+    try {
+      final res = await NotificationService.list();
+      final items = (res['items'] as List<dynamic>)
+          .map((n) =>
+              notificationToTile(n as Map<String, dynamic>))
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _notifications = items;
+        _loadingNotifs = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _loadingNotifs = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1641,13 +1764,7 @@ class _CoachNotificationScreenState
                         .map((n) => {...n, 'read': true})
                         .toList();
                   });
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(const SnackBar(
-                    content:
-                    Text('All marked as read ✅'),
-                    backgroundColor: Color(0xFF00C853),
-                    duration: Duration(seconds: 2),
-                  ));
+                  NotificationService.markAllRead();
                 },
                 child: const Text('Mark all read',
                     style: TextStyle(
@@ -1661,7 +1778,17 @@ class _CoachNotificationScreenState
           const SizedBox(height: 16),
 
           Expanded(
-            child: ListView.separated(
+            child: _loadingNotifs
+                ? const Center(
+                    child: CircularProgressIndicator(
+                        color: Color(0xFF00C853)))
+                : _notifications.isEmpty
+                    ? const Center(
+                        child: Text('No notifications yet',
+                            style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 13)))
+                    : ListView.separated(
               padding: const EdgeInsets.symmetric(
                   horizontal: 20),
               itemCount: _notifications.length,
@@ -1670,12 +1797,19 @@ class _CoachNotificationScreenState
               itemBuilder: (context, i) {
                 final n = _notifications[i];
                 return GestureDetector(
-                  onTap: () => setState(() {
-                    _notifications[i] = {
-                      ..._notifications[i],
-                      'read': true,
-                    };
-                  }),
+                  onTap: () {
+                    final id =
+                        _notifications[i]['id'] as String?;
+                    setState(() {
+                      _notifications[i] = {
+                        ..._notifications[i],
+                        'read': true,
+                      };
+                    });
+                    if (id != null) {
+                      NotificationService.markRead(id);
+                    }
+                  },
                   child: Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -1839,12 +1973,18 @@ class _VideoCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       child: Stack(children: [
         Positioned.fill(
-          child: Image.network(
-            item['image'],
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                Container(color: const Color(0xFF1A1A1A)),
-          ),
+          child: item['type'] == 'video'
+              ? Container(
+                  color: const Color(0xFF15251A),
+                  child: const Center(
+                      child: Icon(Icons.movie_outlined,
+                          color: Colors.white24, size: 40)))
+              : Image.network(
+                  item['image'] ?? '',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                      color: const Color(0xFF1A1A1A)),
+                ),
         ),
         Positioned.fill(
           child: Container(
@@ -1860,6 +2000,7 @@ class _VideoCard extends StatelessWidget {
             ),
           ),
         ),
+        if (item['type'] == 'video')
         Positioned(
           top: 10, left: 10,
           child: Container(
@@ -1910,153 +2051,71 @@ class _VideoCard extends StatelessWidget {
 
 // ── Video Player Screen ───────────────────────────────────────────────
 
-class _VideoPlayerScreen extends StatefulWidget {
+class _VideoPlayerScreen extends StatelessWidget {
   final Map<String, dynamic> item;
   const _VideoPlayerScreen({required this.item});
 
   @override
-  State<_VideoPlayerScreen> createState() =>
-      _VideoPlayerScreenState();
-}
-
-class _VideoPlayerScreenState
-    extends State<_VideoPlayerScreen> {
-  bool _isPlaying = false;
-  double _progress = 0.0;
-
-  @override
   Widget build(BuildContext context) {
+    final url = item['image'] as String?;
+    final isVideo = item['type'] == 'video';
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(children: [
-          GestureDetector(
-            onTap: () =>
-                setState(() => _isPlaying = !_isPlaying),
-            child: SizedBox(
+          Stack(children: [
+            SizedBox(
               width: double.infinity,
-              height: MediaQuery.of(context).size.height *
-                  0.4,
-              child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Image.network(
-                      widget.item['image'],
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          Container(
-                              color:
-                              const Color(0xFF1A1A1A)),
-                    ),
-                    Container(
-                        color:
-                        Colors.black.withOpacity(0.3)),
-                    Container(
-                      width: 64, height: 64,
-                      decoration: const BoxDecoration(
-                          color: Colors.black54,
-                          shape: BoxShape.circle),
-                      child: Icon(
-                          _isPlaying
-                              ? Icons.pause
-                              : Icons.play_arrow,
-                          color: Colors.white,
-                          size: 36),
-                    ),
-                    Positioned(
-                      top: 16, left: 16,
-                      child: GestureDetector(
-                        onTap: () =>
-                            Navigator.pop(context),
-                        child: Container(
-                          width: 36, height: 36,
-                          decoration: const BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle),
-                          child: const Icon(
-                              Icons.arrow_back_ios,
-                              color: Colors.white,
-                              size: 18),
+              child: url == null
+                  ? Container(
+                      height: 260,
+                      color: const Color(0xFF1A1A1A))
+                  : isVideo
+                      ? AppVideoPlayer.network(url,
+                          autoPlay: true)
+                      : InteractiveViewer(
+                          child: Image.network(url,
+                              width: double.infinity,
+                              fit: BoxFit.contain,
+                              errorBuilder: (_, __, ___) =>
+                                  Container(
+                                      height: 260,
+                                      color: const Color(
+                                          0xFF1A1A1A))),
                         ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0, left: 0, right: 0,
-                      child: LinearProgressIndicator(
-                        value: _progress,
-                        backgroundColor: Colors.white24,
-                        color: const Color(0xFF00C853),
-                        minHeight: 3,
-                      ),
-                    ),
-                  ]),
             ),
-          ),
+            Positioned(
+              top: 12, left: 12,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 36, height: 36,
+                  decoration: const BoxDecoration(
+                      color: Colors.black54,
+                      shape: BoxShape.circle),
+                  child: const Icon(Icons.arrow_back_ios,
+                      color: Colors.white, size: 18),
+                ),
+              ),
+            ),
+          ]),
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.item['title'],
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800)),
+                if (((item['title'] as String?) ?? '')
+                    .isNotEmpty)
+                  Text(item['title'],
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800)),
                 const SizedBox(height: 6),
-                Row(children: [
-                  Text(widget.item['subtitle'],
-                      style: const TextStyle(
-                          color: Color(0xFF00C853),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600)),
-                  const Text(' • ',
-                      style: TextStyle(
-                          color: Colors.white38)),
-                  Text(widget.item['date'],
-                      style: const TextStyle(
-                          color: Colors.white38,
-                          fontSize: 13)),
-                ]),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.spaceAround,
-                  children: [
-                    GestureDetector(
-                      onTap: () => setState(() =>
-                      _progress = (_progress - 0.1)
-                          .clamp(0.0, 1.0)),
-                      child: const Icon(Icons.replay_10,
-                          color: Colors.white, size: 32),
-                    ),
-                    GestureDetector(
-                      onTap: () => setState(() =>
-                      _isPlaying = !_isPlaying),
-                      child: Container(
-                        width: 60, height: 60,
-                        decoration: const BoxDecoration(
-                            color: Color(0xFF00C853),
-                            shape: BoxShape.circle),
-                        child: Icon(
-                            _isPlaying
-                                ? Icons.pause
-                                : Icons.play_arrow,
-                            color: Colors.white,
-                            size: 32),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => setState(() =>
-                      _progress = (_progress + 0.1)
-                          .clamp(0.0, 1.0)),
-                      child: const Icon(Icons.forward_10,
-                          color: Colors.white, size: 32),
-                    ),
-                  ],
-                ),
+                Text((item['date'] as String?) ?? '',
+                    style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 13)),
               ],
             ),
           ),
@@ -2065,8 +2124,6 @@ class _VideoPlayerScreenState
     );
   }
 }
-
-// ── Widgets ───────────────────────────────────────────────────────────
 
 class _EditField extends StatelessWidget {
   final String label;
