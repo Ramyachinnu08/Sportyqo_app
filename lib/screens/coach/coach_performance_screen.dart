@@ -48,20 +48,15 @@ class _CoachPerformanceScreenState
   List<Map<String, dynamic>> _directory = [];
 
   Future<void> _loadRoster() async {
+    // Roster and directory load independently: if the server is
+    // older and lacks /players/directory, the squad still works.
     try {
-      final results = await Future.wait([
-        CoachService.roster(),
-        CoachService.playerDirectory(),
-      ]);
-      final items = results[0] as List<dynamic>;
-      final dir = results[1] as Map<String, dynamic>;
+      final items = await CoachService.roster();
       if (!mounted) return;
       setState(() {
         _players = items
             .map((raw) => _toRow(raw as Map<String, dynamic>))
             .toList();
-        _directory = (dir['items'] as List<dynamic>)
-            .cast<Map<String, dynamic>>();
         _loading = false;
       });
     } catch (e) {
@@ -69,6 +64,16 @@ class _CoachPerformanceScreenState
         setState(() => _loading = false);
         showApiError(context, e);
       }
+    }
+    try {
+      final dir = await CoachService.playerDirectory();
+      if (!mounted) return;
+      setState(() {
+        _directory = (dir['items'] as List<dynamic>)
+            .cast<Map<String, dynamic>>();
+      });
+    } catch (_) {
+      // old backend without the directory endpoint — squad-only mode
     }
   }
 

@@ -43,17 +43,19 @@ class _CoachPlaybookScreenState
 
   Future<void> _load() async {
     try {
-      final results = await Future.wait([
-        CoachService.playbook(),
-        CoachService.playerDirectory(),
-      ]);
+      final pb = await CoachService.playbook();
       if (!mounted) return;
       setState(() {
-        _playbook = results[0] as Map<String, dynamic>;
-        _avatarUrl = (_playbook?['profile']
+        _playbook = pb;
+        _avatarUrl = (pb['profile']
             as Map<String, dynamic>?)?['avatar_url'] as String?;
-        _directory = ((results[1]
-                    as Map<String, dynamic>)['items'] as List<dynamic>)
+      });
+    } catch (_) {}
+    try {
+      final dir = await CoachService.playerDirectory();
+      if (!mounted) return;
+      setState(() {
+        _directory = (dir['items'] as List<dynamic>)
             .cast<Map<String, dynamic>>();
       });
     } catch (_) {}
