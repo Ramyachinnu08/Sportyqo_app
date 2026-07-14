@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../api/api_config.dart';
 import '../../api/api_client.dart';
 import '../../api/mappers.dart';
 import '../../api/services.dart';
@@ -44,14 +45,23 @@ class _CoachPerformanceScreenState
     };
   }
 
+  List<Map<String, dynamic>> _directory = [];
+
   Future<void> _loadRoster() async {
     try {
-      final items = await CoachService.roster();
+      final results = await Future.wait([
+        CoachService.roster(),
+        CoachService.playerDirectory(),
+      ]);
+      final items = results[0] as List<dynamic>;
+      final dir = results[1] as Map<String, dynamic>;
       if (!mounted) return;
       setState(() {
         _players = items
             .map((raw) => _toRow(raw as Map<String, dynamic>))
             .toList();
+        _directory = (dir['items'] as List<dynamic>)
+            .cast<Map<String, dynamic>>();
         _loading = false;
       });
     } catch (e) {
@@ -59,6 +69,67 @@ class _CoachPerformanceScreenState
         setState(() => _loading = false);
         showApiError(context, e);
       }
+    }
+  }
+
+  /// Registered students not yet on this coach's roster,
+  /// filtered by the search box.
+  List<Map<String, dynamic>> get _registryToShow {
+    var list = _directory
+        .where((d) => d['on_roster'] != true)
+        .toList();
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      list = list
+          .where((d) =>
+              ((d['name'] as String?) ?? '')
+                  .toLowerCase()
+                  .contains(q) ||
+              ((d['player_id'] as String?) ?? '')
+                  .toLowerCase()
+                  .contains(q))
+          .toList();
+    }
+    return list;
+  }
+
+  /// Everyone a coach can recommend: their active squad plus every
+  /// registered student on the platform (deduplicated).
+  List<Map<String, dynamic>> get _recommendCandidates {
+    final out = <Map<String, dynamic>>[];
+    final seen = <String>{};
+    for (final p in _players.where((p) => p['active'] == true)) {
+      final id = p['user_id'] as String?;
+      if (id == null || seen.contains(id)) continue;
+      seen.add(id);
+      out.add(p);
+    }
+    for (final d in _directory) {
+      final id = d['user_id'] as String?;
+      if (id == null || seen.contains(id)) continue;
+      seen.add(id);
+      out.add(<String, dynamic>{
+        'user_id': id,
+        'name': d['name'] ?? '',
+        'sqid': d['player_id'] ?? '',
+        'role': d['sub_role'] ?? 'Player',
+        'emoji': '🏏',
+        'active': true,
+      });
+    }
+    return out;
+  }
+
+  Future<void> _addFromDirectory(
+      Map<String, dynamic> d) async {
+    try {
+      await CoachService.addPlayer(
+          (d['player_id'] as String?) ?? '');
+      if (!mounted) return;
+      showInfo(context, '${d['name']} added to your squad ✅');
+      _loadRoster();
+    } catch (e) {
+      if (mounted) showApiError(context, e);
     }
   }
 
@@ -363,8 +434,9 @@ class _CoachPerformanceScreenState
                     const Divider(color: Colors.white10, height: 1),
                     const SizedBox(height: 12),
 
-                    // ── Player List ──
-                    if (_filtered.isEmpty)
+                    // ── Player List (your squad) ──
+                    if (_filtered.isEmpty &&
+                        _registryToShow.isEmpty)
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.all(32),
@@ -389,6 +461,30 @@ class _CoachPerformanceScreenState
                             _showPlayerDetail(context, p),
                         child: _PlayerTile(player: p),
                       )),
+
+                    // ── Registered Students directory ──
+                    if (_tabIndex == 0 &&
+                        _registryToShow.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      const Text('Registered Students',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15)),
+                      const SizedBox(height: 4),
+                      const Text(
+                          'All students on SportyQo — tap Add to bring them into your squad.',
+                          style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 11)),
+                      const SizedBox(height: 12),
+                      ..._registryToShow
+                          .map((d) => _DirectoryTile(
+                                entry: d,
+                                onAdd: () =>
+                                    _addFromDirectory(d),
+                              )),
+                    ],
 
                     const SizedBox(height: 16),
 
@@ -709,9 +805,7 @@ class _CoachPerformanceScreenState
                 'Select players to recommend to clubs and leagues.',
                 style: TextStyle(color: Colors.white54, fontSize: 13)),
             const SizedBox(height: 20),
-            ..._players
-                .where((p) => p['active'] == true)
-                .map((p) => Container(
+            ..._recommendCandidates.map((p) => Container(
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -948,6 +1042,94 @@ class _PlayerTile extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         const Icon(Icons.chevron_right, color: Colors.white24, size: 18),
+      ]),
+    );
+  }
+}
+/// A registered student from the platform-wide directory,
+/// with a one-tap Add button.
+class _DirectoryTile extends StatelessWidget {
+  final Map<String, dynamic> entry;
+  final VoidCallback onAdd;
+  const _DirectoryTile({required this.entry, required this.onAdd});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (entry['name'] as String?) ?? '';
+    final avatar =
+        ApiConfig.resolveMediaUrl(entry['avatar_url'] as String?);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141414),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: const BoxDecoration(
+              color: Color(0xFF1E2E1E), shape: BoxShape.circle),
+          child: ClipOval(
+            child: avatar != null && avatar.isNotEmpty
+                ? Image.network(avatar,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Center(
+                        child: Text(
+                            name.isNotEmpty
+                                ? name[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800))))
+                : Center(
+                    child: Text(
+                        name.isNotEmpty
+                            ? name[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800))),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13)),
+              Text(
+                  '${entry['player_id'] ?? ''} • ${entry['sub_role'] ?? 'Player'} • Qo ${entry['qo_score'] ?? 0}',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white38, fontSize: 11)),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: onAdd,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Text('Add',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12)),
+          ),
+        ),
       ]),
     );
   }

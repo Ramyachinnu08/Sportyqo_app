@@ -195,6 +195,11 @@ class CoachService {
   static Future<Map<String, dynamic>> playbook() async =>
       await ApiClient.get('/coaches/me/playbook') as Map<String, dynamic>;
 
+  static Future<Map<String, dynamic>> playerDirectory({String? q}) async =>
+      await ApiClient.get('/players/directory',
+              query: {if (q != null && q.isNotEmpty) 'q': q})
+          as Map<String, dynamic>;
+
   static Future<List<dynamic>> roster() async =>
       (await ApiClient.get('/coaches/me/players')
           as Map<String, dynamic>)['items'] as List<dynamic>;
