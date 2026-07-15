@@ -13,9 +13,9 @@ class ApiConfig {
   static String get baseUrl {
     if (_fromEnv.isNotEmpty) return _fromEnv;
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8000/v1';
+      return 'https://backendforsportsapp.onrender.com/v1';
     }
-    return 'http://localhost:8000/v1';
+    return 'https://backendforsportsapp.onrender.com/v1';
   }
 
   static String get wsUrl =>

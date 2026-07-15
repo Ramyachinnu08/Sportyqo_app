@@ -5,44 +5,46 @@ class SelectSportScreen extends StatefulWidget {
   const SelectSportScreen({super.key});
 
   @override
-  State<SelectSportScreen> createState() => _SelectSportScreenState();
+  State<SelectSportScreen> createState() =>
+      _SelectSportScreenState();
 }
 
-class _SelectSportScreenState extends State<SelectSportScreen> {
-  String? selectedSport;
+class _SelectSportScreenState
+    extends State<SelectSportScreen> {
+  String? _selectedSport;
 
-  final List<Map<String, String>> sports = [
+  final List<Map<String, String>> _sports = [
     {
       'name': 'Cricket',
-      'image': 'https://i.ibb.co/mC7w3JvY/Screenshot-2026-06-30-122618.png',
+      'image': 'https://i.ibb.co/5g8XNRnC/296480.jpg',
     },
     {
       'name': 'Football',
-      'image': 'https://i.ibb.co/bgZY2Qb9/Screenshot-2026-06-30-122653.png',
+      'image': 'https://i.ibb.co/vCBQG4Wn/IMG-20260715-WA0018.jpg',
     },
     {
       'name': 'Volleyball',
-      'image': 'https://i.ibb.co/Jj2fLjFX/Screenshot-2026-06-30-122700.png',
+      'image': 'https://i.ibb.co/zHh6mvNv/296486.jpg',
     },
     {
       'name': 'Basketball',
-      'image': 'https://i.ibb.co/WN5yRxqX/Screenshot-2026-06-30-122705.png',
+      'image': 'https://i.ibb.co/3y3shwwB/296487.jpg',
     },
     {
       'name': 'Swimming',
-      'image': 'https://i.ibb.co/N6X7pRvv/Screenshot-2026-06-30-122716.png',
+      'image': 'https://i.ibb.co/9H4ZFMCM/296483.jpg',
     },
     {
       'name': 'Badminton',
-      'image': 'https://i.ibb.co/sJNf2nWT/Screenshot-2026-06-30-122810.png',
+      'image': 'https://i.ibb.co/5gFFcxtn/296482.jpg',
     },
     {
       'name': 'Tennis',
-      'image': 'https://i.ibb.co/XTmSVLH/Screenshot-2026-06-30-122816.png',
+      'image': 'https://i.ibb.co/B5nvZTjc/296481.jpg',
     },
     {
       'name': 'Kabaddi',
-      'image': 'https://i.ibb.co/MDbR7Fw2/Screenshot-2026-06-30-122823.png',
+      'image': 'https://i.ibb.co/KTPKmR1/296484.jpg',
     },
   ];
 
@@ -50,169 +52,227 @@ class _SelectSportScreenState extends State<SelectSportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A1A),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 10),
-              const Text(
-                'Select Your Sport',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Choose the sport you play to continue',
-                style: TextStyle(
-                  color: Colors.white60,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: GridView.builder(
-                  itemCount: sports.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1.15,
-                  ),
-                  itemBuilder: (context, index) {
-                    final sport = sports[index];
-                    final isSelected = selectedSport == sport['name'];
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
 
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedSport = sport['name'];
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF14142B),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: isSelected
-                                ? const Color(0xFF7B2FFF)
-                                : Colors.white10,
-                            width: isSelected ? 2.5 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                            BoxShadow(
-                              color: const Color(0xFF7B2FFF)
-                                  .withOpacity(0.4),
-                              blurRadius: 14,
-                              spreadRadius: 1,
-                            ),
-                          ]
-                              : [],
+            // ── Header ──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  20, 16, 20, 0),
+              child: Row(children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.arrow_back_ios,
+                      color: Colors.white, size: 20),
+                ),
+              ]),
+            ),
+
+            const SizedBox(height: 16),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 20),
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: const [
+                  Text('Select Your Sport',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800)),
+                  SizedBox(height: 6),
+                  Text('Choose the sport you play',
+                      style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 14)),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // ── Sports Grid (image only) ──
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20),
+                gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  childAspectRatio: 0.8,
+                ),
+                itemCount: _sports.length,
+                itemBuilder: (context, i) {
+                  final sport = _sports[i];
+                  final isSelected =
+                      _selectedSport == sport['name'];
+
+                  return GestureDetector(
+                    onTap: () => setState(() =>
+                    _selectedSport = sport['name']),
+                    child: AnimatedContainer(
+                      duration: const Duration(
+                          milliseconds: 200),
+                      decoration: BoxDecoration(
+                        borderRadius:
+                        BorderRadius.circular(18),
+                        border: Border.all(
+                          color: isSelected
+                              ? const Color(0xFF7B2FFF)
+                              : Colors.white10,
+                          width: isSelected ? 3 : 1,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        boxShadow: isSelected
+                            ? [
+                          BoxShadow(
+                            color: const Color(
+                                0xFF7B2FFF)
+                                .withOpacity(0.4),
+                            blurRadius: 16,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                            : null,
+                      ),
+                      child: ClipRRect(
+                        borderRadius:
+                        BorderRadius.circular(16),
+                        child: Stack(
+                          fit: StackFit.expand,
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(14),
-                              child: Image.network(
-                                sport['image']!,
-                                width: 90,
-                                height: 90,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (context, child, progress) {
-                                  if (progress == null) return child;
-                                  return const SizedBox(
-                                    width: 90,
-                                    height: 90,
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white24,
-                                        strokeWidth: 2,
-                                      ),
+                            // Sport image
+                            Image.network(
+                              sport['image']!,
+                              fit: BoxFit.cover,
+                              alignment: Alignment
+                                  .bottomCenter,
+                              loadingBuilder: (context,
+                                  child, progress) {
+                                if (progress == null) {
+                                  return child;
+                                }
+                                return Container(
+                                  color: const Color(
+                                      0xFF13132B),
+                                  child: const Center(
+                                    child:
+                                    CircularProgressIndicator(
+                                      color: Color(
+                                          0xFF7B2FFF),
+                                      strokeWidth: 2,
                                     ),
-                                  );
-                                },
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    width: 90,
-                                    height: 90,
-                                    color: Colors.white10,
+                                  ),
+                                );
+                              },
+                              errorBuilder:
+                                  (_, __, ___) =>
+                                  Container(
+                                    color: const Color(
+                                        0xFF13132B),
                                     child: const Icon(
-                                      Icons.sports,
-                                      color: Colors.white38,
-                                    ),
-                                  );
-                                },
-                              ),
+                                        Icons
+                                            .image_outlined,
+                                        color:
+                                        Colors.white24,
+                                        size: 40),
+                                  ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              sport['name']!,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? const Color(0xFF7B2FFF)
-                                    : Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
+
+                            // Selected checkmark
+                            if (isSelected)
+                              Positioned(
+                                top: 10,
+                                right: 10,
+                                child: Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration:
+                                  BoxDecoration(
+                                    color: const Color(
+                                        0xFF7B2FFF),
+                                    shape:
+                                    BoxShape.circle,
+                                    border: Border.all(
+                                        color:
+                                        Colors.white,
+                                        width: 2),
+                                  ),
+                                  child: const Icon(
+                                      Icons.check,
+                                      color:
+                                      Colors.white,
+                                      size: 16),
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: selectedSport == null
-                      ? null
-                      : () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            GeneratingIdScreen(selectedSport: selectedSport!),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7B2FFF),
-                    disabledBackgroundColor: Colors.white12,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    'Continue',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+            ),
+
+            // ── Continue Button ──
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: GestureDetector(
+                onTap: _selectedSport == null
+                    ? null
+                    : () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        GeneratingIdScreen(
+                          selectedSport:
+                          _selectedSport!,
+                        ),
                   ),
                 ),
+                child: AnimatedContainer(
+                  duration:
+                  const Duration(milliseconds: 200),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 16),
+                  decoration: BoxDecoration(
+                    color: _selectedSport == null
+                        ? Colors.white10
+                        : const Color(0xFF7B2FFF),
+                    borderRadius:
+                    BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisAlignment:
+                    MainAxisAlignment.center,
+                    children: [
+                      Text('Continue',
+                          style: TextStyle(
+                              color: _selectedSport ==
+                                  null
+                                  ? Colors.white38
+                                  : Colors.white,
+                              fontWeight:
+                              FontWeight.w700,
+                              fontSize: 16)),
+                      const SizedBox(width: 8),
+                      Icon(Icons.arrow_forward,
+                          color: _selectedSport == null
+                              ? Colors.white38
+                              : Colors.white,
+                          size: 18),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 24),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
