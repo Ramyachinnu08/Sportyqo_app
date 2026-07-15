@@ -60,7 +60,9 @@ class TokenStore {
   }
 
   static Future<void> save(
-      {required String access, required String refresh, String? userRole}) async {
+      {required String access,
+        required String refresh,
+        String? userRole}) async {
     accessToken = access;
     refreshToken = refresh;
     if (userRole != null) role = userRole;
@@ -94,5 +96,6 @@ class Session {
       fullName.isEmpty ? '' : fullName.split(' ').first;
   static String? get playerId => user?['player_id'] as String?;
   static String? get avatarUrl => user?['avatar_url'] as String?;
-  static String get role => (user?['role'] ?? TokenStore.role ?? 'player') as String;
+  static String get role =>
+      (user?['role'] ?? TokenStore.role ?? 'player') as String;
 }
