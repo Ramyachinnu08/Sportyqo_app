@@ -52,6 +52,9 @@ class _PostMediaCarouselState extends State<PostMediaCarousel> {
                 width: double.infinity,
                 height: widget.height,
                 fit: BoxFit.cover,
+                // decode at a bounded size so huge legacy images
+                // can't freeze feed scrolling
+                cacheWidth: 1080,
                 loadingBuilder: (context, child, progress) {
                   if (progress == null) return child;
                   return Container(

@@ -71,7 +71,7 @@ class SplashScreen extends StatelessWidget {
                           TextSpan(
                             text: 'Qo',
                             style: TextStyle(
-                                color: Color(0xFF7B2FFF),
+                                color: Colors.white,
                                 fontSize: 36,
                                 fontWeight:
                                 FontWeight.w800,

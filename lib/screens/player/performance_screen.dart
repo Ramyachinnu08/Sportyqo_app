@@ -30,18 +30,18 @@ class _PerformanceScreenState
   Future<void> _load() async {
     try {
       final perf =
-          await PlayerService.performance(period: _period);
+      await PlayerService.performance(period: _period);
       if (mounted) setState(() => _perf = perf);
     } catch (_) {}
   }
 
   List<String> get _graphLabels =>
       ((_perf?['journey_graph']?['labels'] as List<dynamic>?) ??
-              const [])
+          const [])
           .cast<String>();
   List<num> get _graphValues =>
       ((_perf?['journey_graph']?['values'] as List<dynamic>?) ??
-              const [])
+          const [])
           .cast<num>();
 
   Map<String, dynamic> get _qo =>
@@ -54,7 +54,7 @@ class _PerformanceScreenState
   String _tierLabel() {
     final slug = _qo['card_tier'] as String? ?? 'purple';
     final words = slug.split('_').map((w) =>
-        w.isEmpty ? w : w[0].toUpperCase() + w.substring(1));
+    w.isEmpty ? w : w[0].toUpperCase() + w.substring(1));
     return '${words.join(' ')} Card';
   }
 
@@ -65,11 +65,11 @@ class _PerformanceScreenState
       body: SafeArea(
         child: SingleChildScrollView(
           padding:
-          const EdgeInsets.symmetric(horizontal: 20),
+          const EdgeInsets.symmetric(horizontal: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
               // ── Qo Score Card ──
               Container(
@@ -174,7 +174,7 @@ class _PerformanceScreenState
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
               // ── Card Progress ──
               Container(
@@ -249,29 +249,29 @@ class _PerformanceScreenState
                     ),
                     const SizedBox(height: 8),
                     if (_progress['next_tier'] != null)
-                    RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                            text:
-                                '${_progress['points_needed'] ?? 0} points to ',
-                            style: const TextStyle(
-                                color: Colors.white38,
-                                fontSize: 12)),
-                        TextSpan(
-                            text:
-                                '${_progress['next_tier']}',
-                            style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 12,
-                                fontWeight:
-                                FontWeight.w600)),
-                      ]),
-                    ),
+                      RichText(
+                        text: TextSpan(children: [
+                          TextSpan(
+                              text:
+                              '${_progress['points_needed'] ?? 0} points to ',
+                              style: const TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 12)),
+                          TextSpan(
+                              text:
+                              '${_progress['next_tier']}',
+                              style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight:
+                                  FontWeight.w600)),
+                        ]),
+                      ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
               // ── Ranking (MOVED UP) ──
               Container(
@@ -358,7 +358,7 @@ class _PerformanceScreenState
                 ]),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
               // ── Qo Journey Graph ──
               Container(
@@ -389,29 +389,29 @@ class _PerformanceScreenState
                         itemBuilder: (_) => _periodLabels
                             .entries
                             .map((e) => PopupMenuItem(
-                                value: e.key,
-                                child: Text(e.value,
-                                    style: const TextStyle(
-                                        color:
-                                            Colors.white))))
+                            value: e.key,
+                            child: Text(e.value,
+                                style: const TextStyle(
+                                    color:
+                                    Colors.white))))
                             .toList(),
                         child: Container(
                           padding:
-                              const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4),
+                          const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4),
                           decoration: BoxDecoration(
                               color: Colors.white10,
                               borderRadius:
-                                  BorderRadius.circular(
-                                      20)),
+                              BorderRadius.circular(
+                                  20)),
                           child: Row(
                               mainAxisSize:
-                                  MainAxisSize.min,
+                              MainAxisSize.min,
                               children: [
                                 Text(
                                     _periodLabels[
-                                        _period]!,
+                                    _period]!,
                                     style: const TextStyle(
                                         color: Colors
                                             .white60,
@@ -425,14 +425,14 @@ class _PerformanceScreenState
                         ),
                       ),
                     ]),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     SizedBox(
                       height: 140,
                       child: CustomPaint(
                           painter:
-                              _PerformanceGraphPainter(
-                                  values: _graphValues,
-                                  labels: _graphLabels),
+                          _PerformanceGraphPainter(
+                              values: _graphValues,
+                              labels: _graphLabels),
                           size: const Size(
                               double.infinity, 140)),
                     ),
@@ -442,16 +442,16 @@ class _PerformanceScreenState
                       MainAxisAlignment.spaceBetween,
                       children: _graphLabels
                           .map((l) => Text(l,
-                              style: const TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 10)))
+                          style: const TextStyle(
+                              color: Colors.white38,
+                              fontSize: 10)))
                           .toList(),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
               // ── Recent Matches ──
               Row(
@@ -474,8 +474,8 @@ class _PerformanceScreenState
               const SizedBox(height: 10),
 
               if ((_perf?['recent_matches']
-                          as List<dynamic>?)
-                      ?.isEmpty ??
+              as List<dynamic>?)
+                  ?.isEmpty ??
                   true)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
@@ -486,7 +486,7 @@ class _PerformanceScreenState
                 )
               else
                 for (final raw in (_perf!['recent_matches']
-                    as List<dynamic>)) ...[
+                as List<dynamic>)) ...[
                   Builder(builder: (context) {
                     final m = raw as Map<String, dynamic>;
                     final stats =
@@ -504,7 +504,7 @@ class _PerformanceScreenState
                           ? 'Won Match'
                           : (m['result'] == 'draw' ? 'Draw' : 'Lost'),
                       extraBadge:
-                          badges.contains('MOM') ? 'MOM ⭐' : null,
+                      badges.contains('MOM') ? 'MOM ⭐' : null,
                       extraBadgeColor: badges.contains('MOM')
                           ? const Color(0xFFFFB300)
                           : null,
@@ -512,8 +512,8 @@ class _PerformanceScreenState
                       badgeColor: won
                           ? const Color(0xFF00C853)
                           : (m['result'] == 'draw'
-                              ? const Color(0xFF7B2FFF)
-                              : Colors.redAccent),
+                          ? const Color(0xFF7B2FFF)
+                          : Colors.redAccent),
                     );
                   }),
                   const SizedBox(height: 10),
@@ -767,7 +767,7 @@ class _PerformanceGraphPainter extends CustomPainter {
 
     // label the latest real value
     final lastLabel =
-        labels.isNotEmpty ? labels.last : '';
+    labels.isNotEmpty ? labels.last : '';
     final tp = TextPainter(
       text: TextSpan(children: [
         TextSpan(
@@ -784,13 +784,13 @@ class _PerformanceGraphPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout();
     final lx =
-        (xs.last - 20).clamp(0.0, size.width - tp.width);
+    (xs.last - 20).clamp(0.0, size.width - tp.width);
     final ly = (ys.last - 36).clamp(0.0, size.height);
     tp.paint(canvas, Offset(lx, ly));
   }
 
   @override
   bool shouldRepaint(
-          covariant _PerformanceGraphPainter old) =>
+      covariant _PerformanceGraphPainter old) =>
       old.values != values || old.labels != labels;
 }

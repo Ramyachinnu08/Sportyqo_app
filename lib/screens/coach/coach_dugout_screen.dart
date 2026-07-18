@@ -62,7 +62,7 @@ class _CoachDugoutScreenState
     _loadFeed();
   }
 
-    void _showPostMenu(
+  void _showPostMenu(
       BuildContext context, Map<String, dynamic> post) {
     final isMine =
         post['author_id'] == Session.userId;
@@ -71,7 +71,7 @@ class _CoachDugoutScreenState
       backgroundColor: const Color(0xFF111111),
       shape: const RoundedRectangleBorder(
           borderRadius:
-              BorderRadius.vertical(top: Radius.circular(20))),
+          BorderRadius.vertical(top: Radius.circular(20))),
       builder: (sheetCtx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           if (isMine)
@@ -88,7 +88,7 @@ class _CoachDugoutScreenState
           else
             const ListTile(
               leading:
-                  Icon(Icons.info_outline, color: Colors.white38),
+              Icon(Icons.info_outline, color: Colors.white38),
               title: Text('You can only delete your own posts',
                   style: TextStyle(
                       color: Colors.white38, fontSize: 13)),
@@ -162,16 +162,16 @@ class _CoachDugoutScreenState
         final author = post['author'] as Map<String, dynamic>? ?? {};
         final mediaItems = (post['media'] as List<dynamic>? ?? [])
             .map((m) {
-              final mm = m as Map<String, dynamic>;
-              final u = ApiConfig.resolveMediaUrl(
-                  mm['url'] as String?);
-              return u == null
-                  ? null
-                  : <String, dynamic>{
-                      'url': u,
-                      'type': mm['type'] ?? 'image',
-                    };
-            })
+          final mm = m as Map<String, dynamic>;
+          final u = ApiConfig.resolveMediaUrl(
+              mm['url'] as String?);
+          return u == null
+              ? null
+              : <String, dynamic>{
+            'url': u,
+            'type': mm['type'] ?? 'image',
+          };
+        })
             .whereType<Map<String, dynamic>>()
             .toList();
         final media = mediaItems
@@ -380,55 +380,55 @@ class _CoachDugoutScreenState
               )
                   : ListView.separated(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20),
+                    horizontal: 0),
                 itemCount: _groupedFeed.length,
                 separatorBuilder: (_, __) =>
-                const SizedBox(height: 16),
+                const SizedBox(height: 10),
                 itemBuilder: (context, i) {
                   final group = _groupedFeed[i];
                   return AuthorPostsSwiper(
                     posts: group,
                     accent: const Color(0xFF00C853),
                     buildCard: (post) => _PostCard(
-                    post: post,
-                    onLike: () async {
-                      final index = _posts.indexOf(post);
-                      if (index == -1) return;
-                      final id = _posts[index]['id'] as String?;
-                      final wasLiked =
-                          _posts[index]['liked'] == true;
-                      setState(() {
-                        _posts[index]['liked'] = !wasLiked;
-                        _posts[index]['likes'] += wasLiked ? -1 : 1;
-                      });
-                      if (id == null) return;
-                      try {
-                        final res = wasLiked
-                            ? await FeedService.unlike(id)
-                            : await FeedService.like(id);
-                        if (!mounted) return;
-                        setState(() => _posts[index]['likes'] =
-                            res['like_count'] ?? _posts[index]['likes']);
-                      } catch (_) {
-                        if (!mounted) return;
+                      post: post,
+                      onLike: () async {
+                        final index = _posts.indexOf(post);
+                        if (index == -1) return;
+                        final id = _posts[index]['id'] as String?;
+                        final wasLiked =
+                            _posts[index]['liked'] == true;
                         setState(() {
-                          _posts[index]['liked'] = wasLiked;
-                          _posts[index]['likes'] += wasLiked ? 1 : -1;
+                          _posts[index]['liked'] = !wasLiked;
+                          _posts[index]['likes'] += wasLiked ? -1 : 1;
                         });
-                      }
-                    },
-                    onMenu: () =>
-                        _showPostMenu(context, post),
-                    onTapProfile: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              _ProfileDetailScreen(
-                                  person: post),
-                        ),
-                      );
-                    },
+                        if (id == null) return;
+                        try {
+                          final res = wasLiked
+                              ? await FeedService.unlike(id)
+                              : await FeedService.like(id);
+                          if (!mounted) return;
+                          setState(() => _posts[index]['likes'] =
+                              res['like_count'] ?? _posts[index]['likes']);
+                        } catch (_) {
+                          if (!mounted) return;
+                          setState(() {
+                            _posts[index]['liked'] = wasLiked;
+                            _posts[index]['likes'] += wasLiked ? 1 : -1;
+                          });
+                        }
+                      },
+                      onMenu: () =>
+                          _showPostMenu(context, post),
+                      onTapProfile: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                _ProfileDetailScreen(
+                                    person: post),
+                          ),
+                        );
+                      },
                     ),
                   );
                 },
@@ -460,10 +460,11 @@ class _PostCard extends StatelessWidget {
     final bool liked = post['liked'] as bool;
 
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF111111),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
+      decoration: const BoxDecoration(
+        color: Color(0xFF111111),
+        border: Border.symmetric(
+            horizontal:
+            BorderSide(color: Colors.white10)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -710,6 +711,31 @@ class _ProfileDetailScreenState
   int _followers = 0;
   int _followingCount = 0;
   int _tabIndex = 0;
+  int _postsCount = 0;
+  String _sportLine = '';
+  String _locationText = '';
+  String _bioText = '';
+  Map<String, List<Map<String, dynamic>>> _tabItems = {};
+
+  List<Map<String, dynamic>> get _gridItems {
+    const keys = [
+      'playing',
+      'certificate',
+      'teams',
+      'trophies',
+      'update'
+    ];
+    final items =
+        _tabItems[keys[_tabIndex]] ?? const [];
+    if (_tabItems.isEmpty) {
+      // profile still loading — show the tapped post's media
+      return ((widget.person['media_items']
+      as List<dynamic>? ??
+          const []))
+          .cast<Map<String, dynamic>>();
+    }
+    return items;
+  }
 
   @override
   void initState() {
@@ -727,12 +753,43 @@ class _ProfileDetailScreenState
           (res['counts'] as Map<String, dynamic>?) ?? const {};
       final viewer =
           (res['viewer'] as Map<String, dynamic>?) ?? const {};
+      final tabsRaw =
+          (res['tabs'] as Map<String, dynamic>?) ??
+              const {};
+      final parsedTabs =
+      <String, List<Map<String, dynamic>>>{};
+      for (final entry in tabsRaw.entries) {
+        final items = (((entry.value
+        as Map<String, dynamic>?)?[
+        'items'] as List<dynamic>?) ??
+            const [])
+            .map((raw) {
+          final m = raw as Map<String, dynamic>;
+          return <String, dynamic>{
+            'url': ApiConfig.resolveMediaUrl(
+                m['url'] as String?),
+            'type': m['type'] ?? 'image',
+            'title': (m['title'] ??
+                m['content'] ??
+                '') as String,
+          };
+        }).toList();
+        parsedTabs[entry.key] = items;
+      }
       setState(() {
         _followers =
             (counts['followers'] as num?)?.toInt() ?? 0;
         _followingCount =
             (counts['following'] as num?)?.toInt() ?? 0;
         _isFollowing = viewer['following'] == true;
+        _postsCount =
+            (counts['posts'] as num?)?.toInt() ?? 0;
+        _sportLine =
+            (res['sport_line'] as String?) ?? '';
+        _locationText =
+            (res['location'] as String?) ?? '';
+        _bioText = (res['bio'] as String?) ?? '';
+        _tabItems = parsedTabs;
       });
     } catch (_) {}
   }
@@ -763,6 +820,60 @@ class _ProfileDetailScreenState
     }
   }
 
+
+  void _openGridMedia(Map<String, dynamic> item) {
+    final url = item['url'] as String?;
+    if (url == null || url.isEmpty) return;
+    final isVideo = item['type'] == 'video';
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          body: SafeArea(
+            child: Stack(children: [
+              Center(
+                child: isVideo
+                    ? AppVideoPlayer.network(url,
+                    autoPlay: true)
+                    : InteractiveViewer(
+                  child: Image.network(url,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __,
+                          ___) =>
+                      const Icon(
+                          Icons
+                              .broken_image_outlined,
+                          color:
+                          Colors.white24,
+                          size: 64)),
+                ),
+              ),
+              Positioned(
+                top: 12,
+                left: 12,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle),
+                    child: const Icon(
+                        Icons.arrow_back_ios,
+                        color: Colors.white,
+                        size: 18),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
   final List<Map<String, String>> _tabs = [
     {'icon': 'playing', 'label': 'Playing'},
     {'icon': 'certificate', 'label': 'Certificate'},
@@ -791,7 +902,6 @@ class _ProfileDetailScreenState
   @override
   Widget build(BuildContext context) {
     final p = widget.person;
-    final images = p['images'] as List<String>;
     const themeColor = Color(0xFF00C853);
 
     return Scaffold(
@@ -908,7 +1018,7 @@ class _ProfileDetailScreenState
                                 color: Colors.white38,
                                 size: 13),
                             const SizedBox(width: 4),
-                            Text(p['sport'],
+                            Text(_sportLine.isNotEmpty ? _sportLine : '${p['sport'] ?? ''}',
                                 style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12)),
@@ -924,7 +1034,7 @@ class _ProfileDetailScreenState
                                 color: Colors.white38,
                                 size: 13),
                             const SizedBox(width: 4),
-                            Text(p['location'],
+                            Text(_locationText.isNotEmpty ? _locationText : '${p['location'] ?? ''}',
                                 style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12)),
@@ -932,17 +1042,17 @@ class _ProfileDetailScreenState
                           const SizedBox(height: 12),
                           Row(children: [
                             _StatCol(
-                                value: '${p['posts']}',
+                                value: '$_postsCount',
                                 label: 'Posts'),
                             const SizedBox(width: 20),
                             _StatCol(
                                 value: '$_followers',
-                                label: 'Followers'),
+                                label: 'Fans'),
                             const SizedBox(width: 20),
                             _StatCol(
                                 value:
                                 '$_followingCount',
-                                label: 'Following'),
+                                label: 'Tracking'),
                           ]),
                         ],
                       ),
@@ -957,7 +1067,7 @@ class _ProfileDetailScreenState
               Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 16),
-                child: _buildBio(p['bio']),
+                child: _buildBio(_bioText.isNotEmpty ? _bioText : '${p['bio'] ?? ''}'),
               ),
 
               const SizedBox(height: 16),
@@ -988,8 +1098,8 @@ class _ProfileDetailScreenState
                         child: Center(
                           child: Text(
                             _isFollowing
-                                ? 'Following'
-                                : 'Follow',
+                                ? 'Tracking'
+                                : 'Track',
                             style: TextStyle(
                                 color: _isFollowing
                                     ? Colors.white70
@@ -1104,8 +1214,19 @@ class _ProfileDetailScreenState
 
               const SizedBox(height: 2),
 
-              // ── Image Grid ──
-              GridView.builder(
+              // ── Content Grid (all posts of this user) ──
+              _gridItems.isEmpty
+                  ? const Padding(
+                padding: EdgeInsets.symmetric(
+                    vertical: 40),
+                child: Center(
+                  child: Text('No posts yet',
+                      style: TextStyle(
+                          color: Colors.white38,
+                          fontSize: 13)),
+                ),
+              )
+                  : GridView.builder(
                 shrinkWrap: true,
                 physics:
                 const NeverScrollableScrollPhysics(),
@@ -1116,37 +1237,85 @@ class _ProfileDetailScreenState
                   mainAxisSpacing: 2,
                   childAspectRatio: 1,
                 ),
-                itemCount: images.length,
+                itemCount: _gridItems.length,
                 itemBuilder: (context, i) {
-                  return Stack(children: [
-                    Positioned.fill(
-                      child: Image.network(
-                        images[i],
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            Container(
-                                color: const Color(
-                                    0xFF1A1A1A)),
-                      ),
-                    ),
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius:
-                          BorderRadius.circular(6),
+                  final item = _gridItems[i];
+                  final url =
+                  item['url'] as String?;
+                  final isVideo =
+                      item['type'] == 'video';
+                  final title =
+                      (item['title'] as String?) ??
+                          '';
+                  if (url == null ||
+                      url.isEmpty) {
+                    // text-only update post
+                    return Container(
+                      color:
+                      const Color(0xFF141414),
+                      padding:
+                      const EdgeInsets.all(8),
+                      child: Text(title,
+                          maxLines: 5,
+                          overflow: TextOverflow
+                              .ellipsis,
+                          style: const TextStyle(
+                              color:
+                              Colors.white54,
+                              fontSize: 10,
+                              height: 1.4)),
+                    );
+                  }
+                  return GestureDetector(
+                    onTap: () =>
+                        _openGridMedia(item),
+                    child: Stack(children: [
+                      Positioned.fill(
+                        child: isVideo
+                            ? Container(
+                            color: const Color(
+                                0xFF15152A),
+                            child: const Icon(
+                                Icons
+                                    .movie_outlined,
+                                color: Colors
+                                    .white24,
+                                size: 28))
+                            : Image.network(
+                          url,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_,
+                              __,
+                              ___) =>
+                              Container(
+                                  color: const Color(
+                                      0xFF1A1A1A)),
                         ),
-                        child: const Icon(
-                            Icons.play_arrow,
-                            color: Colors.white,
-                            size: 16),
                       ),
-                    ),
-                  ]);
+                      if (isVideo)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration:
+                            BoxDecoration(
+                              color:
+                              Colors.black54,
+                              borderRadius:
+                              BorderRadius
+                                  .circular(6),
+                            ),
+                            child: const Icon(
+                                Icons.play_arrow,
+                                color:
+                                Colors.white,
+                                size: 16),
+                          ),
+                        ),
+                    ]),
+                  );
                 },
               ),
 

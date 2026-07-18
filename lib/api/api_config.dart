@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Where the SportyQo backend lives.
@@ -10,12 +8,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiConfig {
   static const _fromEnv = String.fromEnvironment('API_BASE_URL');
 
+  /// Production backend (Render). Local development can still override
+  /// with: flutter run --dart-define=API_BASE_URL=http://<lan-ip>:8000/v1
+  static const productionBaseUrl =
+      'https://backendforsportsapp.onrender.com/v1';
+
   static String get baseUrl {
     if (_fromEnv.isNotEmpty) return _fromEnv;
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'https://backendforsportsapp.onrender.com/v1';
-    }
-    return 'https://backendforsportsapp.onrender.com/v1';
+    return productionBaseUrl;
   }
 
   static String get wsUrl =>
@@ -60,7 +60,9 @@ class TokenStore {
   }
 
   static Future<void> save(
-      {required String access, required String refresh, String? userRole}) async {
+      {required String access,
+        required String refresh,
+        String? userRole}) async {
     accessToken = access;
     refreshToken = refresh;
     if (userRole != null) role = userRole;
@@ -94,5 +96,6 @@ class Session {
       fullName.isEmpty ? '' : fullName.split(' ').first;
   static String? get playerId => user?['player_id'] as String?;
   static String? get avatarUrl => user?['avatar_url'] as String?;
-  static String get role => (user?['role'] ?? TokenStore.role ?? 'player') as String;
+  static String get role =>
+      (user?['role'] ?? TokenStore.role ?? 'player') as String;
 }

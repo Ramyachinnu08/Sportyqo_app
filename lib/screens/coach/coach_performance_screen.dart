@@ -88,12 +88,12 @@ class _CoachPerformanceScreenState
       final q = _searchQuery.toLowerCase();
       list = list
           .where((d) =>
-              ((d['name'] as String?) ?? '')
-                  .toLowerCase()
-                  .contains(q) ||
-              ((d['player_id'] as String?) ?? '')
-                  .toLowerCase()
-                  .contains(q))
+      ((d['name'] as String?) ?? '')
+          .toLowerCase()
+          .contains(q) ||
+          ((d['player_id'] as String?) ?? '')
+              .toLowerCase()
+              .contains(q))
           .toList();
     }
     return list;
@@ -221,7 +221,7 @@ class _CoachPerformanceScreenState
 
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -534,13 +534,13 @@ class _CoachPerformanceScreenState
                       const SizedBox(height: 12),
                       ..._registryToShow
                           .map((d) => _DirectoryTile(
-                                entry: d,
-                                onAdd: () =>
-                                    _addFromDirectory(d),
-                              )),
+                        entry: d,
+                        onAdd: () =>
+                            _addFromDirectory(d),
+                      )),
                     ],
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
                     // ── Recommend Players Card ──
                     GestureDetector(
@@ -1129,7 +1129,7 @@ class _DirectoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = (entry['name'] as String?) ?? '';
     final avatar =
-        ApiConfig.resolveMediaUrl(entry['avatar_url'] as String?);
+    ApiConfig.resolveMediaUrl(entry['avatar_url'] as String?);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
@@ -1147,23 +1147,23 @@ class _DirectoryTile extends StatelessWidget {
           child: ClipOval(
             child: avatar != null && avatar.isNotEmpty
                 ? Image.network(avatar,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Center(
-                        child: Text(
-                            name.isNotEmpty
-                                ? name[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800))))
-                : Center(
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Center(
                     child: Text(
                         name.isNotEmpty
                             ? name[0].toUpperCase()
                             : '?',
                         style: const TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.w800))),
+                            fontWeight: FontWeight.w800))))
+                : Center(
+                child: Text(
+                    name.isNotEmpty
+                        ? name[0].toUpperCase()
+                        : '?',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800))),
           ),
         ),
         const SizedBox(width: 12),

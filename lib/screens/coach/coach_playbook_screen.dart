@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -11,6 +13,10 @@ import '../../widgets/avatar_picker.dart';
 import '../../widgets/create_post_screen.dart';
 import '../../widgets/recommend_dialog.dart';
 import '../auth/choose_role_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import '../legal/legal_screen.dart';
+import 'coach_certification_screen.dart';
 
 class CoachPlaybookScreen extends StatefulWidget {
   const CoachPlaybookScreen({super.key});
@@ -23,7 +29,6 @@ class CoachPlaybookScreen extends StatefulWidget {
 class _CoachPlaybookScreenState
     extends State<CoachPlaybookScreen> {
   int _tabIndex = 0;
-  bool _isFollowing = false;
 
   Map<String, dynamic>? _playbook;
   List<Map<String, dynamic>> _directory = [];
@@ -102,7 +107,7 @@ class _CoachPlaybookScreenState
       setState(() {
         _playbook = pb;
         _avatarUrl = (pb['profile']
-            as Map<String, dynamic>?)?['avatar_url'] as String?;
+        as Map<String, dynamic>?)?['avatar_url'] as String?;
       });
     } catch (_) {}
     try {
@@ -121,8 +126,8 @@ class _CoachPlaybookScreenState
 
   List<Map<String, dynamic>> _tab(String key) =>
       ((_playbook?['tabs'] as Map<String, dynamic>?)?[key]
-                  as List<dynamic>? ??
-              const [])
+      as List<dynamic>? ??
+          const [])
           .map((raw) {
         final m = raw as Map<String, dynamic>;
         return <String, dynamic>{
@@ -209,9 +214,9 @@ class _CoachPlaybookScreenState
                   child: Center(
                       child: Text(
                           ((p['name'] as String?) ?? '?')
-                                  .isNotEmpty
+                              .isNotEmpty
                               ? (p['name'] as String)[0]
-                                  .toUpperCase()
+                              .toUpperCase()
                               : '?',
                           style: const TextStyle(
                               fontSize: 24))),
@@ -344,7 +349,7 @@ class _CoachPlaybookScreenState
       backgroundColor: const Color(0xFF111111),
       shape: const RoundedRectangleBorder(
           borderRadius:
-              BorderRadius.vertical(top: Radius.circular(20))),
+          BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           ListTile(
@@ -404,9 +409,9 @@ class _CoachPlaybookScreenState
                         Navigator.pop(context);
                         final x = await ImagePicker()
                             .pickImage(
-                                source: ImageSource.camera,
-                                maxWidth: 1920,
-                                imageQuality: 88);
+                            source: ImageSource.camera,
+                            maxWidth: 1920,
+                            imageQuality: 88);
                         _startPost(x, isVideo: false);
                       })),
               const SizedBox(width: 12),
@@ -418,12 +423,12 @@ class _CoachPlaybookScreenState
                         Navigator.pop(context);
                         final x = await ImagePicker()
                             .pickMedia(
-                                maxWidth: 1920,
-                                imageQuality: 88);
+                            maxWidth: 1920,
+                            imageQuality: 88);
                         if (x == null) return;
                         final n = x.name.toLowerCase();
                         final vid = (x.mimeType ?? '')
-                                .startsWith('video/') ||
+                            .startsWith('video/') ||
                             n.endsWith('.mp4') ||
                             n.endsWith('.mov') ||
                             n.endsWith('.webm');
@@ -438,10 +443,10 @@ class _CoachPlaybookScreenState
                         Navigator.pop(context);
                         final x = await ImagePicker()
                             .pickVideo(
-                                source: ImageSource.camera,
-                                maxDuration:
-                                    const Duration(
-                                        minutes: 3));
+                            source: ImageSource.camera,
+                            maxDuration:
+                            const Duration(
+                                minutes: 3));
                         _startPost(x, isVideo: true);
                       })),
             ]),
@@ -537,18 +542,18 @@ class _CoachPlaybookScreenState
                             final u = ApiConfig
                                 .resolveMediaUrl(_avatarUrl);
                             final fb = Container(
-                                  color:
-                                  const Color(0xFF1A1A1A),
-                                  child: const Icon(
-                                      Icons.person,
-                                      color: Colors.white,
-                                      size: 48),
-                                );
+                              color:
+                              const Color(0xFF1A1A1A),
+                              child: const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 48),
+                            );
                             return u != null && u.isNotEmpty
                                 ? Image.network(u,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (_, __, ___) => fb)
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (_, __, ___) => fb)
                                 : fb;
                           }),
                         ),
@@ -605,11 +610,11 @@ class _CoachPlaybookScreenState
                             Flexible(
                               child: Text(
                                   (_profile['full_name']
-                                          as String?) ??
+                                  as String?) ??
                                       Session.fullName ??
                                       '',
                                   overflow:
-                                      TextOverflow.ellipsis,
+                                  TextOverflow.ellipsis,
                                   style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 20,
@@ -618,15 +623,15 @@ class _CoachPlaybookScreenState
                             ),
                             if (_profile['verified'] ==
                                 true) ...[
-                            const SizedBox(width: 6),
-                            const Icon(Icons.verified,
-                                color: Color(0xFF00C853),
-                                size: 18),
+                              const SizedBox(width: 6),
+                              const Icon(Icons.verified,
+                                  color: Color(0xFF00C853),
+                                  size: 18),
                             ],
                           ]),
                           Text(
                               (_profile['role_title']
-                                      as String?) ??
+                              as String?) ??
                                   'Coach',
                               style: const TextStyle(
                                   color: Color(0xFF00C853),
@@ -635,81 +640,81 @@ class _CoachPlaybookScreenState
                                   FontWeight.w600)),
                           const SizedBox(height: 8),
                           if (((_profile['certification']
-                                      as String?) ??
-                                  '')
+                          as String?) ??
+                              '')
                               .isNotEmpty)
-                          Row(children: [
-                            const Icon(
-                                Icons
-                                    .workspace_premium_outlined,
-                                color: Colors.white38,
-                                size: 13),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                  _profile['certification'],
-                                  overflow:
-                                      TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 12)),
-                            ),
-                          ]),
+                            Row(children: [
+                              const Icon(
+                                  Icons
+                                      .workspace_premium_outlined,
+                                  color: Colors.white38,
+                                  size: 13),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                    _profile['certification'],
+                                    overflow:
+                                    TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 12)),
+                              ),
+                            ]),
                           const SizedBox(height: 4),
                           if (((_profile['location']
-                                      as String?) ??
-                                  '')
+                          as String?) ??
+                              '')
                               .isNotEmpty)
-                          Row(children: [
-                            const Icon(
-                                Icons.location_on_outlined,
-                                color: Colors.white38,
-                                size: 13),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                  _profile['location'],
-                                  overflow:
-                                      TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 12)),
-                            ),
-                          ]),
+                            Row(children: [
+                              const Icon(
+                                  Icons.location_on_outlined,
+                                  color: Colors.white38,
+                                  size: 13),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                    _profile['location'],
+                                    overflow:
+                                    TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 12)),
+                              ),
+                            ]),
                           const SizedBox(height: 4),
                           if (((_profile['academy']
-                                      as String?) ??
-                                  '')
+                          as String?) ??
+                              '')
                               .isNotEmpty)
-                          Row(children: [
-                            const Icon(Icons.shield_outlined,
-                                color: Colors.white38,
-                                size: 13),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                  _profile['academy'],
-                                  overflow:
-                                      TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 12)),
-                            ),
-                          ]),
+                            Row(children: [
+                              const Icon(Icons.shield_outlined,
+                                  color: Colors.white38,
+                                  size: 13),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                    _profile['academy'],
+                                    overflow:
+                                    TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 12)),
+                              ),
+                            ]),
                           const SizedBox(height: 4),
                           if (_stats['experience_years'] !=
                               null)
-                          Row(children: [
-                            const Icon(Icons.access_time,
-                                color: Colors.white38,
-                                size: 13),
-                            const SizedBox(width: 6),
-                            Text(
-                                '${_stats['experience_years']}+ Years Experience',
-                                style: const TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 12)),
-                          ]),
+                            Row(children: [
+                              const Icon(Icons.access_time,
+                                  color: Colors.white38,
+                                  size: 13),
+                              const SizedBox(width: 6),
+                              Text(
+                                  '${_stats['experience_years']}+ Years Experience',
+                                  style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 12)),
+                            ]),
                         ],
                       ),
                     ),
@@ -753,7 +758,7 @@ class _CoachPlaybookScreenState
                                 FontWeight.w800)),
                         Text(
                             (_score['rank_scope']
-                                    as String?) ??
+                            as String?) ??
                                 'Coaches',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
@@ -771,101 +776,74 @@ class _CoachPlaybookScreenState
               if (((_profile['about'] as String?) ?? '')
                   .trim()
                   .isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF111111),
-                    borderRadius: BorderRadius.circular(12),
-                    border:
-                    Border.all(color: Colors.white10),
-                  ),
-                  child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                    children: [
-                      const Text('About',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14)),
-                      const SizedBox(height: 6),
-                      Text(
-                          (_profile['about'] as String)
-                              .trim(),
-                          style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 13,
-                              height: 1.5)),
-                    ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF111111),
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                      Border.all(color: Colors.white10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      children: [
+                        const Text('About',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14)),
+                        const SizedBox(height: 6),
+                        Text(
+                            (_profile['about'] as String)
+                                .trim(),
+                            style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 13,
+                                height: 1.5)),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
               ],
 
-              // ── Stats + Follow ──
+              // ── Stats (tap Followers for lists) ──
               Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20),
                 child: Row(children: [
                   _StatItem(
                       value:
-                          '${_stats['players_trained'] ?? 0}',
+                      '${_stats['players_trained'] ?? 0}',
                       label: 'Players'),
                   _Divider(),
                   _StatItem(
                       value:
-                          '${_stats['tournaments'] ?? 0}',
+                      '${_stats['tournaments'] ?? 0}',
                       label: 'Tournaments'),
                   _Divider(),
                   _StatItem(
                       value: '${_stats['followers'] ?? 0}',
-                      label: 'Followers'),
+                      label: 'Fans',
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                              const _CoachConnectionsScreen(
+                                  initialTab: 0)))),
                   _Divider(),
                   _StatItem(
                       value: _stats['experience_years'] !=
-                              null
+                          null
                           ? '${_stats['experience_years']}+'
                           : '—',
                       label: 'Years'),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: () => setState(() =>
-                    _isFollowing = !_isFollowing),
-                    child: AnimatedContainer(
-                      duration: const Duration(
-                          milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: _isFollowing
-                            ? Colors.white10
-                            : const Color(0xFF00C853),
-                        borderRadius:
-                        BorderRadius.circular(24),
-                        border: _isFollowing
-                            ? Border.all(
-                            color: Colors.white24)
-                            : null,
-                      ),
-                      child: Text(
-                        _isFollowing
-                            ? 'Tracking'
-                            : 'Track',
-                        style: TextStyle(
-                            color: _isFollowing
-                                ? Colors.white70
-                                : Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14),
-                      ),
-                    ),
-                  ),
                 ]),
               ),
 
@@ -1050,7 +1028,7 @@ class _CoachPlaybookScreenState
   }
 }
 
-// ── Coach Settings Screen ─────────────────────────────────────────────
+// ── Coach Settings Screen (Instagram-style, continuous) ───────────────
 
 class _CoachSettingsScreen extends StatefulWidget {
   const _CoachSettingsScreen();
@@ -1069,6 +1047,33 @@ class _CoachSettingsScreenState
   bool _emailAlerts = true;
 
   @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final st = await UserService.settings();
+      if (!mounted) return;
+      setState(() {
+        _notificationsOn =
+            st['notifications_enabled'] as bool? ?? _notificationsOn;
+        _darkMode = st['dark_mode'] as bool? ?? _darkMode;
+        _privateProfile =
+            st['private_profile'] as bool? ?? _privateProfile;
+        _locationOn =
+            st['location_access'] as bool? ?? _locationOn;
+        _emailAlerts = st['email_alerts'] as bool? ?? _emailAlerts;
+      });
+    } catch (_) {}
+  }
+
+  void _pushSetting(String key, bool value) {
+    UserService.updateSettings({key: value});
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
@@ -1076,7 +1081,7 @@ class _CoachSettingsScreenState
         child: Column(children: [
           Padding(
             padding:
-            const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            const EdgeInsets.fromLTRB(20, 16, 20, 12),
             child: Row(children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
@@ -1091,303 +1096,192 @@ class _CoachSettingsScreenState
                       fontWeight: FontWeight.w800)),
             ]),
           ),
-
-          const SizedBox(height: 20),
-
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20),
               child: Column(
                 crossAxisAlignment:
                 CrossAxisAlignment.start,
                 children: [
-
-                  _SectionTitle(title: 'Profile'),
-                  const SizedBox(height: 10),
-
-                  _SettingsTile(
+                  const _SectionHeader(title: 'Profile'),
+                  _SettingsRow(
                     icon: Icons.edit_outlined,
-                    color: const Color(0xFF00C853),
                     title: 'Edit Profile',
                     subtitle:
-                    'Update your coaching details',
-                    trailing: const Icon(
-                        Icons.chevron_right,
-                        color: Colors.white24),
-                    onTap: () async {
-                      Map<String, dynamic> prof = const {};
-                      Map<String, dynamic> st = const {};
-                      try {
-                        final pb =
-                            await CoachService.playbook();
-                        prof = (pb['profile']
-                                as Map<String, dynamic>?) ??
-                            const {};
-                        st = (pb['stats']
-                                as Map<String, dynamic>?) ??
-                            const {};
-                      } catch (_) {}
-                      if (!mounted) return;
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) =>
-                                  _CoachEditProfileScreen(
-                                      profile: prof,
-                                      stats: st)));
-                    },
+                    'Update your name, photo and details',
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                            const _CoachEditProfileScreen())),
                   ),
-
-                  _SettingsTile(
+                  _SettingsRow(
                     icon: Icons.share_outlined,
-                    color: const Color(0xFF1A6BFF),
                     title: 'Share Profile',
-                    subtitle: 'Share your coach profile',
-                    trailing: const Icon(
-                        Icons.chevron_right,
-                        color: Colors.white24),
-                    onTap: () =>
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                            content: Text(
-                                'Profile link copied! 📋'),
-                            backgroundColor:
-                            Color(0xFF1A6BFF))),
+                    subtitle:
+                    'Share your coach profile link',
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                            const _CoachShareProfileScreen())),
                   ),
-
-                  _SettingsTile(
-                    icon: Icons.workspace_premium_outlined,
-                    color: const Color(0xFFFFB300),
+                  _SettingsRow(
+                    icon: Icons
+                        .workspace_premium_outlined,
                     title: 'Get Certified',
                     subtitle:
-                    'Apply for coach verification',
-                    trailing: const Icon(
-                        Icons.chevron_right,
-                        color: Colors.white24),
-                    onTap: () =>
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                            content: Text(
-                                'Certification page opening...'),
-                            backgroundColor:
-                            Color(0xFFFFB300))),
+                    'Become a verified SportyQo coach',
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                            const CoachCertificationScreen())),
                   ),
-
-                  const SizedBox(height: 20),
-
-                  _SectionTitle(title: 'Preferences'),
-                  const SizedBox(height: 10),
-
-                  _SettingsTile(
+                  const _SectionDivider(),
+                  const _SectionHeader(
+                      title: 'Preferences'),
+                  _SettingsRow(
                     icon: Icons.notifications_outlined,
-                    color: const Color(0xFF00C853),
                     title: 'Notifications',
-                    subtitle: 'Get player & match alerts',
+                    subtitle: 'Get match & league alerts',
                     trailing: Switch(
                       value: _notificationsOn,
-                      onChanged: (v) => setState(
-                              () => _notificationsOn = v),
-                      activeColor: const Color(0xFF00C853),
+                      onChanged: (v) {
+                        setState(
+                                () => _notificationsOn = v);
+                        _pushSetting(
+                            'notifications_enabled', v);
+                      },
+                      activeColor:
+                      const Color(0xFF00C853),
                     ),
-                    onTap: () => setState(() =>
-                    _notificationsOn =
-                    !_notificationsOn),
                   ),
-
-                  _SettingsTile(
+                  _SettingsRow(
                     icon: Icons.dark_mode_outlined,
-                    color: const Color(0xFF00C853),
                     title: 'Dark Mode',
                     subtitle: 'Switch app appearance',
                     trailing: Switch(
                       value: _darkMode,
-                      onChanged: (v) =>
-                          setState(() => _darkMode = v),
-                      activeColor: const Color(0xFF00C853),
+                      onChanged: (v) {
+                        setState(() => _darkMode = v);
+                        _pushSetting('dark_mode', v);
+                      },
+                      activeColor:
+                      const Color(0xFF00C853),
                     ),
-                    onTap: () => setState(
-                            () => _darkMode = !_darkMode),
                   ),
-
-                  _SettingsTile(
+                  _SettingsRow(
                     icon: Icons.email_outlined,
-                    color: const Color(0xFF00C853),
                     title: 'Email Alerts',
-                    subtitle:
-                    'Receive updates via email',
+                    subtitle: 'Receive updates via email',
                     trailing: Switch(
                       value: _emailAlerts,
-                      onChanged: (v) => setState(
-                              () => _emailAlerts = v),
-                      activeColor: const Color(0xFF00C853),
+                      onChanged: (v) {
+                        setState(() => _emailAlerts = v);
+                        _pushSetting('email_alerts', v);
+                      },
+                      activeColor:
+                      const Color(0xFF00C853),
                     ),
-                    onTap: () => setState(() =>
-                    _emailAlerts = !_emailAlerts),
                   ),
-
-                  const SizedBox(height: 20),
-
-                  _SectionTitle(title: 'Privacy'),
-                  const SizedBox(height: 10),
-
-                  _SettingsTile(
+                  const _SectionDivider(),
+                  const _SectionHeader(title: 'Privacy'),
+                  _SettingsRow(
                     icon: Icons.lock_outline,
-                    color: const Color(0xFF00C853),
                     title: 'Private Profile',
                     subtitle:
                     'Only followers can see your profile',
                     trailing: Switch(
                       value: _privateProfile,
-                      onChanged: (v) => setState(
-                              () => _privateProfile = v),
-                      activeColor: const Color(0xFF00C853),
+                      onChanged: (v) {
+                        setState(
+                                () => _privateProfile = v);
+                        _pushSetting(
+                            'private_profile', v);
+                      },
+                      activeColor:
+                      const Color(0xFF00C853),
                     ),
-                    onTap: () => setState(() =>
-                    _privateProfile = !_privateProfile),
                   ),
-
-                  _SettingsTile(
+                  _SettingsRow(
                     icon: Icons.location_on_outlined,
-                    color: const Color(0xFF00C853),
                     title: 'Location Access',
                     subtitle: 'Share your location',
                     trailing: Switch(
                       value: _locationOn,
-                      onChanged: (v) =>
-                          setState(() => _locationOn = v),
-                      activeColor: const Color(0xFF00C853),
+                      onChanged: (v) {
+                        setState(() => _locationOn = v);
+                        _pushSetting(
+                            'location_access', v);
+                      },
+                      activeColor:
+                      const Color(0xFF00C853),
                     ),
-                    onTap: () => setState(
-                            () => _locationOn = !_locationOn),
                   ),
-
-                  _SettingsTile(
+                  _SettingsRow(
                     icon: Icons.privacy_tip_outlined,
-                    color: const Color(0xFF00C853),
                     title: 'Privacy Policy',
-                    subtitle: 'Read our privacy policy',
-                    trailing: const Icon(
-                        Icons.chevron_right,
-                        color: Colors.white24),
-                    onTap: () =>
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                            content: Text(
-                                'Opening Privacy Policy...'),
-                            backgroundColor:
-                            Color(0xFF00C853))),
+                    onTap: () => Navigator.push(context,
+                        LegalScreen.privacyRoute()),
                   ),
-
-                  _SettingsTile(
+                  _SettingsRow(
                     icon: Icons.description_outlined,
-                    color: const Color(0xFF00C853),
                     title: 'Terms of Service',
-                    subtitle: 'Read our terms',
-                    trailing: const Icon(
-                        Icons.chevron_right,
-                        color: Colors.white24),
-                    onTap: () =>
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                            content: Text(
-                                'Opening Terms...'),
-                            backgroundColor:
-                            Color(0xFF00C853))),
+                    onTap: () => Navigator.push(
+                        context, LegalScreen.termsRoute()),
                   ),
-
-                  const SizedBox(height: 20),
-
-                  _SectionTitle(title: 'Support'),
-                  const SizedBox(height: 10),
-
-                  _SettingsTile(
+                  const _SectionDivider(),
+                  const _SectionHeader(title: 'Support'),
+                  _SettingsRow(
                     icon: Icons.help_outline,
-                    color: const Color(0xFF1A6BFF),
                     title: 'Help & Support',
-                    subtitle: 'Get help or contact us',
-                    trailing: const Icon(
-                        Icons.chevron_right,
-                        color: Colors.white24),
-                    onTap: () =>
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                            content: Text(
-                                'Opening Help...'),
-                            backgroundColor:
-                            Color(0xFF1A6BFF))),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                            const _CoachHelpSupportScreen())),
                   ),
-
-                  _SettingsTile(
+                  _SettingsRow(
                     icon: Icons.info_outline,
-                    color: const Color(0xFF1A6BFF),
                     title: 'About SportyQo',
                     subtitle: 'Version 1.0.0',
-                    trailing: const Icon(
-                        Icons.chevron_right,
-                        color: Colors.white24),
-                    onTap: () =>
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                            content: Text(
-                                'SportyQo v1.0.0'),
-                            backgroundColor:
-                            Color(0xFF1A6BFF))),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                            const _CoachAboutScreen())),
                   ),
-
-                  _SettingsTile(
+                  _SettingsRow(
                     icon: Icons.star_outline,
-                    color: const Color(0xFFFFB300),
                     title: 'Rate Us',
-                    subtitle:
-                    'Rate SportyQo on the store',
-                    trailing: const Icon(
-                        Icons.chevron_right,
-                        color: Colors.white24),
-                    onTap: () =>
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                            content: Text(
-                                'Thank you! ⭐⭐⭐⭐⭐'),
-                            backgroundColor:
-                            Color(0xFFFFB300))),
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                            const _CoachRateUsScreen())),
                   ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Logout ──
-                  GestureDetector(
+                  const _SectionDivider(),
+                  const _SectionHeader(title: 'Account'),
+                  _SettingsRow(
+                    icon: Icons.logout,
+                    title: 'Logout',
+                    titleColor: Colors.redAccent,
+                    iconColor: Colors.redAccent,
                     onTap: () => _showLogout(context),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius:
-                        BorderRadius.circular(14),
-                        border: Border.all(
-                            color: Colors.red
-                                .withOpacity(0.3)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.logout,
-                              color: Colors.red, size: 20),
-                          SizedBox(width: 10),
-                          Text('Logout',
-                              style: TextStyle(
-                                  color: Colors.red,
-                                  fontWeight:
-                                  FontWeight.w700,
-                                  fontSize: 16)),
-                        ],
-                      ),
-                    ),
                   ),
-
+                  _SettingsRow(
+                    icon: Icons.delete_forever_outlined,
+                    title: 'Delete Account',
+                    subtitle:
+                    'Permanently delete your account and data',
+                    titleColor: Colors.redAccent,
+                    iconColor: Colors.redAccent,
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                            const _CoachDeleteAccountScreen())),
+                  ),
                   const SizedBox(height: 32),
                 ],
               ),
@@ -1440,6 +1334,95 @@ class _CoachSettingsScreenState
   }
 }
 
+// ── Instagram-style flat row widgets ──────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding:
+      const EdgeInsets.fromLTRB(20, 18, 20, 6),
+      child: Text(title,
+          style: const TextStyle(
+              color: Colors.white54,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3)),
+    );
+  }
+}
+
+class _SectionDivider extends StatelessWidget {
+  const _SectionDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+        height: 8,
+        margin: const EdgeInsets.only(top: 8),
+        color: const Color(0xFF111111));
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  final Color iconColor;
+  final Color titleColor;
+  const _SettingsRow({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+    this.iconColor = Colors.white70,
+    this.titleColor = Colors.white,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: 20, vertical: 12),
+        child: Row(children: [
+          Icon(icon, color: iconColor, size: 24),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: TextStyle(
+                        color: titleColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500)),
+                if (subtitle != null &&
+                    subtitle!.isNotEmpty)
+                  Text(subtitle!,
+                      style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 12)),
+              ],
+            ),
+          ),
+          trailing ??
+              const Icon(Icons.chevron_right,
+                  color: Colors.white24, size: 20),
+        ]),
+      ),
+    );
+  }
+}
+
 // ── Coach Edit Profile Screen ─────────────────────────────────────────
 
 class _CoachEditProfileScreen extends StatefulWidget {
@@ -1471,7 +1454,7 @@ class _CoachEditProfileScreenState
       text: (widget.profile['location'] as String?) ?? '');
   late final _certCtrl = TextEditingController(
       text:
-          (widget.profile['certification'] as String?) ?? '');
+      (widget.profile['certification'] as String?) ?? '');
   late final _expCtrl = TextEditingController(
       text: widget.stats['experience_years']?.toString() ?? '');
   late final _bioCtrl = TextEditingController(
@@ -1545,16 +1528,16 @@ class _CoachEditProfileScreenState
                               .resolveMediaUrl(_avatarUrl);
                           final fb = Container(
                               color:
-                                  const Color(0xFF1A1A1A),
+                              const Color(0xFF1A1A1A),
                               child: const Icon(
                                   Icons.person,
                                   color: Colors.white,
                                   size: 52));
                           return u != null && u.isNotEmpty
                               ? Image.network(u,
-                                  fit: BoxFit.cover,
-                                  errorBuilder:
-                                      (_, __, ___) => fb)
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (_, __, ___) => fb)
                               : fb;
                         }),
                       ),
@@ -1564,15 +1547,15 @@ class _CoachEditProfileScreenState
                       child: GestureDetector(
                         onTap: () async {
                           final source =
-                              await showModalBottomSheet<
-                                  ImageSource>(
+                          await showModalBottomSheet<
+                              ImageSource>(
                             context: context,
                             backgroundColor:
-                                const Color(0xFF111111),
+                            const Color(0xFF111111),
                             builder: (_) => SafeArea(
                               child: Column(
                                   mainAxisSize:
-                                      MainAxisSize.min,
+                                  MainAxisSize.min,
                                   children: [
                                     ListTile(
                                       leading: const Icon(
@@ -1612,8 +1595,8 @@ class _CoachEditProfileScreenState
                           );
                           if (source == null) return;
                           final url =
-                              await pickAndUploadAvatar(
-                                  context, source);
+                          await pickAndUploadAvatar(
+                              context, source);
                           if (url != null) {
                             _onAvatarPicked(url);
                           }
@@ -1681,44 +1664,44 @@ class _CoachEditProfileScreenState
                     onPressed: _saving
                         ? null
                         : () async {
-                            setState(() => _saving = true);
-                            try {
-                              await CoachService
-                                  .updateProfile(
-                                fullName: _nameCtrl.text
-                                    .trim(),
-                                roleTitle: _roleCtrl.text
-                                    .trim(),
-                                academy: _academyCtrl.text
-                                    .trim(),
-                                location: _locationCtrl
-                                    .text
-                                    .trim(),
-                                certification: _certCtrl
-                                    .text
-                                    .trim(),
-                                experienceYears: int
-                                    .tryParse(_expCtrl
-                                        .text
-                                        .replaceAll(
-                                            RegExp(
-                                                r'[^0-9]'),
-                                            '')),
-                                bio:
-                                    _bioCtrl.text.trim(),
-                              );
-                              if (!mounted) return;
-                              Navigator.pop(context);
-                              showInfo(context,
-                                  'Profile updated ✅');
-                            } catch (e) {
-                              if (mounted) {
-                                setState(() =>
-                                    _saving = false);
-                                showApiError(context, e);
-                              }
-                            }
-                          },
+                      setState(() => _saving = true);
+                      try {
+                        await CoachService
+                            .updateProfile(
+                          fullName: _nameCtrl.text
+                              .trim(),
+                          roleTitle: _roleCtrl.text
+                              .trim(),
+                          academy: _academyCtrl.text
+                              .trim(),
+                          location: _locationCtrl
+                              .text
+                              .trim(),
+                          certification: _certCtrl
+                              .text
+                              .trim(),
+                          experienceYears: int
+                              .tryParse(_expCtrl
+                              .text
+                              .replaceAll(
+                              RegExp(
+                                  r'[^0-9]'),
+                              '')),
+                          bio:
+                          _bioCtrl.text.trim(),
+                        );
+                        if (!mounted) return;
+                        Navigator.pop(context);
+                        showInfo(context,
+                            'Profile updated ✅');
+                      } catch (e) {
+                        if (mounted) {
+                          setState(() =>
+                          _saving = false);
+                          showApiError(context, e);
+                        }
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                       const Color(0xFF00C853),
@@ -1772,7 +1755,7 @@ class _CoachNotificationScreenState
       final res = await NotificationService.list();
       final items = (res['items'] as List<dynamic>)
           .map((n) =>
-              notificationToTile(n as Map<String, dynamic>))
+          notificationToTile(n as Map<String, dynamic>))
           .toList();
       if (!mounted) return;
       setState(() {
@@ -1855,15 +1838,15 @@ class _CoachNotificationScreenState
           Expanded(
             child: _loadingNotifs
                 ? const Center(
-                    child: CircularProgressIndicator(
-                        color: Color(0xFF00C853)))
+                child: CircularProgressIndicator(
+                    color: Color(0xFF00C853)))
                 : _notifications.isEmpty
-                    ? const Center(
-                        child: Text('No notifications yet',
-                            style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 13)))
-                    : ListView.separated(
+                ? const Center(
+                child: Text('No notifications yet',
+                    style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 13)))
+                : ListView.separated(
               padding: const EdgeInsets.symmetric(
                   horizontal: 20),
               itemCount: _notifications.length,
@@ -1874,7 +1857,7 @@ class _CoachNotificationScreenState
                 return GestureDetector(
                   onTap: () {
                     final id =
-                        _notifications[i]['id'] as String?;
+                    _notifications[i]['id'] as String?;
                     setState(() {
                       _notifications[i] = {
                         ..._notifications[i],
@@ -1969,73 +1952,6 @@ class _CoachNotificationScreenState
   }
 }
 
-// ── Section Title ─────────────────────────────────────────────────────
-
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  const _SectionTitle({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(title,
-        style: const TextStyle(
-            color: Colors.white54,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1));
-  }
-}
-
-// ── Settings Tile ─────────────────────────────────────────────────────
-
-class _SettingsTile extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String title, subtitle;
-  final Widget trailing;
-  final VoidCallback onTap;
-  const _SettingsTile({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.subtitle,
-    required this.trailing,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111111),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: ListTile(
-        onTap: onTap,
-        leading: Container(
-          width: 42, height: 42,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        title: Text(title,
-            style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 15)),
-        subtitle: Text(subtitle,
-            style: const TextStyle(
-                color: Colors.white38, fontSize: 12)),
-        trailing: trailing,
-      ),
-    );
-  }
-}
-
 // ── Video Card ────────────────────────────────────────────────────────
 
 class _VideoCard extends StatelessWidget {
@@ -2050,16 +1966,16 @@ class _VideoCard extends StatelessWidget {
         Positioned.fill(
           child: item['type'] == 'video'
               ? Container(
-                  color: const Color(0xFF15251A),
-                  child: const Center(
-                      child: Icon(Icons.movie_outlined,
-                          color: Colors.white24, size: 40)))
+              color: const Color(0xFF15251A),
+              child: const Center(
+                  child: Icon(Icons.movie_outlined,
+                      color: Colors.white24, size: 40)))
               : Image.network(
-                  item['image'] ?? '',
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                      color: const Color(0xFF1A1A1A)),
-                ),
+            item['image'] ?? '',
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+                color: const Color(0xFF1A1A1A)),
+          ),
         ),
         Positioned.fill(
           child: Container(
@@ -2076,17 +1992,17 @@ class _VideoCard extends StatelessWidget {
           ),
         ),
         if (item['type'] == 'video')
-        Positioned(
-          top: 10, left: 10,
-          child: Container(
-            width: 32, height: 32,
-            decoration: const BoxDecoration(
-                color: Colors.black54,
-                shape: BoxShape.circle),
-            child: const Icon(Icons.play_arrow,
-                color: Colors.white, size: 20),
+          Positioned(
+            top: 10, left: 10,
+            child: Container(
+              width: 32, height: 32,
+              decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle),
+              child: const Icon(Icons.play_arrow,
+                  color: Colors.white, size: 20),
+            ),
           ),
-        ),
         Positioned(
           bottom: 0, left: 0, right: 0,
           child: Padding(
@@ -2143,21 +2059,21 @@ class _VideoPlayerScreen extends StatelessWidget {
               width: double.infinity,
               child: url == null
                   ? Container(
-                      height: 260,
-                      color: const Color(0xFF1A1A1A))
+                  height: 260,
+                  color: const Color(0xFF1A1A1A))
                   : isVideo
-                      ? AppVideoPlayer.network(url,
-                          autoPlay: true)
-                      : InteractiveViewer(
-                          child: Image.network(url,
-                              width: double.infinity,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) =>
-                                  Container(
-                                      height: 260,
-                                      color: const Color(
-                                          0xFF1A1A1A))),
-                        ),
+                  ? AppVideoPlayer.network(url,
+                  autoPlay: true)
+                  : InteractiveViewer(
+                child: Image.network(url,
+                    width: double.infinity,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) =>
+                        Container(
+                            height: 260,
+                            color: const Color(
+                                0xFF1A1A1A))),
+              ),
             ),
             Positioned(
               top: 12, left: 12,
@@ -2241,22 +2157,29 @@ class _EditField extends StatelessWidget {
 
 class _StatItem extends StatelessWidget {
   final String value, label;
+  final VoidCallback? onTap;
   const _StatItem(
-      {required this.value, required this.label});
+      {required this.value,
+        required this.label,
+        this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Column(children: [
-        Text(value,
-            style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 16)),
-        Text(label,
-            style: const TextStyle(
-                color: Colors.white38, fontSize: 10)),
-      ]),
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(children: [
+          Text(value,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16)),
+          Text(label,
+              style: const TextStyle(
+                  color: Colors.white38, fontSize: 10)),
+        ]),
+      ),
     );
   }
 }
@@ -2358,4 +2281,1065 @@ class _UploadOption extends StatelessWidget {
       ),
     );
   }
+}
+// ── Coach Delete Account Screen ───────────────────────────────────────
+
+class _CoachDeleteAccountScreen extends StatefulWidget {
+  const _CoachDeleteAccountScreen();
+
+  @override
+  State<_CoachDeleteAccountScreen> createState() =>
+      _CoachDeleteAccountScreenState();
+}
+
+class _CoachDeleteAccountScreenState
+    extends State<_CoachDeleteAccountScreen> {
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  bool _deleting = false;
+
+  Future<void> _confirmDelete() async {
+    if (_nameCtrl.text.trim().isEmpty ||
+        _phoneCtrl.text.trim().isEmpty ||
+        _passwordCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Please fill all fields'),
+              backgroundColor: Colors.redAccent));
+      return;
+    }
+
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF141414),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Account?',
+            style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800)),
+        content: const Text(
+            'Your account, Coach Score, posts and all data will be permanently deleted. This cannot be undone.',
+            style: TextStyle(
+                color: Colors.white54,
+                fontSize: 13,
+                height: 1.5)),
+        actions: [
+          TextButton(
+              onPressed: () =>
+                  Navigator.pop(context, false),
+              child: const Text('Cancel',
+                  style:
+                  TextStyle(color: Colors.white38))),
+          ElevatedButton(
+            onPressed: () =>
+                Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red),
+            child: const Text('Delete Forever',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (sure != true || !mounted) return;
+
+    setState(() => _deleting = true);
+    try {
+      final res = await http.delete(
+        Uri.parse('${ApiConfig.baseUrl}/users/me'),
+        headers: {
+          'Authorization':
+          'Bearer ${TokenStore.accessToken}',
+        },
+      );
+      if (res.statusCode != 200 &&
+          res.statusCode != 202) {
+        throw Exception(
+            'Delete failed (${res.statusCode})');
+      }
+      await TokenStore.clear();
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+            builder: (_) => const ChooseRoleScreen()),
+            (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _deleting = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not delete: $e'),
+          backgroundColor: Colors.redAccent));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: SafeArea(
+        child: Column(children: [
+          Padding(
+            padding:
+            const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Row(children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.arrow_back_ios,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 16),
+              const Text('Delete Account',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800)),
+            ]),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color:
+                      Colors.red.withOpacity(0.08),
+                      borderRadius:
+                      BorderRadius.circular(12),
+                      border: Border.all(
+                          color: Colors.red
+                              .withOpacity(0.3)),
+                    ),
+                    child: Row(children: const [
+                      Icon(Icons.warning_amber_rounded,
+                          color: Colors.redAccent,
+                          size: 22),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                            'This permanently deletes your account, Coach Score, posts and league history.',
+                            style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                height: 1.5)),
+                      ),
+                    ]),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                      'Confirm your details to continue',
+                      style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 13)),
+                  const SizedBox(height: 16),
+                  _EditField(
+                      label: 'Full Name',
+                      controller: _nameCtrl),
+                  const SizedBox(height: 14),
+                  _EditField(
+                      label: 'Phone Number',
+                      controller: _phoneCtrl),
+                  const SizedBox(height: 14),
+                  const Text('Password',
+                      style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _passwordCtrl,
+                    obscureText: true,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor:
+                      const Color(0xFF1A1A1A),
+                      border: OutlineInputBorder(
+                          borderRadius:
+                          BorderRadius.circular(10),
+                          borderSide: BorderSide.none),
+                      contentPadding:
+                      const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _deleting
+                          ? null
+                          : _confirmDelete,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        padding: const EdgeInsets
+                            .symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius.circular(
+                                14)),
+                      ),
+                      child: _deleting
+                          ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child:
+                          CircularProgressIndicator(
+                              color:
+                              Colors.white,
+                              strokeWidth: 2))
+                          : const Text(
+                          'Delete My Account',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight:
+                              FontWeight.w700,
+                              fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Coach Share Profile Screen ────────────────────────────────────────
+
+class _CoachShareProfileScreen extends StatelessWidget {
+  const _CoachShareProfileScreen();
+
+  String get _link =>
+      'https://sportyqo.app/coach/${Session.userId}';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: SafeArea(
+        child: Column(children: [
+          Padding(
+            padding:
+            const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Row(children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.arrow_back_ios,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 16),
+              const Text('Share Profile',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800)),
+            ]),
+          ),
+          const SizedBox(height: 32),
+          Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                  color: const Color(0xFF00C853),
+                  width: 2.5),
+            ),
+            child: ClipOval(
+              child: Builder(builder: (context) {
+                final u = ApiConfig.resolveMediaUrl(
+                    Session.avatarUrl);
+                final fallback = Container(
+                    color: const Color(0xFF1A1A1A),
+                    child: const Icon(Icons.person,
+                        color: Colors.white, size: 48));
+                return u != null && u.isNotEmpty
+                    ? Image.network(u,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                    fallback)
+                    : fallback;
+              }),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(Session.fullName,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800)),
+          const Text('Coach',
+              style: TextStyle(
+                  color: Color(0xFF00C853),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(height: 28),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 20),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF111111),
+                borderRadius: BorderRadius.circular(12),
+                border:
+                Border.all(color: Colors.white10),
+              ),
+              child: Row(children: [
+                const Icon(Icons.link,
+                    color: Colors.white38, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(_link,
+                      style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13),
+                      overflow: TextOverflow.ellipsis),
+                ),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 20),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Clipboard.setData(
+                      ClipboardData(text: _link));
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(const SnackBar(
+                      content: Text(
+                          'Profile link copied! 📋'),
+                      backgroundColor:
+                      Color(0xFF00C853)));
+                },
+                icon: const Icon(Icons.copy,
+                    color: Colors.white, size: 18),
+                label: const Text('Copy Link',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                  const Color(0xFF00C853),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius:
+                      BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Coach Help & Support Screen ───────────────────────────────────────
+
+class _CoachHelpSupportScreen extends StatelessWidget {
+  const _CoachHelpSupportScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final faqs = [
+      {
+        'q': 'How do I create a league?',
+        'a':
+        'Go to Home, tap Create League, set the name, sport and teams. You get a league code (like FALC-16-24) to share with your players.'
+      },
+      {
+        'q': 'How do players join my league?',
+        'a':
+        'Share your league code with them. They enter it in Join League on their Home screen and pick a team.'
+      },
+      {
+        'q': 'How do I recommend a player?',
+        'a':
+        'Open your Playbook and tap Recommend Players, or open a player profile. Your recommendation appears on their Playbook and adds Qo points.'
+      },
+      {
+        'q': 'How do I get certified?',
+        'a':
+        'Go to Settings, tap Get Certified and upload your coaching certificates. Verified coaches get a green tick on their profile.'
+      },
+      {
+        'q': 'How do I delete my account?',
+        'a':
+        'Go to Settings, tap Delete Account. Your data is removed permanently after a 30-day grace period.'
+      },
+    ];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: SafeArea(
+        child: Column(children: [
+          Padding(
+            padding:
+            const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            child: Row(children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.arrow_back_ios,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 16),
+              const Text('Help & Support',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800)),
+            ]),
+          ),
+          Expanded(
+            child: ListView(
+              children: [
+                const _SectionHeader(
+                    title:
+                    'Frequently Asked Questions'),
+                ...faqs.map((f) => Theme(
+                  data: Theme.of(context).copyWith(
+                      dividerColor:
+                      Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding:
+                    const EdgeInsets.symmetric(
+                        horizontal: 20),
+                    iconColor:
+                    const Color(0xFF00C853),
+                    collapsedIconColor:
+                    Colors.white38,
+                    title: Text(f['q']!,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight:
+                            FontWeight.w600)),
+                    children: [
+                      Padding(
+                        padding:
+                        const EdgeInsets.fromLTRB(
+                            20, 0, 20, 14),
+                        child: Text(f['a']!,
+                            style: const TextStyle(
+                                color:
+                                Colors.white54,
+                                fontSize: 13,
+                                height: 1.5)),
+                      ),
+                    ],
+                  ),
+                )),
+                const _SectionDivider(),
+                const _SectionHeader(
+                    title: 'Contact Us'),
+                _SettingsRow(
+                  icon: Icons.email_outlined,
+                  title: 'Email Support',
+                  subtitle: 'support@sportyqo.app',
+                  onTap: () {
+                    Clipboard.setData(const ClipboardData(
+                        text: 'support@sportyqo.app'));
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(const SnackBar(
+                        content: Text(
+                            'Email copied! 📋'),
+                        backgroundColor:
+                        Color(0xFF00C853)));
+                  },
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Coach About Screen ────────────────────────────────────────────────
+
+class _CoachAboutScreen extends StatelessWidget {
+  const _CoachAboutScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: SafeArea(
+        child: Column(children: [
+          Padding(
+            padding:
+            const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Row(children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.arrow_back_ios,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 16),
+              const Text('About SportyQo',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800)),
+            ]),
+          ),
+          const SizedBox(height: 32),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.network(
+              'https://i.ibb.co/cXgJptfk/29.png',
+              width: 90,
+              height: 90,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00C853),
+                  borderRadius:
+                  BorderRadius.circular(20),
+                ),
+                child: const Icon(Icons.bolt,
+                    color: Colors.white, size: 44),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          RichText(
+            text: const TextSpan(children: [
+              TextSpan(
+                  text: 'Sporty',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800)),
+              TextSpan(
+                  text: 'Qo',
+                  style: TextStyle(
+                      color: Color(0xFF00C853),
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800)),
+            ]),
+          ),
+          const Text('Every Player Counts.',
+              style: TextStyle(
+                  color: Colors.white54, fontSize: 13)),
+          const SizedBox(height: 6),
+          const Text('Version 1.0.0',
+              style: TextStyle(
+                  color: Colors.white38, fontSize: 12)),
+          const SizedBox(height: 24),
+          const Padding(
+            padding:
+            EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+                'SportyQo is a sports networking platform where coaches build verified profiles, run leagues, discover talent and recommend players. Track your players, grow your academy and build your coaching reputation.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 13,
+                    height: 1.6)),
+          ),
+          const SizedBox(height: 24),
+          _SettingsRow(
+            icon: Icons.privacy_tip_outlined,
+            title: 'Privacy Policy',
+            onTap: () => Navigator.push(
+                context, LegalScreen.privacyRoute()),
+          ),
+          _SettingsRow(
+            icon: Icons.description_outlined,
+            title: 'Terms of Service',
+            onTap: () => Navigator.push(
+                context, LegalScreen.termsRoute()),
+          ),
+          const Spacer(),
+          const Text('Made with ❤️ in India',
+              style: TextStyle(
+                  color: Colors.white24, fontSize: 12)),
+          const SizedBox(height: 20),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Coach Rate Us Screen ──────────────────────────────────────────────
+
+class _CoachRateUsScreen extends StatefulWidget {
+  const _CoachRateUsScreen();
+
+  @override
+  State<_CoachRateUsScreen> createState() =>
+      _CoachRateUsScreenState();
+}
+
+class _CoachRateUsScreenState
+    extends State<_CoachRateUsScreen> {
+  int _stars = 0;
+  final _feedbackCtrl = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: SafeArea(
+        child: Column(children: [
+          Padding(
+            padding:
+            const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Row(children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.arrow_back_ios,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 16),
+              const Text('Rate Us',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800)),
+            ]),
+          ),
+          const Spacer(),
+          const Icon(Icons.sports,
+              color: Color(0xFF00C853), size: 52),
+          const SizedBox(height: 14),
+          const Text('Enjoying SportyQo?',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          const Text('Tap a star to rate the app',
+              style: TextStyle(
+                  color: Colors.white54, fontSize: 13)),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (i) {
+              return GestureDetector(
+                onTap: () =>
+                    setState(() => _stars = i + 1),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6),
+                  child: Icon(
+                    i < _stars
+                        ? Icons.star
+                        : Icons.star_border,
+                    color: const Color(0xFFFFB300),
+                    size: 40,
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 32),
+            child: TextField(
+              controller: _feedbackCtrl,
+              maxLines: 3,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 14),
+              decoration: InputDecoration(
+                hintText:
+                'Tell us what you think (optional)',
+                hintStyle: const TextStyle(
+                    color: Colors.white24,
+                    fontSize: 13),
+                filled: true,
+                fillColor: const Color(0xFF1A1A1A),
+                border: OutlineInputBorder(
+                    borderRadius:
+                    BorderRadius.circular(12),
+                    borderSide: BorderSide.none),
+                contentPadding:
+                const EdgeInsets.all(14),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 32),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _stars == 0
+                    ? null
+                    : () {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(
+                      content: Text(
+                          'Thanks for the $_stars star rating! 🎉'),
+                      backgroundColor:
+                      const Color(
+                          0xFF00C853)));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                  const Color(0xFF00C853),
+                  disabledBackgroundColor:
+                  Colors.white10,
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 15),
+                  shape: RoundedRectangleBorder(
+                      borderRadius:
+                      BorderRadius.circular(14)),
+                ),
+                child: Text('Submit Rating',
+                    style: TextStyle(
+                        color: _stars == 0
+                            ? Colors.white38
+                            : Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15)),
+              ),
+            ),
+          ),
+          const Spacer(flex: 2),
+        ]),
+      ),
+    );
+  }
+}
+
+// ── Coach Connections (Followers / Following) — Instagram style ───────
+
+class _CoachConnectionsScreen extends StatefulWidget {
+  final int initialTab;
+  const _CoachConnectionsScreen({this.initialTab = 0});
+
+  @override
+  State<_CoachConnectionsScreen> createState() =>
+      _CoachConnectionsScreenState();
+}
+
+class _CoachConnectionsScreenState
+    extends State<_CoachConnectionsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabs;
+  List<Map<String, dynamic>>? _followers;
+  List<Map<String, dynamic>>? _following;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabs = TabController(
+        length: 2,
+        vsync: this,
+        initialIndex: widget.initialTab);
+    _loadKind('followers');
+    _loadKind('following');
+  }
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadKind(String kind) async {
+    try {
+      final res = await http.get(
+        Uri.parse(
+            '${ApiConfig.baseUrl}/users/me/connections?kind=$kind'),
+        headers: {
+          'Authorization':
+          'Bearer ${TokenStore.accessToken}',
+        },
+      );
+      List<Map<String, dynamic>> items = [];
+      if (res.statusCode == 200) {
+        items = ((jsonDecode(res.body)
+        as Map<String, dynamic>)['items']
+        as List<dynamic>)
+            .cast<Map<String, dynamic>>();
+      }
+      if (!mounted) return;
+      setState(() {
+        if (kind == 'followers') {
+          _followers = items;
+        } else {
+          _following = items;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        if (kind == 'followers') {
+          _followers = [];
+        } else {
+          _following = [];
+        }
+      });
+    }
+  }
+
+  Future<void> _toggleTrack(
+      Map<String, dynamic> u) async {
+    final id = u['id'] as String?;
+    if (id == null) return;
+    final wasFollowing =
+        u['viewer_following'] == true;
+    setState(
+            () => u['viewer_following'] = !wasFollowing);
+    try {
+      final uri = Uri.parse(
+          '${ApiConfig.baseUrl}/users/$id/track');
+      final headers = {
+        'Authorization':
+        'Bearer ${TokenStore.accessToken}',
+      };
+      final res = wasFollowing
+          ? await http.delete(uri, headers: headers)
+          : await http.post(uri, headers: headers);
+      if (res.statusCode >= 400) {
+        throw Exception('failed');
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() =>
+        u['viewer_following'] = wasFollowing);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: SafeArea(
+        child: Column(children: [
+          Padding(
+            padding:
+            const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Row(children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.arrow_back_ios,
+                    color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 16),
+              Text(Session.fullName,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800)),
+            ]),
+          ),
+          TabBar(
+            controller: _tabs,
+            indicatorColor: const Color(0xFF00C853),
+            indicatorWeight: 2,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white38,
+            labelStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700),
+            tabs: [
+              Tab(
+                  text:
+                  '${_followers?.length ?? ''} Fans'),
+              Tab(
+                  text:
+                  '${_following?.length ?? ''} Tracking'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabs,
+              children: [
+                _buildList(_followers,
+                    'No fans yet'),
+                _buildList(_following,
+                    'Not tracking anyone yet'),
+              ],
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildList(
+      List<Map<String, dynamic>>? items,
+      String emptyText) {
+    if (items == null) {
+      return const Center(
+          child: CircularProgressIndicator(
+              color: Color(0xFF00C853)));
+    }
+    if (items.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.people_outline,
+                color: Colors.white24, size: 48),
+            const SizedBox(height: 12),
+            Text(emptyText,
+                style: const TextStyle(
+                    color: Colors.white38,
+                    fontSize: 14)),
+          ],
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: items.length,
+      itemBuilder: (context, i) =>
+          _CoachUserListTile(
+              user: items[i],
+              onToggle: () =>
+                  _toggleTrack(items[i])),
+    );
+  }
+}
+
+class _CoachUserListTile extends StatelessWidget {
+  final Map<String, dynamic> user;
+  final VoidCallback onToggle;
+  const _CoachUserListTile(
+      {required this.user, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    final name =
+        (user['full_name'] as String?) ?? 'Player';
+    final verified = user['verified'] == true;
+    final role = (user['role'] as String?) ?? 'player';
+    final sub = (user['player_id'] as String?) ??
+        (role == 'coach' ? 'Coach' : 'Player');
+    final following =
+        user['viewer_following'] == true;
+    final avatar = ApiConfig.resolveMediaUrl(
+        user['avatar_url'] as String?);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: 20, vertical: 8),
+      child: Row(children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+                color: role == 'coach'
+                    ? const Color(0xFF00C853)
+                    : const Color(0xFF7B2FFF),
+                width: 1.5),
+          ),
+          child: ClipOval(
+            child: avatar != null && avatar.isNotEmpty
+                ? Image.network(avatar,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    _initialBox(name))
+                : _initialBox(name),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment:
+            CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Flexible(
+                  child: Text(name,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight:
+                          FontWeight.w700),
+                      overflow:
+                      TextOverflow.ellipsis),
+                ),
+                if (verified) ...[
+                  const SizedBox(width: 4),
+                  const Icon(Icons.verified,
+                      color: Color(0xFF00C853),
+                      size: 14),
+                ],
+              ]),
+              Text(sub,
+                  style: const TextStyle(
+                      color: Colors.white38,
+                      fontSize: 12)),
+            ],
+          ),
+        ),
+        GestureDetector(
+          onTap: onToggle,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 18, vertical: 7),
+            decoration: BoxDecoration(
+              color: following
+                  ? Colors.white10
+                  : const Color(0xFF00C853),
+              borderRadius: BorderRadius.circular(8),
+              border: following
+                  ? Border.all(color: Colors.white24)
+                  : null,
+            ),
+            child: Text(
+                following ? 'Tracking' : 'Track',
+                style: TextStyle(
+                    color: following
+                        ? Colors.white70
+                        : Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600)),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _initialBox(String name) => Container(
+    color: const Color(0xFF1A1A1A),
+    child: Center(
+        child: Text(
+            name.isNotEmpty
+                ? name[0].toUpperCase()
+                : '?',
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800))),
+  );
 }
