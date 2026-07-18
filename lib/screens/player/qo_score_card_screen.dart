@@ -243,16 +243,16 @@ class _QoScoreCardScreenState extends State<QoScoreCardScreen> {
                       _ScoreStat(
                           label: 'Level',
                           value:
-                              '${serverCard?['level'] ?? 1}'),
+                          '${serverCard?['level'] ?? 1}'),
                       _ScoreStat(
                           label: 'Next Card',
                           value: (serverCard?['next_tier']
-                                  ?['label'] as String?) ??
+                          ?['label'] as String?) ??
                               'Max'),
                       _ScoreStat(
                           label: 'Points Needed',
                           value:
-                              '${serverCard?['next_tier']?['points_needed'] ?? 0}'),
+                          '${serverCard?['next_tier']?['points_needed'] ?? 0}'),
                     ],
                   ),
                 ]),
@@ -307,22 +307,22 @@ class _QoScoreCardScreenState extends State<QoScoreCardScreen> {
                           if (i > 0) const SizedBox(height: 12),
                           _CardProgress(
                             emoji: _tierEmoji[
-                                    (_tiers[i] as Map)['tier']] ??
+                            (_tiers[i] as Map)['tier']] ??
                                 '🏏',
                             label: (_tiers[i]
-                                as Map)['label'] as String,
+                            as Map)['label'] as String,
                             level:
-                                'Level ${(_tiers[i] as Map)['level']}',
+                            'Level ${(_tiers[i] as Map)['level']}',
                             points: _fmtPoints((_tiers[i]
-                                as Map)['threshold'] as int),
+                            as Map)['threshold'] as int),
                             value: currentScore,
                             max: (_tiers[i]
-                                as Map)['threshold'] as int,
+                            as Map)['threshold'] as int,
                             color: _hex(
                                 (_tiers[i] as Map)['hex'] as String?,
                                 const Color(0xFF7B2FFF)),
                             isActive: (serverCard?['level'] ??
-                                    0) ==
+                                0) ==
                                 (_tiers[i] as Map)['level'],
                           ),
                         ],
@@ -356,16 +356,16 @@ class _QoScoreCardScreenState extends State<QoScoreCardScreen> {
                               fontSize: 16)),
                       const SizedBox(height: 16),
                       for (final raw
-                          in (_data?['breakdown'] as List<dynamic>? ??
-                              const [])) ...[
+                      in (_data?['breakdown'] as List<dynamic>? ??
+                          const [])) ...[
                         _ScoreBar(
                             label: (raw as Map)['category'] as String,
                             value: ((raw['max'] as num) == 0)
                                 ? 0
                                 : ((raw['points'] as num) /
-                                        (raw['max'] as num))
-                                    .clamp(0.0, 1.0)
-                                    .toDouble(),
+                                (raw['max'] as num))
+                                .clamp(0.0, 1.0)
+                                .toDouble(),
                             score: (raw['points'] as num).toInt(),
                             color: cardColor),
                         const SizedBox(height: 12),
@@ -400,8 +400,8 @@ class _QoScoreCardScreenState extends State<QoScoreCardScreen> {
                               fontSize: 16)),
                       const SizedBox(height: 16),
                       ...((_data?['improve_tips']
-                                  as List<dynamic>?) ??
-                              const [])
+                      as List<dynamic>?) ??
+                          const [])
                           .map((tip) => Padding(
                         padding: const EdgeInsets
                             .only(bottom: 12),
@@ -469,6 +469,106 @@ class _QoScoreCardScreenState extends State<QoScoreCardScreen> {
                                 fontSize: 13,
                                 height: 1.4)),
                       )),
+                    ],
+                  ),
+                ),
+              ),
+
+
+              const SizedBox(height: 16),
+
+              // ── How Qo Points Work ──
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF111111),
+                    borderRadius:
+                    BorderRadius.circular(16),
+                    border: Border.all(
+                        color: Colors.white10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Icon(Icons.menu_book_outlined,
+                            color: cardColor, size: 20),
+                        const SizedBox(width: 8),
+                        const Text('How Qo Points Work',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight:
+                                FontWeight.w700,
+                                fontSize: 14)),
+                      ]),
+                      const SizedBox(height: 4),
+                      const Text(
+                          'Official SportyQo scoring structure',
+                          style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 11)),
+                      const SizedBox(height: 14),
+                      _PointsGroup(
+                          color: cardColor,
+                          title: '🎁 Getting Started',
+                          rows: const [
+                            ['Welcome bonus on joining', '+50'],
+                          ]),
+                      _PointsGroup(
+                          color: cardColor,
+                          title: '📤 Uploads',
+                          rows: const [
+                            ['Photo post', '+1'],
+                            ['Video post', '+2'],
+                            ['Certificate', '+5'],
+                          ]),
+                      _PointsGroup(
+                          color: cardColor,
+                          title: '🏏 Batting (per match)',
+                          rows: const [
+                            ['0 – 10 runs', '+5'],
+                            ['11 – 25 runs', '+8'],
+                            ['26 – 45 runs', '+12'],
+                            ['46 – 99 runs', '+20'],
+                            ['100+ runs', '+50'],
+                          ]),
+                      _PointsGroup(
+                          color: cardColor,
+                          title: '🎯 Bowling',
+                          rows: const [
+                            ['1 – 2 wickets', '+5'],
+                            ['3+ wickets', '+20'],
+                          ]),
+                      _PointsGroup(
+                          color: cardColor,
+                          title: '🧤 Fielding',
+                          rows: const [
+                            ['2 catches / assists', '+2'],
+                            ['3+ catches / assists', '+5'],
+                          ]),
+                      _PointsGroup(
+                          color: cardColor,
+                          title: '🏅 Achievement Bonuses',
+                          rows: const [
+                            ['Player of the Match', '+20'],
+                            ['Man of the Match', '+20'],
+                            ['Best Bowler', '+20'],
+                            ['Best Batsman', '+20'],
+                            ['MVP Performance', '+25'],
+                          ]),
+                      _PointsGroup(
+                          color: cardColor,
+                          title: '🏆 Team Achievements',
+                          rows: const [
+                            ['Match win (team bonus)', '+20'],
+                            ['Tournament Finalist', '+50'],
+                            ['Championship Runner Up', '+50'],
+                            ['Championship Winner', '+100'],
+                          ]),
                     ],
                   ),
                 ),
@@ -689,6 +789,52 @@ class _ScoreBar extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+
+class _PointsGroup extends StatelessWidget {
+  final String title;
+  final List<List<String>> rows;
+  final Color color;
+  const _PointsGroup(
+      {required this.title,
+        required this.rows,
+        required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style: const TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5)),
+          const SizedBox(height: 6),
+          ...rows.map((r) => Padding(
+            padding:
+            const EdgeInsets.only(bottom: 4),
+            child: Row(children: [
+              Expanded(
+                child: Text(r[0],
+                    style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12.5)),
+              ),
+              Text(r[1],
+                  style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12.5)),
+            ]),
+          )),
+        ],
+      ),
     );
   }
 }
