@@ -1192,17 +1192,32 @@ class _DeleteAccountScreen extends StatefulWidget {
 class _DeleteAccountScreenState
     extends State<_DeleteAccountScreen> {
   final _nameCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _deleting = false;
 
   Future<void> _confirmDelete() async {
     if (_nameCtrl.text.trim().isEmpty ||
-        _phoneCtrl.text.trim().isEmpty ||
+        _emailCtrl.text.trim().isEmpty ||
         _passwordCtrl.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('Please fill all fields'),
+              backgroundColor: Colors.redAccent));
+      return;
+    }
+
+    final accountEmail =
+    ((Session.user?['email'] as String?) ?? '')
+        .trim()
+        .toLowerCase();
+    if (accountEmail.isNotEmpty &&
+        _emailCtrl.text.trim().toLowerCase() !=
+            accountEmail) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  "Email doesn't match your account email"),
               backgroundColor: Colors.redAccent));
       return;
     }
@@ -1344,8 +1359,8 @@ class _DeleteAccountScreenState
                       controller: _nameCtrl),
                   const SizedBox(height: 14),
                   _EditField(
-                      label: 'Phone Number',
-                      controller: _phoneCtrl),
+                      label: 'Email',
+                      controller: _emailCtrl),
                   const SizedBox(height: 14),
                   const Text('Password',
                       style: TextStyle(
@@ -2715,11 +2730,24 @@ class _VideoCard extends StatelessWidget {
       child: Stack(children: [
         Positioned.fill(
           child: item['type'] == 'video'
-              ? Container(
-              color: const Color(0xFF15152A),
-              child: const Center(
-                  child: Icon(Icons.movie_outlined,
-                      color: Colors.white24, size: 40)))
+              ? Builder(builder: (context) {
+            final thumb =
+            item['thumbnail'] as String?;
+            final iconBox = Container(
+                color: const Color(0xFF15152A),
+                child: const Center(
+                    child: Icon(
+                        Icons.movie_outlined,
+                        color: Colors.white24,
+                        size: 40)));
+            return thumb != null &&
+                thumb.isNotEmpty
+                ? Image.network(thumb,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                iconBox)
+                : iconBox;
+          })
               : Image.network(
             item['image'] ?? '',
             fit: BoxFit.cover,

@@ -23,7 +23,7 @@ class _SelectCoachSportScreenState extends State<SelectCoachSportScreen> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const CoachHomeScreen()),
-        (route) => false,
+            (route) => false,
       );
     } catch (e) {
       if (mounted) showApiError(context, e);
@@ -36,42 +36,42 @@ class _SelectCoachSportScreenState extends State<SelectCoachSportScreen> {
     {
       'name': 'Cricket',
       'emoji': '🏏',
-      'image': 'https://i.ibb.co/mC7w3JvY/Screenshot-2026-06-30-122618.png',
+      'image': 'https://i.ibb.co/5g8XNRnC/296480.jpg',
     },
     {
       'name': 'Football',
       'emoji': '⚽',
-      'image': 'https://i.ibb.co/bgZY2Qb9/Screenshot-2026-06-30-122653.png',
+      'image': 'https://i.ibb.co/vCBQG4Wn/IMG-20260715-WA0018.jpg',
     },
     {
       'name': 'Volleyball',
       'emoji': '🏐',
-      'image': 'https://i.ibb.co/Jj2fLjFX/Screenshot-2026-06-30-122700.png',
+      'image': 'https://i.ibb.co/zHh6mvNv/296486.jpg',
     },
     {
       'name': 'Basketball',
       'emoji': '🏀',
-      'image': 'https://i.ibb.co/WN5yRxqX/Screenshot-2026-06-30-122705.png',
+      'image': 'https://i.ibb.co/3y3shwwB/296487.jpg',
     },
     {
       'name': 'Swimming',
       'emoji': '🏊',
-      'image': 'https://i.ibb.co/N6X7pRvv/Screenshot-2026-06-30-122716.png',
+      'image': 'https://i.ibb.co/9H4ZFMCM/296483.jpg',
     },
     {
       'name': 'Badminton',
       'emoji': '🏸',
-      'image': 'https://i.ibb.co/sJNf2nWT/Screenshot-2026-06-30-122810.png',
+      'image': 'https://i.ibb.co/5gFFcxtn/296482.jpg',
     },
     {
       'name': 'Tennis',
       'emoji': '🎾',
-      'image': 'https://i.ibb.co/XTmSVLH/Screenshot-2026-06-30-122816.png',
+      'image': 'https://i.ibb.co/B5nvZTjc/296481.jpg',
     },
     {
       'name': 'Kabaddi',
       'emoji': '🤼',
-      'image': 'https://i.ibb.co/MDbR7Fw2/Screenshot-2026-06-30-122823.png',
+      'image': 'https://i.ibb.co/KTPKmR1/296484.jpg',
     },
   ];
 
@@ -134,7 +134,7 @@ class _SelectCoachSportScreenState extends State<SelectCoachSportScreen> {
                     crossAxisCount: 2,
                     crossAxisSpacing: 14,
                     mainAxisSpacing: 14,
-                    childAspectRatio: 1.15,
+                    childAspectRatio: 0.8,
                   ),
                   itemCount: _sports.length,
                   itemBuilder: (context, i) {
@@ -146,7 +146,6 @@ class _SelectCoachSportScreenState extends State<SelectCoachSportScreen> {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0F0F2A),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
                             color: isSelected
@@ -165,47 +164,75 @@ class _SelectCoachSportScreenState extends State<SelectCoachSportScreen> {
                           ]
                               : [],
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
+                        child: ClipRRect(
+                          borderRadius:
+                          BorderRadius.circular(16),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.network(
                                 sport['image'] as String,
-                                width: 90,
-                                height: 90,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Text(
-                                  sport['emoji'] as String,
-                                  style: const TextStyle(fontSize: 52),
+                                alignment: Alignment
+                                    .bottomCenter,
+                                loadingBuilder: (context,
+                                    child, progress) {
+                                  if (progress == null) {
+                                    return child;
+                                  }
+                                  return Container(
+                                    color: const Color(
+                                        0xFF13132B),
+                                    child: const Center(
+                                      child:
+                                      CircularProgressIndicator(
+                                        color: Color(
+                                            0xFF00C853),
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                errorBuilder:
+                                    (_, __, ___) =>
+                                    Container(
+                                      color: const Color(
+                                          0xFF13132B),
+                                      child: const Icon(
+                                          Icons
+                                              .image_outlined,
+                                          color:
+                                          Colors.white24,
+                                          size: 40),
+                                    ),
+                              ),
+                              if (isSelected)
+                                Positioned(
+                                  top: 10,
+                                  right: 10,
+                                  child: Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration:
+                                    BoxDecoration(
+                                      color: const Color(
+                                          0xFF00C853),
+                                      shape:
+                                      BoxShape.circle,
+                                      border: Border.all(
+                                          color: Colors
+                                              .white,
+                                          width: 2),
+                                    ),
+                                    child: const Icon(
+                                        Icons.check,
+                                        color:
+                                        Colors.white,
+                                        size: 16),
+                                  ),
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              sport['name'] as String,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? const Color(0xFF00C853)
-                                    : Colors.white,
-                                fontSize: 14,
-                                fontWeight: isSelected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                              ),
-                            ),
-                            if (isSelected) ...[
-                              const SizedBox(height: 4),
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF00C853),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
                             ],
-                          ],
+                          ),
                         ),
                       ),
                     );

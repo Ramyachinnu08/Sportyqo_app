@@ -1,3 +1,4 @@
+import '../../api/api_config.dart';
 import 'package:flutter/material.dart';
 import '../../api/mappers.dart';
 import '../../api/services.dart';
@@ -192,6 +193,56 @@ class _CoachHomeTabState extends State<_CoachHomeTab> {
                                       0xFF0A0A0A),
                                   width: 1.5)),
                         ),
+                      ),
+                      const SizedBox(width: 10),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                const _CoachProfileImageScreen())),
+                        child: Builder(builder: (context) {
+                          final resolved =
+                          ApiConfig.resolveMediaUrl(
+                              Session.avatarUrl);
+                          final initial = Text(
+                              Session.firstName.isNotEmpty
+                                  ? Session.firstName[0]
+                                  .toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight:
+                                  FontWeight.w800));
+                          return Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color:
+                              const Color(0xFF13132B),
+                              border: Border.all(
+                                  color: const Color(
+                                      0xFF00C853),
+                                  width: 2),
+                            ),
+                            child: ClipOval(
+                              child: resolved != null &&
+                                  resolved.isNotEmpty
+                                  ? Image.network(resolved,
+                                  fit: BoxFit.cover,
+                                  width: 44,
+                                  height: 44,
+                                  errorBuilder:
+                                      (_, __, ___) =>
+                                      Center(
+                                          child:
+                                          initial))
+                                  : Center(child: initial),
+                            ),
+                          );
+                        }),
                       ),
                     ]),
                   ),
@@ -680,7 +731,7 @@ class _CoachHomeTabState extends State<_CoachHomeTab> {
                 _StatChip(
                     label: 'Win Rate',
                     value:
-                        '${(((_stats['win_rate'] as num?) ?? 0) * 100).round()}%'),
+                    '${(((_stats['win_rate'] as num?) ?? 0) * 100).round()}%'),
               ],
             ),
             const SizedBox(height: 16),
@@ -803,13 +854,13 @@ class _CoachNotificationScreenState
           Expanded(
             child: _loading
                 ? const Center(
-                    child: CircularProgressIndicator())
+                child: CircularProgressIndicator())
                 : _notifications.isEmpty
-                    ? const Center(
-                        child: Text('No notifications yet',
-                            style: TextStyle(
-                                color: Colors.white38)))
-                    : ListView.separated(
+                ? const Center(
+                child: Text('No notifications yet',
+                    style: TextStyle(
+                        color: Colors.white38)))
+                : ListView.separated(
               padding: const EdgeInsets.symmetric(
                   horizontal: 20),
               itemCount: _notifications.length,
@@ -934,5 +985,70 @@ class _StatChip extends StatelessWidget {
           style: const TextStyle(
               color: Colors.white38, fontSize: 12)),
     ]);
+  }
+}
+
+// ── Coach Profile Image (full screen) ─────────────────────────────────
+
+class _CoachProfileImageScreen extends StatelessWidget {
+  const _CoachProfileImageScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    final u =
+    ApiConfig.resolveMediaUrl(Session.avatarUrl);
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(children: [
+          Center(
+            child: u != null && u.isNotEmpty
+                ? InteractiveViewer(
+              child: Image.network(u,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.person,
+                      color: Colors.white24,
+                      size: 96)),
+            )
+                : const Icon(Icons.person,
+                color: Colors.white24, size: 96),
+          ),
+          Positioned(
+            top: 12,
+            left: 12,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle),
+                child: const Icon(Icons.arrow_back_ios,
+                    color: Colors.white, size: 18),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 24,
+            left: 0,
+            right: 0,
+            child: Column(children: [
+              Text(Session.fullName,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800)),
+              const Text('Coach',
+                  style: TextStyle(
+                      color: Color(0xFF00C853),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600)),
+            ]),
+          ),
+        ]),
+      ),
+    );
   }
 }

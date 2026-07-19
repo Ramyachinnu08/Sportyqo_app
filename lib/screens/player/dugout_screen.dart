@@ -843,6 +843,8 @@ class _ProfileDetailScreenState
             'url': ApiConfig.resolveMediaUrl(
                 m['url'] as String?),
             'type': m['type'] ?? 'image',
+            'thumbnail': ApiConfig.resolveMediaUrl(
+                m['thumbnail_url'] as String?),
             'title': (m['title'] ??
                 m['content'] ??
                 '') as String,
@@ -1355,15 +1357,34 @@ class _ProfileDetailScreenState
                     child: Stack(children: [
                       Positioned.fill(
                         child: isVideo
-                            ? Container(
-                            color: const Color(
-                                0xFF15152A),
-                            child: const Icon(
-                                Icons
-                                    .movie_outlined,
-                                color: Colors
-                                    .white24,
-                                size: 28))
+                            ? Builder(builder:
+                            (context) {
+                          final thumb = item[
+                          'thumbnail']
+                          as String?;
+                          final iconBox = Container(
+                              color: const Color(
+                                  0xFF15152A),
+                              child: const Icon(
+                                  Icons
+                                      .movie_outlined,
+                                  color: Colors
+                                      .white24,
+                                  size: 28));
+                          return thumb !=
+                              null &&
+                              thumb
+                                  .isNotEmpty
+                              ? Image.network(
+                              thumb,
+                              fit: BoxFit
+                                  .cover,
+                              errorBuilder:
+                                  (_, __,
+                                  ___) =>
+                              iconBox)
+                              : iconBox;
+                        })
                             : Image.network(
                           url,
                           fit: BoxFit.cover,
