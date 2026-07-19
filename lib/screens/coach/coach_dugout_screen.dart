@@ -480,7 +480,7 @@ class _PostCard extends StatelessWidget {
                   onTap: onTapProfile,
                   child: ClipOval(
                     child: Image.network(
-                      post['avatar'],
+                      (post['avatar'] as String?) ?? '',
                       width: 46,
                       height: 46,
                       fit: BoxFit.cover,
@@ -953,7 +953,7 @@ class _ProfileDetailScreenState
                         ),
                         child: ClipOval(
                           child: Image.network(
-                            p['avatar'],
+                            (p['avatar'] as String?) ?? '',
                             fit: BoxFit.cover,
                             errorBuilder:
                                 (_, __, ___) =>
