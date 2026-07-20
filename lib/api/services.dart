@@ -305,13 +305,6 @@ class LeagueService {
   static Future<Map<String, dynamic>> detail(String leagueId) async =>
       await ApiClient.get('/leagues/$leagueId') as Map<String, dynamic>;
 
-  /// Active players in a league, optionally filtered to one team.
-  static Future<List<dynamic>> players(String leagueId,
-      {String? teamId}) async =>
-      (await ApiClient.get(
-          '/leagues/$leagueId/players${teamId != null ? '?team_id=$teamId' : ''}')
-      as Map<String, dynamic>)['items'] as List<dynamic>;
-
   /// Look a league up by its invite code (for the join screen's team picker).
   static Future<Map<String, dynamic>?> findByCode(String code) async {
     // The backend keys join on the code; league detail needs an id, so we
