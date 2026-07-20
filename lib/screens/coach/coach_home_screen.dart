@@ -1,3 +1,6 @@
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../../api/api_config.dart';
 import 'package:flutter/material.dart';
 import '../../api/mappers.dart';
@@ -194,75 +197,60 @@ class _CoachHomeTabState extends State<_CoachHomeTab> {
                                   width: 1.5)),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) =>
-                                const _CoachProfileImageScreen())),
-                        child: Builder(builder: (context) {
-                          final resolved =
-                          ApiConfig.resolveMediaUrl(
-                              Session.avatarUrl);
-                          final initial = Text(
-                              Session.firstName.isNotEmpty
-                                  ? Session.firstName[0]
-                                  .toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight:
-                                  FontWeight.w800));
-                          return Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color:
-                              const Color(0xFF13132B),
-                              border: Border.all(
-                                  color: const Color(
-                                      0xFF00C853),
-                                  width: 2),
-                            ),
-                            child: ClipOval(
-                              child: resolved != null &&
-                                  resolved.isNotEmpty
-                                  ? Image.network(resolved,
-                                  fit: BoxFit.cover,
-                                  width: 44,
-                                  height: 44,
-                                  errorBuilder:
-                                      (_, __, ___) =>
-                                      Center(
-                                          child:
-                                          initial))
-                                  : Center(child: initial),
-                            ),
-                          );
-                        }),
-                      ),
                     ]),
                   ),
                   const SizedBox(width: 10),
                   GestureDetector(
-                    onTap: () =>
-                        _showProfileQuick(context),
-                    child: Container(
-                      width: 44, height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color:
-                            const Color(0xFF00C853),
-                            width: 2),
-                        color: const Color(0xFF1A1A1A),
-                      ),
-                      child: const Icon(Icons.person,
-                          color: Colors.white, size: 24),
-                    ),
+                    onTap: () async {
+                      await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                              const _CoachProfileImageScreen()));
+                      if (mounted) setState(() {});
+                    },
+                    child: Builder(builder: (context) {
+                      final resolved =
+                      ApiConfig.resolveMediaUrl(
+                          Session.avatarUrl);
+                      final initial = Text(
+                          Session.firstName.isNotEmpty
+                              ? Session.firstName[0]
+                              .toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight:
+                              FontWeight.w800));
+                      return Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color:
+                          const Color(0xFF13132B),
+                          border: Border.all(
+                              color: const Color(
+                                  0xFF00C853),
+                              width: 2),
+                        ),
+                        child: ClipOval(
+                          child: resolved != null &&
+                              resolved.isNotEmpty
+                              ? Image.network(resolved,
+                              fit: BoxFit.cover,
+                              width: 44,
+                              height: 44,
+                              errorBuilder:
+                                  (_, __, ___) =>
+                                  Center(
+                                      child:
+                                      initial))
+                              : Center(child: initial),
+                        ),
+                      );
+                    }),
                   ),
                 ]),
               ),
@@ -988,63 +976,220 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-// ── Coach Profile Image (full screen) ─────────────────────────────────
+// ── Coach Profile Photo (full screen, like player) ────────────────────
 
-class _CoachProfileImageScreen extends StatelessWidget {
+class _CoachProfileImageScreen extends StatefulWidget {
   const _CoachProfileImageScreen();
 
   @override
+  State<_CoachProfileImageScreen> createState() =>
+      _CoachProfileImageScreenState();
+}
+
+class _CoachProfileImageScreenState
+    extends State<_CoachProfileImageScreen> {
+  final _picker = ImagePicker();
+  String? _avatarUrl = Session.avatarUrl;
+  bool _uploading = false;
+
+  String _mimeFor(XFile x) {
+    if (x.mimeType != null && x.mimeType!.isNotEmpty) {
+      return x.mimeType!;
+    }
+    final n = x.name.toLowerCase();
+    if (n.endsWith('.png')) return 'image/png';
+    if (n.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
+  }
+
+  Future<void> _pick(ImageSource source) async {
+    if (_uploading) return;
+    try {
+      final x = await _picker.pickImage(
+          source: source,
+          maxWidth: 1080,
+          maxHeight: 1080,
+          imageQuality: 85);
+      if (x == null) return;
+      setState(() => _uploading = true);
+      final bytes = await x.readAsBytes();
+      final mime = _mimeFor(x).split('/');
+      final res = await CoachService.updateProfile(
+        avatar: http.MultipartFile.fromBytes(
+          'avatar',
+          bytes,
+          filename:
+          x.name.isNotEmpty ? x.name : 'avatar.jpg',
+          contentType: MediaType(mime[0], mime[1]),
+        ),
+      );
+      await UserService.me();
+      if (!mounted) return;
+      setState(() {
+        _avatarUrl = (res['avatar_url'] as String?) ??
+            Session.avatarUrl;
+        _uploading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Profile photo updated'),
+              backgroundColor: Color(0xFF00C853)));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _uploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not update photo: $e'),
+          backgroundColor: Colors.red));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final u =
-    ApiConfig.resolveMediaUrl(Session.avatarUrl);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF0A0A1A),
       body: SafeArea(
-        child: Stack(children: [
-          Center(
-            child: u != null && u.isNotEmpty
-                ? InteractiveViewer(
-              child: Image.network(u,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) =>
-                  const Icon(Icons.person,
-                      color: Colors.white24,
-                      size: 96)),
-            )
-                : const Icon(Icons.person,
-                color: Colors.white24, size: 96),
-          ),
-          Positioned(
-            top: 12,
-            left: 12,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                    color: Colors.black54,
-                    shape: BoxShape.circle),
+        child: Column(children: [
+          Padding(
+            padding:
+            const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            child: Row(children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
                 child: const Icon(Icons.arrow_back_ios,
-                    color: Colors.white, size: 18),
+                    color: Colors.white, size: 20),
               ),
-            ),
-          ),
-          Positioned(
-            bottom: 24,
-            left: 0,
-            right: 0,
-            child: Column(children: [
-              Text(Session.fullName,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800)),
-              const Text('Coach',
+              const SizedBox(width: 16),
+              const Text('Profile Photo',
                   style: TextStyle(
-                      color: Color(0xFF00C853),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600)),
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800)),
+            ]),
+          ),
+          const Spacer(),
+          Stack(
+              alignment: Alignment.center,
+              children: [
+                Builder(builder: (context) {
+                  final resolved =
+                  ApiConfig.resolveMediaUrl(
+                      _avatarUrl);
+                  final initial = Text(
+                      Session.firstName.isNotEmpty
+                          ? Session.firstName[0]
+                          .toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 56,
+                          fontWeight: FontWeight.w800));
+                  return Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF13132B),
+                      border: Border.all(
+                          color:
+                          const Color(0xFF00C853),
+                          width: 3),
+                    ),
+                    child: ClipOval(
+                      child: resolved != null &&
+                          resolved.isNotEmpty
+                          ? Image.network(resolved,
+                          fit: BoxFit.cover,
+                          width: 160,
+                          height: 160,
+                          errorBuilder:
+                              (_, __, ___) => Center(
+                              child: initial))
+                          : Center(child: initial),
+                    ),
+                  );
+                }),
+                if (_uploading)
+                  Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black
+                            .withOpacity(0.55)),
+                    child: const Center(
+                        child:
+                        CircularProgressIndicator(
+                            color:
+                            Color(0xFF00C853))),
+                  ),
+              ]),
+          const SizedBox(height: 24),
+          Text(Session.fullName,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800)),
+          const Text('Coach',
+              style: TextStyle(
+                  color: Color(0xFF00C853),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600)),
+          const Spacer(),
+          Padding(
+            padding:
+            const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            child: Column(children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _uploading
+                      ? null
+                      : () => _pick(ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt,
+                      color: Colors.white, size: 20),
+                  label: const Text('Take Photo',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                    const Color(0xFF00C853),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius:
+                        BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _uploading
+                      ? null
+                      : () =>
+                      _pick(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library,
+                      color: Colors.white, size: 20),
+                  label: const Text(
+                      'Choose from Gallery',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                    const Color(0xFF00C853),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius:
+                        BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
             ]),
           ),
         ]),
