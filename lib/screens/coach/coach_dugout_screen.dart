@@ -424,7 +424,7 @@ class _CoachDugoutScreenState
                           context,
                           MaterialPageRoute(
                             builder: (_) =>
-                                _ProfileDetailScreen(
+                                ProfileDetailScreen(
                                     person: post),
                           ),
                         );
@@ -695,17 +695,17 @@ class _PostCard extends StatelessWidget {
 
 // ── Profile Detail Screen ─────────────────────────────────────────────
 
-class _ProfileDetailScreen extends StatefulWidget {
+class ProfileDetailScreen extends StatefulWidget {
   final Map<String, dynamic> person;
-  const _ProfileDetailScreen({required this.person});
+  const ProfileDetailScreen({required this.person});
 
   @override
-  State<_ProfileDetailScreen> createState() =>
-      _ProfileDetailScreenState();
+  State<ProfileDetailScreen> createState() =>
+      ProfileDetailScreenState();
 }
 
-class _ProfileDetailScreenState
-    extends State<_ProfileDetailScreen> {
+class ProfileDetailScreenState
+    extends State<ProfileDetailScreen> {
   bool _isFollowing = false;
   bool _followBusy = false;
   int _followers = 0;

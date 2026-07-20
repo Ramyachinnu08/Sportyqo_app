@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../api/api_config.dart';
 import '../../widgets/recommend_dialog.dart';
+import 'coach_dugout_screen.dart' show ProfileDetailScreen;
 import '../../api/api_client.dart';
 import '../../api/mappers.dart';
 import '../../api/services.dart';
@@ -36,6 +37,7 @@ class _CoachPerformanceScreenState
     return <String, dynamic>{
       'user_id': raw['user_id'],
       'name': raw['name'] ?? '',
+      'avatar_url': raw['avatar_url'],
       'sqid': raw['player_id'] ?? '',
       'role': raw['sub_role'] ?? 'Player',
       'subRole': 'Qo ${raw['qo_score'] ?? 0}',
@@ -508,8 +510,26 @@ class _CoachPerformanceScreenState
                       )
                     else
                       ..._filtered.map((p) => GestureDetector(
-                        onTap: () =>
-                            _showPlayerDetail(context, p),
+                        onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => ProfileDetailScreen(
+                                    person: <String, dynamic>{
+                                      'author_id':
+                                      p['user_id'] as String,
+                                      'name':
+                                      (p['name'] as String?) ?? '',
+                                      'avatar': ApiConfig
+                                          .resolveMediaUrl(p[
+                                      'avatar_url']
+                                      as String?) ??
+                                          '',
+                                      'verified': false,
+                                      'sport':
+                                      (p['role'] as String?) ?? '',
+                                      'location': '',
+                                      'bio': '',
+                                    }))),
                         child: _PlayerTile(
                           player: p,
                           onKick: () => _confirmKick(p),
@@ -537,6 +557,31 @@ class _CoachPerformanceScreenState
                         entry: d,
                         onAdd: () =>
                             _addFromDirectory(d),
+                        onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    ProfileDetailScreen(
+                                        person: <String,
+                                            dynamic>{
+                                          'author_id':
+                                          d['user_id']
+                                          as String,
+                                          'name': (d['name']
+                                          as String?) ??
+                                              '',
+                                          'avatar': ApiConfig
+                                              .resolveMediaUrl(
+                                              d['avatar_url']
+                                              as String?) ??
+                                              '',
+                                          'verified': false,
+                                          'sport': (d['sub_role']
+                                          as String?) ??
+                                              'Player',
+                                          'location': '',
+                                          'bio': '',
+                                        }))),
                       )),
                     ],
 
@@ -612,131 +657,6 @@ class _CoachPerformanceScreenState
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPlayerDetail(
-      BuildContext context, Map<String, dynamic> player) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF111111),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Avatar
-            Container(
-              width: 80, height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.15),
-                border: Border.all(
-                    color: AppColors.primary.withOpacity(0.4), width: 2),
-              ),
-              child: Center(
-                  child: Text(player['emoji'] as String,
-                      style: const TextStyle(fontSize: 40))),
-            ),
-            const SizedBox(height: 12),
-            Text(player['name'] as String,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800)),
-            Text(player['sqid'] as String,
-                style: const TextStyle(
-                    color: AppColors.primary, fontSize: 13)),
-            const SizedBox(height: 16),
-
-            // Stats
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _MiniStat(label: 'Role', value: player['role']),
-                  Container(width: 1, height: 30, color: Colors.white10),
-                  _MiniStat(label: 'Sub Role', value: player['subRole']),
-                  Container(width: 1, height: 30, color: Colors.white10),
-                  _MiniStat(
-                      label: 'Rating', value: '⭐ ${player['rating']}'),
-                  Container(width: 1, height: 30, color: Colors.white10),
-                  _MiniStat(
-                      label: 'Status',
-                      value: player['active'] as bool
-                          ? '🟢 Active'
-                          : '🟠 Inactive'),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Buttons
-            Row(children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content:
-                        Text('${player['name']} recommended! ✅'),
-                        backgroundColor: AppColors.primary,
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Center(
-                      child: Text('Recommend',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14)),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: Colors.white10,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white12),
-                    ),
-                    child: const Center(
-                      child: Text('Close',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14)),
-                    ),
-                  ),
-                ),
-              ),
-            ]),
-            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -941,24 +861,6 @@ class _CoachPerformanceScreenState
   }
 }
 
-class _MiniStat extends StatelessWidget {
-  final String label, value;
-  const _MiniStat({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(children: [
-      Text(value,
-          style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w700)),
-      Text(label,
-          style: const TextStyle(color: Colors.white38, fontSize: 10)),
-    ]);
-  }
-}
-
 class _PlayerTab extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -1123,86 +1025,91 @@ class _PlayerTile extends StatelessWidget {
 class _DirectoryTile extends StatelessWidget {
   final Map<String, dynamic> entry;
   final VoidCallback onAdd;
-  const _DirectoryTile({required this.entry, required this.onAdd});
+  final VoidCallback? onTap;
+  const _DirectoryTile(
+      {required this.entry, required this.onAdd, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final name = (entry['name'] as String?) ?? '';
     final avatar =
     ApiConfig.resolveMediaUrl(entry['avatar_url'] as String?);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF141414),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Row(children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-              color: Color(0xFF1E2E1E), shape: BoxShape.circle),
-          child: ClipOval(
-            child: avatar != null && avatar.isNotEmpty
-                ? Image.network(avatar,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Center(
-                    child: Text(
-                        name.isNotEmpty
-                            ? name[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800))))
-                : Center(
-                child: Text(
-                    name.isNotEmpty
-                        ? name[0].toUpperCase()
-                        : '?',
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF141414),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+                color: Color(0xFF1E2E1E), shape: BoxShape.circle),
+            child: ClipOval(
+              child: avatar != null && avatar.isNotEmpty
+                  ? Image.network(avatar,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Center(
+                      child: Text(
+                          name.isNotEmpty
+                              ? name[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800))))
+                  : Center(
+                  child: Text(
+                      name.isNotEmpty
+                          ? name[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800))),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w800))),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13)),
+                Text(
+                    '${entry['player_id'] ?? ''} • ${entry['sub_role'] ?? 'Player'} • Qo ${entry['qo_score'] ?? 0}',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: Colors.white38, fontSize: 11)),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(name,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onAdd,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: const Text('Add',
+                  style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
-                      fontSize: 13)),
-              Text(
-                  '${entry['player_id'] ?? ''} • ${entry['sub_role'] ?? 'Player'} • Qo ${entry['qo_score'] ?? 0}',
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      color: Colors.white38, fontSize: 11)),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: onAdd,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 7),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(18),
+                      fontSize: 12)),
             ),
-            child: const Text('Add',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12)),
           ),
-        ),
-      ]),
+        ]),
+      ),
     );
   }
 }

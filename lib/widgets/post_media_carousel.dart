@@ -14,10 +14,10 @@ class PostMediaCarousel extends StatefulWidget {
 
   const PostMediaCarousel(
       {super.key,
-      required this.items,
-      this.height = 240,
-      this.accent = const Color(0xFF7B2FFF),
-      this.onTapImage});
+        required this.items,
+        this.height = 240,
+        this.accent = const Color(0xFF7B2FFF),
+        this.onTapImage});
 
   @override
   State<PostMediaCarousel> createState() => _PostMediaCarouselState();
@@ -32,8 +32,8 @@ class _PostMediaCarouselState extends State<PostMediaCarousel> {
     if (items.isEmpty) return const SizedBox.shrink();
     final multiple = items.length > 1;
 
-    return SizedBox(
-      height: widget.height,
+    return AspectRatio(
+      aspectRatio: 4 / 5, // Instagram portrait 1080x1350
       child: Stack(children: [
         PageView.builder(
           itemCount: items.length,
@@ -50,7 +50,6 @@ class _PostMediaCarouselState extends State<PostMediaCarousel> {
               child: Image.network(
                 url,
                 width: double.infinity,
-                height: widget.height,
                 fit: BoxFit.cover,
                 // decode at a bounded size so huge legacy images
                 // can't freeze feed scrolling

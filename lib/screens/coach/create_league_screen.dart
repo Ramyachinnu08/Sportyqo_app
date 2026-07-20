@@ -45,8 +45,8 @@ class _CreateLeagueScreenState
         (n.endsWith('.png')
             ? 'image/png'
             : n.endsWith('.webp')
-                ? 'image/webp'
-                : 'image/jpeg');
+            ? 'image/webp'
+            : 'image/jpeg');
     final parts = mime.split('/');
     return http.MultipartFile.fromBytes('logo', _logoBytes!,
         filename: _logoFile!.name.isNotEmpty
@@ -56,6 +56,42 @@ class _CreateLeagueScreenState
   }
 
   int _step = 1;
+
+  // Per-team logo (e.g. RCB badge) — parallel to _teamControllers.
+  final List<XFile?> _teamLogoFiles = [];
+  final List<Uint8List?> _teamLogoBytes = [];
+
+  Future<void> _pickTeamLogo(int index) async {
+    final x = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85);
+    if (x == null) return;
+    final bytes = await x.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _teamLogoFiles[index] = x;
+      _teamLogoBytes[index] = bytes;
+    });
+  }
+
+  http.MultipartFile? _teamLogoMultipart(int index) {
+    final f = _teamLogoFiles[index];
+    final b = _teamLogoBytes[index];
+    if (f == null || b == null) return null;
+    final n = f.name.toLowerCase();
+    final mime = f.mimeType ??
+        (n.endsWith('.png')
+            ? 'image/png'
+            : n.endsWith('.webp')
+            ? 'image/webp'
+            : 'image/jpeg');
+    final parts = mime.split('/');
+    return http.MultipartFile.fromBytes('logo', b,
+        filename: f.name.isNotEmpty ? f.name : 'team_logo.jpg',
+        contentType: MediaType(parts[0], parts[1]));
+  }
   bool _busy = false;
   Map<String, dynamic>? _created; // POST /leagues response (server code)
   final _leagueNameCtrl = TextEditingController();
@@ -82,6 +118,8 @@ class _CreateLeagueScreenState
     for (var i = 0; i < _teamsCount; i++) {
       _teamControllers
           .add(TextEditingController(text: 'Team ${i + 1}'));
+      _teamLogoFiles.add(null);
+      _teamLogoBytes.add(null);
     }
   }
 
@@ -100,6 +138,8 @@ class _CreateLeagueScreenState
       _teamsCount++;
       _teamControllers.add(TextEditingController(
           text: 'Team $_teamsCount'));
+      _teamLogoFiles.add(null);
+      _teamLogoBytes.add(null);
     });
   }
 
@@ -109,6 +149,8 @@ class _CreateLeagueScreenState
       _teamsCount--;
       _teamControllers[index].dispose();
       _teamControllers.removeAt(index);
+      _teamLogoFiles.removeAt(index);
+      _teamLogoBytes.removeAt(index);
     });
   }
 
@@ -177,6 +219,30 @@ class _CreateLeagueScreenState
         teamNames: teamNames,
         logo: _logoMultipart,
       );
+
+      // Upload team icons (matched by team name — the server just
+      // created these teams and returned their ids).
+      final leagueId = created['id'] as String;
+      final createdTeams =
+      ((created['teams'] as List<dynamic>?) ?? const [])
+          .cast<Map<String, dynamic>>();
+      final idByName = {
+        for (final t in createdTeams)
+          (t['name'] as String): t['id'] as String
+      };
+      for (var i = 0; i < _teamControllers.length; i++) {
+        final logo = _teamLogoMultipart(i);
+        if (logo == null) continue;
+        final teamId = idByName[_teamControllers[i].text.trim()];
+        if (teamId == null) continue;
+        try {
+          await LeagueService.uploadTeamLogo(
+              leagueId: leagueId, teamId: teamId, logo: logo);
+        } catch (_) {
+          // one bad icon shouldn't block league creation
+        }
+      }
+
       if (!mounted) return;
       setState(() {
         _created = created;
@@ -372,11 +438,11 @@ class _CreateLeagueScreenState
                   child: ClipOval(
                     child: _logoBytes != null
                         ? Image.memory(_logoBytes!,
-                            width: 88,
-                            height: 88,
-                            fit: BoxFit.cover)
+                        width: 88,
+                        height: 88,
+                        fit: BoxFit.cover)
                         : const Icon(Icons.shield_outlined,
-                            color: Colors.white38, size: 36),
+                        color: Colors.white38, size: 36),
                   ),
                 ),
                 Positioned(
@@ -671,9 +737,34 @@ class _CreateLeagueScreenState
                   Border.all(color: Colors.white10),
                 ),
                 child: Row(children: [
-                  const SizedBox(width: 12),
-                  const Icon(Icons.drag_handle,
-                      color: Colors.white24, size: 20),
+                  const SizedBox(width: 10),
+                  // Team icon — tap to upload (e.g. RCB badge)
+                  GestureDetector(
+                    onTap: () => _pickTeamLogo(i),
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF1A6BFF)
+                            .withOpacity(0.12),
+                        border: Border.all(
+                            color: const Color(0xFF1A6BFF)
+                                .withOpacity(0.4)),
+                      ),
+                      child: _teamLogoBytes[i] != null
+                          ? ClipOval(
+                          child: Image.memory(
+                              _teamLogoBytes[i]!,
+                              width: 38,
+                              height: 38,
+                              fit: BoxFit.cover))
+                          : const Icon(
+                          Icons.add_a_photo_outlined,
+                          color: Color(0xFF1A6BFF),
+                          size: 16),
+                    ),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: TextField(

@@ -12,7 +12,7 @@ class AuthService {
           body: {'email': email});
 
   static Future<void> resetPassword(
-          {required String token, required String newPassword}) async =>
+      {required String token, required String newPassword}) async =>
       await ApiClient.post('/auth/password/reset',
           body: {'token': token, 'new_password': newPassword});
 
@@ -76,7 +76,7 @@ class AuthService {
       }) as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> verifyOtp(
-          {required String requestId, required String code}) async =>
+      {required String requestId, required String code}) async =>
       await ApiClient.post('/auth/otp/verify', body: {
         'request_id': requestId,
         'code': code,
@@ -106,6 +106,14 @@ class UserService {
     final me = await ApiClient.get('/users/me') as Map<String, dynamic>;
     Session.user = me;
     return me;
+  }
+
+  /// Remove the current profile photo (works for players and coaches).
+  static Future<void> removeAvatar() async {
+    await ApiClient.delete('/users/me/avatar');
+    try {
+      await me(); // refresh cached session user so avatarUrl becomes null
+    } catch (_) {}
   }
 
   /// PATCH /users/me — JSON-less multipart form (works with or without avatar).
@@ -144,9 +152,9 @@ class UserService {
       await ApiClient.get('/users/me/settings') as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> updateSettings(
-          Map<String, dynamic> patch) async =>
+      Map<String, dynamic> patch) async =>
       await ApiClient.patch('/users/me/settings', body: patch)
-          as Map<String, dynamic>;
+      as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> publicProfile(String userId) async =>
       await ApiClient.get('/users/$userId/profile') as Map<String, dynamic>;
@@ -166,7 +174,7 @@ class PlayerService {
       await ApiClient.get('/players/me/qo-score') as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> performance(
-          {String period = 'this_season'}) async =>
+      {String period = 'this_season'}) async =>
       await ApiClient.get('/players/me/performance',
           query: {'period': period}) as Map<String, dynamic>;
 
@@ -211,20 +219,20 @@ class CoachService {
 
   static Future<Map<String, dynamic>> playerDirectory({String? q}) async =>
       await ApiClient.get('/players/directory',
-              query: {if (q != null && q.isNotEmpty) 'q': q})
-          as Map<String, dynamic>;
+          query: {if (q != null && q.isNotEmpty) 'q': q})
+      as Map<String, dynamic>;
 
   static Future<List<dynamic>> roster() async =>
       (await ApiClient.get('/coaches/me/players')
-          as Map<String, dynamic>)['items'] as List<dynamic>;
+      as Map<String, dynamic>)['items'] as List<dynamic>;
 
   static Future<Map<String, dynamic>> removePlayer(String userId) async =>
       await ApiClient.delete('/coaches/me/players/$userId')
-          as Map<String, dynamic>;
+      as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> addPlayer(String playerId) async =>
       await ApiClient.post('/coaches/me/players', body: {'player_id': playerId})
-          as Map<String, dynamic>;
+      as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> recommend({
     required List<String> playerUserIds,
@@ -275,10 +283,20 @@ class LeagueService {
 
   static Future<List<dynamic>> myLeagues() async =>
       (await ApiClient.get('/coaches/me/leagues')
-          as Map<String, dynamic>)['items'] as List<dynamic>;
+      as Map<String, dynamic>)['items'] as List<dynamic>;
+
+  /// Upload a team's logo/icon (league owner only).
+  static Future<Map<String, dynamic>> uploadTeamLogo({
+    required String leagueId,
+    required String teamId,
+    required http.MultipartFile logo,
+  }) async =>
+      await ApiClient.multipart(
+          'POST', '/leagues/$leagueId/teams/$teamId/logo',
+          fields: {}, files: [logo]) as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> join(
-          {required String leagueCode, required String teamId}) async =>
+      {required String leagueCode, required String teamId}) async =>
       await ApiClient.post('/leagues/join', body: {
         'league_code': leagueCode,
         'team_id': teamId,
@@ -286,6 +304,13 @@ class LeagueService {
 
   static Future<Map<String, dynamic>> detail(String leagueId) async =>
       await ApiClient.get('/leagues/$leagueId') as Map<String, dynamic>;
+
+  /// Active players in a league, optionally filtered to one team.
+  static Future<List<dynamic>> players(String leagueId,
+      {String? teamId}) async =>
+      (await ApiClient.get(
+          '/leagues/$leagueId/players${teamId != null ? '?team_id=$teamId' : ''}')
+      as Map<String, dynamic>)['items'] as List<dynamic>;
 
   /// Look a league up by its invite code (for the join screen's team picker).
   static Future<Map<String, dynamic>?> findByCode(String code) async {
@@ -296,7 +321,7 @@ class LeagueService {
     // we call the dedicated lightweight lookup below.
     try {
       return await ApiClient.get('/leagues/by-code/$code')
-          as Map<String, dynamic>;
+      as Map<String, dynamic>;
     } on ApiException {
       return null;
     }
@@ -323,13 +348,23 @@ class LeagueService {
       }) as Map<String, dynamic>;
 
   static Future<List<dynamic>> players(String leagueId,
-          {String? teamId}) async =>
+      {String? teamId}) async =>
       (await ApiClient.get('/leagues/$leagueId/players',
-              query: teamId == null ? null : {'team_id': teamId})
-          as Map<String, dynamic>)['items'] as List<dynamic>;
+          query: teamId == null ? null : {'team_id': teamId})
+      as Map<String, dynamic>)['items'] as List<dynamic>;
 
   static Future<void> exit(String leagueId) async =>
       await ApiClient.delete('/leagues/$leagueId/membership');
+
+  static Future<Map<String, dynamic>> completeTournament({
+    required String leagueId,
+    required String winnerTeamId,
+    String? runnerUpTeamId,
+  }) async =>
+      await ApiClient.post('/leagues/$leagueId/complete', body: {
+        'winner_team_id': winnerTeamId,
+        if (runnerUpTeamId != null) 'runner_up_team_id': runnerUpTeamId,
+      }) as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> submitPoints({
     required String matchId,
@@ -345,7 +380,7 @@ class LeagueService {
 
 class FeedService {
   static Future<Map<String, dynamic>> feed(
-          {String tab = 'all', String? q, int page = 1}) async =>
+      {String tab = 'all', String? q, int page = 1}) async =>
       await ApiClient.get('/feed', query: {
         'tab': tab,
         'page': '$page',
@@ -379,14 +414,14 @@ class FeedService {
       await ApiClient.delete('/posts/$postId') as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> comments(String postId,
-          {int page = 1}) async =>
+      {int page = 1}) async =>
       await ApiClient.get('/posts/$postId/comments',
           query: {'page': '$page'}) as Map<String, dynamic>;
 
   static Future<Map<String, dynamic>> addComment(
-          {required String postId,
-          required String body,
-          String? parentId}) async =>
+      {required String postId,
+        required String body,
+        String? parentId}) async =>
       await ApiClient.post('/posts/$postId/comments', body: {
         'body': body,
         if (parentId != null) 'parent_id': parentId,
@@ -411,9 +446,9 @@ class NotificationService {
 class ConfigService {
   static Future<List<dynamic>> cardTiers() async =>
       (await ApiClient.get('/config/card-tiers')
-          as Map<String, dynamic>)['tiers'] as List<dynamic>;
+      as Map<String, dynamic>)['tiers'] as List<dynamic>;
 
   static Future<List<dynamic>> cricketTypes() async =>
       (await ApiClient.get('/config/cricket-types')
-          as Map<String, dynamic>)['types'] as List<dynamic>;
+      as Map<String, dynamic>)['types'] as List<dynamic>;
 }

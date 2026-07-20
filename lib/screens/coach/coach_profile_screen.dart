@@ -133,25 +133,25 @@ class _CoachProfileScreenState
                                 child: ClipOval(
                                   child: Builder(
                                       builder: (context) {
-                                    final u = ApiConfig
-                                        .resolveMediaUrl(
+                                        final u = ApiConfig
+                                            .resolveMediaUrl(
                                             _avatarUrl);
-                                    const fallback = Center(
-                                        child: Text('👤',
-                                            style: TextStyle(
-                                                fontSize:
+                                        const fallback = Center(
+                                            child: Text('👤',
+                                                style: TextStyle(
+                                                    fontSize:
                                                     40)));
-                                    return u != null &&
+                                        return u != null &&
                                             u.isNotEmpty
-                                        ? Image.network(u,
+                                            ? Image.network(u,
                                             width: 80,
                                             height: 80,
                                             fit: BoxFit.cover,
                                             errorBuilder: (_,
-                                                    __, ___) =>
-                                                fallback)
-                                        : fallback;
-                                  }),
+                                                __, ___) =>
+                                            fallback)
+                                            : fallback;
+                                      }),
                                 ),
                               ),
                               Positioned(
@@ -1074,6 +1074,21 @@ class _CoachProfileScreenState
                 if (url != null) _onAvatarPicked(url);
               },
             ),
+            if (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.delete_outline,
+                    color: Colors.redAccent),
+                title: const Text('Remove Photo',
+                    style: TextStyle(color: Colors.redAccent)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final ok = await removeAvatarPhoto(context);
+                  if (ok && mounted) {
+                    setState(() => _avatarUrl = null);
+                  }
+                },
+              ),
             TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Cancel',

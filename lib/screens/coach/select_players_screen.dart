@@ -84,6 +84,10 @@ class _SelectPlayersScreenState
           'wkts': 0,
           'catches': 0,
           'is_mom': false,
+          'is_player_of_match': false,
+          'is_best_bowler': false,
+          'is_best_batsman': false,
+          'is_mvp': false,
           'pts': 0.0,
           'color': _avatarColors[i % _avatarColors.length],
         });
@@ -114,10 +118,14 @@ class _SelectPlayersScreenState
     }
     final withStats = _players
         .where((p) =>
-            (p['runs'] as int) > 0 ||
-            (p['wkts'] as int) > 0 ||
-            (p['catches'] as int) > 0 ||
-            p['is_mom'] == true)
+    (p['runs'] as int) > 0 ||
+        (p['wkts'] as int) > 0 ||
+        (p['catches'] as int) > 0 ||
+        p['is_mom'] == true ||
+        p['is_player_of_match'] == true ||
+        p['is_best_bowler'] == true ||
+        p['is_best_batsman'] == true ||
+        p['is_mvp'] == true)
         .toList();
     if (withStats.isEmpty) {
       showInfo(context, 'Edit at least one player\'s stats first.');
@@ -172,12 +180,16 @@ class _SelectPlayersScreenState
         idempotencyKey: idempotencyKey,
         playerStats: withStats
             .map((p) => <String, dynamic>{
-                  'user_id': p['user_id'],
-                  'runs': p['runs'],
-                  'wickets': p['wkts'],
-                  'catches': p['catches'],
-                  'is_mom': p['is_mom'] == true,
-                })
+          'user_id': p['user_id'],
+          'runs': p['runs'],
+          'wickets': p['wkts'],
+          'catches': p['catches'],
+          'is_mom': p['is_mom'] == true,
+          'is_player_of_match': p['is_player_of_match'] == true,
+          'is_best_bowler': p['is_best_bowler'] == true,
+          'is_best_batsman': p['is_best_batsman'] == true,
+          'is_mvp': p['is_mvp'] == true,
+        })
             .toList(),
       );
       if (!mounted) return;
@@ -298,8 +310,8 @@ class _SelectPlayersScreenState
           child: _loading
               ? const Center(child: CircularProgressIndicator(color: Color(0xFF1A6BFF)))
               : _players.isEmpty
-                  ? const Center(child: Text('No players have joined these teams yet', style: TextStyle(color: Colors.white38)))
-                  : ListView.separated(
+              ? const Center(child: Text('No players have joined these teams yet', style: TextStyle(color: Colors.white38)))
+              : ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: _players.length,
             separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 16),
@@ -491,8 +503,11 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
   late int _wickets;
   late int _catches;
   late int _runOuts;
-  bool _strikeRateBonus = true;
-  bool _boundaryBonus = true;
+  late bool _isMom;
+  late bool _isPlayerOfMatch;
+  late bool _isBestBowler;
+  late bool _isBestBatsman;
+  late bool _isMvp;
 
   @override
   void initState() {
@@ -503,19 +518,38 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
     _wickets = widget.player['wkts'] as int;
     _catches = (widget.player['catches'] as int?) ?? 0;
     _runOuts = 0;
+    _isMom = widget.player['is_mom'] == true;
+    _isPlayerOfMatch = widget.player['is_player_of_match'] == true;
+    _isBestBowler = widget.player['is_best_bowler'] == true;
+    _isBestBatsman = widget.player['is_best_batsman'] == true;
+    _isMvp = widget.player['is_mvp'] == true;
   }
 
+  /// Preview using the official SportyQo card. The server recomputes the
+  /// final number on submit — this is display only.
   double _calculatePts() {
-    double pts = 0;
-    pts += _runs * 0.3;
-    pts += _fours * 0.5;
-    pts += _sixes * 1.0;
-    pts += _wickets * 3.0;
-    pts += _catches * 1.0;
-    pts += _runOuts * 1.5;
-    if (_strikeRateBonus) pts += 2.0;
-    if (_boundaryBonus) pts += 1.5;
-    return double.parse(pts.toStringAsFixed(1));
+    int batting;
+    if (_runs >= 100) {
+      batting = 50;
+    } else if (_runs >= 46) {
+      batting = 20;
+    } else if (_runs >= 26) {
+      batting = 12;
+    } else if (_runs >= 11) {
+      batting = 8;
+    } else {
+      batting = 5;
+    }
+    final bowling = _wickets >= 3 ? 20 : (_wickets >= 1 ? 5 : 0);
+    final fieldingCount = _catches + _runOuts;
+    final fielding = fieldingCount >= 3 ? 5 : (fieldingCount == 2 ? 2 : 0);
+    int bonus = 0;
+    if (_isMom) bonus += 20;
+    if (_isPlayerOfMatch) bonus += 20;
+    if (_isBestBowler) bonus += 20;
+    if (_isBestBatsman) bonus += 20;
+    if (_isMvp) bonus += 25;
+    return (batting + bowling + fielding + bonus).toDouble();
   }
 
   @override
@@ -596,42 +630,32 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                       _StatRow(label: 'Run Outs / Assists', value: _runOuts, onDec: () => setState(() => _runOuts = (_runOuts - 1).clamp(0, 10)), onInc: () => setState(() => _runOuts++)),
 
                       const SizedBox(height: 16),
-                      // Extras
-                      const Text('Extras', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                      // Achievement Awards (official SportyQo card)
+                      const Text('Achievement Awards', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                       const SizedBox(height: 8),
-                      Row(children: [
-                        GestureDetector(
-                          onTap: () => setState(() => _strikeRateBonus = !_strikeRateBonus),
-                          child: Container(
-                            width: 20, height: 20,
-                            decoration: BoxDecoration(
-                              color: _strikeRateBonus ? const Color(0xFF1A6BFF) : Colors.transparent,
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: const Color(0xFF1A6BFF)),
-                            ),
-                            child: _strikeRateBonus ? const Icon(Icons.check, color: Colors.white, size: 14) : null,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Text('Strike Rate Bonus', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                      ]),
-                      const SizedBox(height: 8),
-                      Row(children: [
-                        GestureDetector(
-                          onTap: () => setState(() => _boundaryBonus = !_boundaryBonus),
-                          child: Container(
-                            width: 20, height: 20,
-                            decoration: BoxDecoration(
-                              color: _boundaryBonus ? const Color(0xFF1A6BFF) : Colors.transparent,
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: const Color(0xFF1A6BFF)),
-                            ),
-                            child: _boundaryBonus ? const Icon(Icons.check, color: Colors.white, size: 14) : null,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Text('Boundary Bonus', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                      ]),
+                      _AwardCheck(
+                          label: 'Man of the Match  (+20)',
+                          value: _isMom,
+                          onChanged: (v) => setState(() => _isMom = v)),
+                      _AwardCheck(
+                          label: 'Player of the Match  (+20)',
+                          value: _isPlayerOfMatch,
+                          onChanged: (v) =>
+                              setState(() => _isPlayerOfMatch = v)),
+                      _AwardCheck(
+                          label: 'Best Bowler  (+20)',
+                          value: _isBestBowler,
+                          onChanged: (v) =>
+                              setState(() => _isBestBowler = v)),
+                      _AwardCheck(
+                          label: 'Best Batsman  (+20)',
+                          value: _isBestBatsman,
+                          onChanged: (v) =>
+                              setState(() => _isBestBatsman = v)),
+                      _AwardCheck(
+                          label: 'MVP Performance  (+25)',
+                          value: _isMvp,
+                          onChanged: (v) => setState(() => _isMvp = v)),
                     ],
                   ),
                 ),
@@ -649,6 +673,11 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                     updated['runs'] = _runs;
                     updated['wkts'] = _wickets;
                     updated['catches'] = _catches;
+                    updated['is_mom'] = _isMom;
+                    updated['is_player_of_match'] = _isPlayerOfMatch;
+                    updated['is_best_bowler'] = _isBestBowler;
+                    updated['is_best_batsman'] = _isBestBatsman;
+                    updated['is_mvp'] = _isMvp;
                     updated['pts'] = _calculatePts();
                     widget.onSave(updated);
                     Navigator.push(
@@ -877,5 +906,41 @@ class _StatDisplay extends StatelessWidget {
       const SizedBox(height: 4),
       Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
     ]);
+  }
+}
+// ── Award checkbox row ────────────────────────────────────────────────
+class _AwardCheck extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  const _AwardCheck(
+      {required this.label, required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: () => onChanged(!value),
+        child: Row(children: [
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: value ? const Color(0xFF1A6BFF) : Colors.transparent,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: const Color(0xFF1A6BFF)),
+            ),
+            child: value
+                ? const Icon(Icons.check, color: Colors.white, size: 14)
+                : null,
+          ),
+          const SizedBox(width: 10),
+          Text(label,
+              style:
+              const TextStyle(color: Colors.white70, fontSize: 13)),
+        ]),
+      ),
+    );
   }
 }

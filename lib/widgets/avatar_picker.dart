@@ -14,6 +14,27 @@ String _mimeFor(XFile x) {
   return 'image/jpeg';
 }
 
+/// Removes the current user's profile photo.
+/// Returns true on success (callers should clear their local avatar state).
+Future<bool> removeAvatarPhoto(BuildContext context) async {
+  try {
+    await UserService.removeAvatar();
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Profile photo removed'),
+          backgroundColor: Color(0xFF7B2FFF)));
+    }
+    return true;
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not remove photo: $e'),
+          backgroundColor: Colors.redAccent));
+    }
+    return false;
+  }
+}
+
 /// Opens the camera or gallery, uploads the picked image as the
 /// current user's avatar, and returns the new avatar URL
 /// (null if the user cancelled or the upload failed).

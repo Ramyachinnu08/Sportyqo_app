@@ -378,6 +378,20 @@ class _CoachPlaybookScreenState
               if (url != null) _onAvatarPicked(url);
             },
           ),
+          if (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+            ListTile(
+              leading: const Icon(Icons.delete_outline,
+                  color: Colors.redAccent),
+              title: const Text('Remove Photo',
+                  style: TextStyle(color: Colors.redAccent)),
+              onTap: () async {
+                Navigator.pop(context);
+                final ok = await removeAvatarPhoto(context);
+                if (ok && mounted) {
+                  setState(() => _avatarUrl = null);
+                }
+              },
+            ),
           const SizedBox(height: 8),
         ]),
       ),

@@ -10,6 +10,7 @@ import '../../api/mappers.dart';
 import '../../api/services.dart';
 import '../../widgets/app_video_player.dart';
 import '../../widgets/create_post_screen.dart';
+import '../../widgets/avatar_picker.dart';
 import '../legal/legal_screen.dart';
 import '../auth/choose_role_screen.dart';
 import 'package:flutter/services.dart';
@@ -2426,6 +2427,21 @@ class _EditProfileScreenState
               ),
             ]),
             const SizedBox(height: 8),
+            if (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.delete_outline,
+                    color: Colors.redAccent),
+                title: const Text('Remove Photo',
+                    style: TextStyle(color: Colors.redAccent)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final ok = await removeAvatarPhoto(context);
+                  if (ok && mounted) {
+                    setState(() => _avatarUrl = null);
+                  }
+                },
+              ),
             TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Cancel',

@@ -63,464 +63,469 @@ class _PerformanceScreenState
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A1A),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding:
-          const EdgeInsets.symmetric(horizontal: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: _load,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding:
+            const EdgeInsets.symmetric(horizontal: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
 
-              // ── Qo Score Card ──
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F0F2A),
-                  borderRadius: BorderRadius.circular(20),
-                  border:
-                  Border.all(color: Colors.white10),
+                // ── Qo Score Card ──
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F0F2A),
+                    borderRadius: BorderRadius.circular(20),
+                    border:
+                    Border.all(color: Colors.white10),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                          children: [
+                            const Text('Qo Score',
+                                style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 13)),
+                            Text('${_qo['current'] ?? 0}',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 52,
+                                    fontWeight:
+                                    FontWeight.w800,
+                                    height: 1)),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets
+                                  .symmetric(
+                                  horizontal: 10,
+                                  vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary
+                                    .withOpacity(0.2),
+                                borderRadius:
+                                BorderRadius.circular(
+                                    20),
+                                border: Border.all(
+                                    color: AppColors.primary
+                                        .withOpacity(0.4)),
+                              ),
+                              child: Row(children: [
+                                Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                        color: AppColors
+                                            .primary,
+                                        shape:
+                                        BoxShape.circle)),
+                                const SizedBox(width: 6),
+                                Text(_tierLabel(),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight:
+                                        FontWeight.w600)),
+                              ]),
+                            ),
+                            const SizedBox(height: 6),
+                            Text((_qo['label'] as String?) ?? '',
+                                style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12)),
+                            const SizedBox(height: 6),
+                            Row(children: [
+                              const Icon(Icons.arrow_upward,
+                                  color: AppColors.primary,
+                                  size: 14),
+                              Text('+${_qo['delta_week'] ?? 0} points this week',
+                                  style: const TextStyle(
+                                      color:
+                                      AppColors.primary,
+                                      fontSize: 12,
+                                      fontWeight:
+                                      FontWeight.w500)),
+                            ]),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.primary
+                              .withOpacity(0.15),
+                          border: Border.all(
+                              color: AppColors.primary
+                                  .withOpacity(0.3),
+                              width: 2),
+                        ),
+                        child: const Icon(Icons.shield,
+                            color: AppColors.primary,
+                            size: 36),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  children: [
+
+                const SizedBox(height: 8),
+
+                // ── Card Progress ──
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F0F2A),
+                    borderRadius: BorderRadius.circular(16),
+                    border:
+                    Border.all(color: Colors.white10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      const Text('Card Progress',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14)),
+                      const SizedBox(height: 12),
+                      Row(children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                              color: AppColors.primary
+                                  .withOpacity(0.2),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: AppColors.primary
+                                      .withOpacity(0.4))),
+                          child: const Icon(Icons.bolt,
+                              color: AppColors.primary,
+                              size: 16),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(_tierLabel(),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14)),
+                        const Spacer(),
+                        RichText(
+                          text: TextSpan(children: [
+                            TextSpan(
+                                text: '${_progress['current'] ?? 0}',
+                                style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight:
+                                    FontWeight.w800,
+                                    fontSize: 14)),
+                            TextSpan(
+                                text: ' / ${_progress['target'] ?? 1000}',
+                                style: const TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 13)),
+                          ]),
+                        ),
+                      ]),
+                      const SizedBox(height: 10),
+                      ClipRRect(
+                        borderRadius:
+                        BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                            value: ((_progress['current'] as num?) ?? 0) /
+                                (((_progress['target'] as num?) ?? 1000) == 0
+                                    ? 1
+                                    : ((_progress['target'] as num?) ?? 1000)),
+                            backgroundColor: Colors.white10,
+                            color: AppColors.primary,
+                            minHeight: 8),
+                      ),
+                      const SizedBox(height: 8),
+                      if (_progress['next_tier'] != null)
+                        RichText(
+                          text: TextSpan(children: [
+                            TextSpan(
+                                text:
+                                '${_progress['points_needed'] ?? 0} points to ',
+                                style: const TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 12)),
+                            TextSpan(
+                                text:
+                                '${_progress['next_tier']}',
+                                style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontWeight:
+                                    FontWeight.w600)),
+                          ]),
+                        ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // ── Ranking (MOVED UP) ──
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F0F2A),
+                    borderRadius: BorderRadius.circular(16),
+                    border:
+                    Border.all(color: Colors.white10),
+                  ),
+                  child: Row(children: [
                     Expanded(
                       child: Column(
                         crossAxisAlignment:
                         CrossAxisAlignment.start,
                         children: [
-                          const Text('Qo Score',
+                          const Text('Ranking',
                               style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 13)),
-                          Text('${_qo['current'] ?? 0}',
-                              style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 52,
                                   fontWeight:
-                                  FontWeight.w800,
-                                  height: 1)),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets
-                                .symmetric(
-                                horizontal: 10,
-                                vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary
-                                  .withOpacity(0.2),
-                              borderRadius:
-                              BorderRadius.circular(
-                                  20),
-                              border: Border.all(
-                                  color: AppColors.primary
-                                      .withOpacity(0.4)),
-                            ),
-                            child: Row(children: [
-                              Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                      color: AppColors
-                                          .primary,
-                                      shape:
-                                      BoxShape.circle)),
-                              const SizedBox(width: 6),
-                              Text(_tierLabel(),
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight:
-                                      FontWeight.w600)),
-                            ]),
-                          ),
-                          const SizedBox(height: 6),
-                          Text((_qo['label'] as String?) ?? '',
+                                  FontWeight.w700,
+                                  fontSize: 14)),
+                          const SizedBox(height: 8),
+                          Text(
+                              _ranking['rank'] == null
+                                  ? '—'
+                                  : '#${_ranking['rank']}',
+                              style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 36,
+                                  fontWeight:
+                                  FontWeight.w800)),
+                          Text((_ranking['category'] as String?) ?? '',
                               style: const TextStyle(
                                   color: Colors.white54,
                                   fontSize: 12)),
-                          const SizedBox(height: 6),
-                          Row(children: [
-                            const Icon(Icons.arrow_upward,
-                                color: AppColors.primary,
-                                size: 14),
-                            Text('+${_qo['delta_week'] ?? 0} points this week',
-                                style: const TextStyle(
-                                    color:
-                                    AppColors.primary,
-                                    fontSize: 12,
-                                    fontWeight:
-                                    FontWeight.w500)),
-                          ]),
                         ],
                       ),
                     ),
-                    Container(
-                      width: 70,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.primary
-                            .withOpacity(0.15),
-                        border: Border.all(
-                            color: AppColors.primary
-                                .withOpacity(0.3),
-                            width: 2),
+                    Column(children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary
+                              .withOpacity(0.15),
+                          borderRadius:
+                          BorderRadius.circular(20),
+                          border: Border.all(
+                              color: AppColors.primary
+                                  .withOpacity(0.3)),
+                        ),
+                        child: Text(
+                            (_ranking['percentile'] as String?) ?? '—',
+                            style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12)),
                       ),
-                      child: const Icon(Icons.shield,
-                          color: AppColors.primary,
-                          size: 36),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                            color: AppColors.primary
+                                .withOpacity(0.1),
+                            shape: BoxShape.circle),
+                        child: const Icon(
+                            Icons.people_outline,
+                            color: AppColors.primary,
+                            size: 26),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                          'Out of ${_ranking['total_players'] ?? '—'}',
+                          style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 10)),
+                      const Text('players',
+                          style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 10)),
+                    ]),
+                  ]),
                 ),
-              ),
 
-              const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-              // ── Card Progress ──
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F0F2A),
-                  borderRadius: BorderRadius.circular(16),
-                  border:
-                  Border.all(color: Colors.white10),
+                // ── Qo Journey Graph ──
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F0F2A),
+                    borderRadius: BorderRadius.circular(16),
+                    border:
+                    Border.all(color: Colors.white10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        const Text('Qo Journey',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14)),
+                        const Spacer(),
+                        PopupMenuButton<String>(
+                          color: const Color(0xFF15152E),
+                          onSelected: (v) {
+                            setState(() => _period = v);
+                            _load();
+                          },
+                          itemBuilder: (_) => _periodLabels
+                              .entries
+                              .map((e) => PopupMenuItem(
+                              value: e.key,
+                              child: Text(e.value,
+                                  style: const TextStyle(
+                                      color:
+                                      Colors.white))))
+                              .toList(),
+                          child: Container(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4),
+                            decoration: BoxDecoration(
+                                color: Colors.white10,
+                                borderRadius:
+                                BorderRadius.circular(
+                                    20)),
+                            child: Row(
+                                mainAxisSize:
+                                MainAxisSize.min,
+                                children: [
+                                  Text(
+                                      _periodLabels[
+                                      _period]!,
+                                      style: const TextStyle(
+                                          color: Colors
+                                              .white60,
+                                          fontSize: 12)),
+                                  const Icon(
+                                      Icons
+                                          .keyboard_arrow_down,
+                                      color: Colors.white38,
+                                      size: 16),
+                                ]),
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 140,
+                        child: CustomPaint(
+                            painter:
+                            _PerformanceGraphPainter(
+                                values: _graphValues,
+                                labels: _graphLabels),
+                            size: const Size(
+                                double.infinity, 140)),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween,
+                        children: _graphLabels
+                            .map((l) => Text(l,
+                            style: const TextStyle(
+                                color: Colors.white38,
+                                fontSize: 10)))
+                            .toList(),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
-                  children: [
-                    const Text('Card Progress',
+
+                const SizedBox(height: 8),
+
+                // ── Recent Matches ──
+                Row(
+                  mainAxisAlignment:
+                  MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text('Recent Matches',
                         style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
-                            fontSize: 14)),
-                    const SizedBox(height: 12),
-                    Row(children: [
-                      Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                            color: AppColors.primary
-                                .withOpacity(0.2),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: AppColors.primary
-                                    .withOpacity(0.4))),
-                        child: const Icon(Icons.bolt,
-                            color: AppColors.primary,
-                            size: 16),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(_tierLabel(),
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14)),
-                      const Spacer(),
-                      RichText(
-                        text: TextSpan(children: [
-                          TextSpan(
-                              text: '${_progress['current'] ?? 0}',
-                              style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight:
-                                  FontWeight.w800,
-                                  fontSize: 14)),
-                          TextSpan(
-                              text: ' / ${_progress['target'] ?? 1000}',
-                              style: const TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 13)),
-                        ]),
-                      ),
-                    ]),
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius:
-                      BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                          value: ((_progress['current'] as num?) ?? 0) /
-                              (((_progress['target'] as num?) ?? 1000) == 0
-                                  ? 1
-                                  : ((_progress['target'] as num?) ?? 1000)),
-                          backgroundColor: Colors.white10,
-                          color: AppColors.primary,
-                          minHeight: 8),
-                    ),
-                    const SizedBox(height: 8),
-                    if (_progress['next_tier'] != null)
-                      RichText(
-                        text: TextSpan(children: [
-                          TextSpan(
-                              text:
-                              '${_progress['points_needed'] ?? 0} points to ',
-                              style: const TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 12)),
-                          TextSpan(
-                              text:
-                              '${_progress['next_tier']}',
-                              style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 12,
-                                  fontWeight:
-                                  FontWeight.w600)),
-                        ]),
-                      ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // ── Ranking (MOVED UP) ──
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F0F2A),
-                  borderRadius: BorderRadius.circular(16),
-                  border:
-                  Border.all(color: Colors.white10),
-                ),
-                child: Row(children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        const Text('Ranking',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight:
-                                FontWeight.w700,
-                                fontSize: 14)),
-                        const SizedBox(height: 8),
-                        Text(
-                            _ranking['rank'] == null
-                                ? '—'
-                                : '#${_ranking['rank']}',
-                            style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 36,
-                                fontWeight:
-                                FontWeight.w800)),
-                        Text((_ranking['category'] as String?) ?? '',
-                            style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                  Column(children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary
-                            .withOpacity(0.15),
-                        borderRadius:
-                        BorderRadius.circular(20),
-                        border: Border.all(
-                            color: AppColors.primary
-                                .withOpacity(0.3)),
-                      ),
-                      child: Text(
-                          (_ranking['percentile'] as String?) ?? '—',
-                          style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12)),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                          color: AppColors.primary
-                              .withOpacity(0.1),
-                          shape: BoxShape.circle),
-                      child: const Icon(
-                          Icons.people_outline,
-                          color: AppColors.primary,
-                          size: 26),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                        'Out of ${_ranking['total_players'] ?? '—'}',
-                        style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 10)),
-                    const Text('players',
+                            fontSize: 16)),
+                    Text('View All',
                         style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 10)),
-                  ]),
-                ]),
-              ),
-
-              const SizedBox(height: 8),
-
-              // ── Qo Journey Graph ──
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F0F2A),
-                  borderRadius: BorderRadius.circular(16),
-                  border:
-                  Border.all(color: Colors.white10),
-                ),
-                child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      const Text('Qo Journey',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14)),
-                      const Spacer(),
-                      PopupMenuButton<String>(
-                        color: const Color(0xFF15152E),
-                        onSelected: (v) {
-                          setState(() => _period = v);
-                          _load();
-                        },
-                        itemBuilder: (_) => _periodLabels
-                            .entries
-                            .map((e) => PopupMenuItem(
-                            value: e.key,
-                            child: Text(e.value,
-                                style: const TextStyle(
-                                    color:
-                                    Colors.white))))
-                            .toList(),
-                        child: Container(
-                          padding:
-                          const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4),
-                          decoration: BoxDecoration(
-                              color: Colors.white10,
-                              borderRadius:
-                              BorderRadius.circular(
-                                  20)),
-                          child: Row(
-                              mainAxisSize:
-                              MainAxisSize.min,
-                              children: [
-                                Text(
-                                    _periodLabels[
-                                    _period]!,
-                                    style: const TextStyle(
-                                        color: Colors
-                                            .white60,
-                                        fontSize: 12)),
-                                const Icon(
-                                    Icons
-                                        .keyboard_arrow_down,
-                                    color: Colors.white38,
-                                    size: 16),
-                              ]),
-                        ),
-                      ),
-                    ]),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      height: 140,
-                      child: CustomPaint(
-                          painter:
-                          _PerformanceGraphPainter(
-                              values: _graphValues,
-                              labels: _graphLabels),
-                          size: const Size(
-                              double.infinity, 140)),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
-                      children: _graphLabels
-                          .map((l) => Text(l,
-                          style: const TextStyle(
-                              color: Colors.white38,
-                              fontSize: 10)))
-                          .toList(),
-                    ),
+                            color: AppColors.primary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
                   ],
                 ),
-              ),
 
-              const SizedBox(height: 8),
+                const SizedBox(height: 10),
 
-              // ── Recent Matches ──
-              Row(
-                mainAxisAlignment:
-                MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text('Recent Matches',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16)),
-                  Text('View All',
-                      style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600)),
-                ],
-              ),
+                if ((_perf?['recent_matches']
+                as List<dynamic>?)
+                    ?.isEmpty ??
+                    true)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                        child: Text('No matches yet',
+                            style: TextStyle(
+                                color: Colors.white38))),
+                  )
+                else
+                  for (final raw in (_perf!['recent_matches']
+                  as List<dynamic>)) ...[
+                    Builder(builder: (context) {
+                      final m = raw as Map<String, dynamic>;
+                      final stats =
+                          (m['stats'] as Map<String, dynamic>?) ?? {};
+                      final badges =
+                          (m['badges'] as List<dynamic>?) ?? [];
+                      final won = m['result'] == 'won';
+                      return _MatchTile(
+                        teamLetter: won ? 'W' : 'L',
+                        opponent: 'vs ${m['opponent'] ?? ''}',
+                        date: (m['played_at'] as String?) ?? '',
+                        stat1: '${stats['runs'] ?? 0} Runs',
+                        stat2: '${stats['wickets'] ?? 0} Wkts • ${stats['catches'] ?? 0} Ct',
+                        badge: won
+                            ? 'Won Match'
+                            : (m['result'] == 'draw' ? 'Draw' : 'Lost'),
+                        extraBadge:
+                        badges.contains('MOM') ? 'MOM ⭐' : null,
+                        extraBadgeColor: badges.contains('MOM')
+                            ? const Color(0xFFFFB300)
+                            : null,
+                        points: '+${m['qo_points'] ?? 0}',
+                        badgeColor: won
+                            ? const Color(0xFF00C853)
+                            : (m['result'] == 'draw'
+                            ? const Color(0xFF7B2FFF)
+                            : Colors.redAccent),
+                      );
+                    }),
+                    const SizedBox(height: 10),
+                  ],
 
-              const SizedBox(height: 10),
-
-              if ((_perf?['recent_matches']
-              as List<dynamic>?)
-                  ?.isEmpty ??
-                  true)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                      child: Text('No matches yet',
-                          style: TextStyle(
-                              color: Colors.white38))),
-                )
-              else
-                for (final raw in (_perf!['recent_matches']
-                as List<dynamic>)) ...[
-                  Builder(builder: (context) {
-                    final m = raw as Map<String, dynamic>;
-                    final stats =
-                        (m['stats'] as Map<String, dynamic>?) ?? {};
-                    final badges =
-                        (m['badges'] as List<dynamic>?) ?? [];
-                    final won = m['result'] == 'won';
-                    return _MatchTile(
-                      teamLetter: won ? 'W' : 'L',
-                      opponent: 'vs ${m['opponent'] ?? ''}',
-                      date: (m['played_at'] as String?) ?? '',
-                      stat1: '${stats['runs'] ?? 0} Runs',
-                      stat2: '${stats['wickets'] ?? 0} Wkts • ${stats['catches'] ?? 0} Ct',
-                      badge: won
-                          ? 'Won Match'
-                          : (m['result'] == 'draw' ? 'Draw' : 'Lost'),
-                      extraBadge:
-                      badges.contains('MOM') ? 'MOM ⭐' : null,
-                      extraBadgeColor: badges.contains('MOM')
-                          ? const Color(0xFFFFB300)
-                          : null,
-                      points: '+${m['qo_points'] ?? 0}',
-                      badgeColor: won
-                          ? const Color(0xFF00C853)
-                          : (m['result'] == 'draw'
-                          ? const Color(0xFF7B2FFF)
-                          : Colors.redAccent),
-                    );
-                  }),
-                  const SizedBox(height: 10),
-                ],
-
-              const SizedBox(height: 32),
-            ],
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
         ),
       ),

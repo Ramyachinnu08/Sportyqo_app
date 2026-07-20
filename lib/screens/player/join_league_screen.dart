@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../api/api_client.dart';
+import '../../api/api_config.dart';
 import '../../api/services.dart';
 import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
+import 'dugout_screen.dart' show PlayerProfileDetailScreen;
 
 class JoinLeagueScreen extends StatefulWidget {
   final Function(String teamName, String leagueName)? onJoined;
@@ -49,12 +51,13 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
         _league = league;
         _teams = (league['teams'] as List<dynamic>)
             .map((t) => <String, dynamic>{
-                  'id': t['id'],
-                  'name': t['name'],
-                  'division': league['cricket_type'] ?? '',
-                  'players': t['player_count'] ?? 0,
-                  'emoji': '🏏',
-                })
+          'id': t['id'],
+          'name': t['name'],
+          'logo_url': t['logo_url'],
+          'division': league['cricket_type'] ?? '',
+          'players': t['player_count'] ?? 0,
+          'emoji': '🏏',
+        })
             .toList();
         _selectedTeam = null;
         _selectedTeamId = null;
@@ -65,6 +68,215 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Bottom sheet listing everyone who joined this team; tapping a
+  /// player opens their Instagram-style playbook profile.
+  void _showTeamPlayers(Map<String, dynamic> team) {
+    final leagueId = _league?['id'] as String?;
+    if (leagueId == null) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0F0F2A),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+          BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetCtx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        builder: (context, scrollController) =>
+            FutureBuilder<List<dynamic>>(
+              future: LeagueService.players(leagueId,
+                  teamId: team['id'] as String?),
+              builder: (context, snap) {
+                final loading =
+                    snap.connectionState != ConnectionState.done;
+                final players = (snap.data ?? const [])
+                    .cast<Map<String, dynamic>>();
+                return Column(children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+                    child: Row(children: [
+                      Expanded(
+                        child: Text(
+                            '${team['name']} — Players',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800)),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(sheetCtx),
+                        child: const Icon(Icons.close,
+                            color: Colors.white38, size: 20),
+                      ),
+                    ]),
+                  ),
+                  Expanded(
+                    child: loading
+                        ? const Center(
+                        child: CircularProgressIndicator(
+                            color: AppColors.primary))
+                        : snap.hasError
+                        ? const Center(
+                        child: Text(
+                            "Couldn't load players.",
+                            style: TextStyle(
+                                color: Colors.white38)))
+                        : players.isEmpty
+                        ? const Center(
+                        child: Text(
+                            'No players have joined this team yet.',
+                            style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 13)))
+                        : ListView.builder(
+                      controller: scrollController,
+                      padding:
+                      const EdgeInsets.symmetric(
+                          horizontal: 16),
+                      itemCount: players.length,
+                      itemBuilder: (context, i) {
+                        final pl = players[i];
+                        final name =
+                            (pl['name'] as String?) ??
+                                '';
+                        final avatar = ApiConfig
+                            .resolveMediaUrl(
+                            pl['avatar_url']
+                            as String?);
+                        return GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    PlayerProfileDetailScreen(
+                                        person: <String,
+                                            dynamic>{
+                                          'author_id':
+                                          pl['id']
+                                          as String,
+                                          'name': name,
+                                          'avatar':
+                                          avatar ?? '',
+                                          'verified':
+                                          false,
+                                          'sport': (pl['sub_role']
+                                          as String?) ??
+                                              'Player',
+                                          'location': '',
+                                          'bio': '',
+                                        })),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets
+                                .only(bottom: 8),
+                            padding:
+                            const EdgeInsets.all(
+                                12),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                  0xFF13132B),
+                              borderRadius:
+                              BorderRadius
+                                  .circular(12),
+                              border: Border.all(
+                                  color:
+                                  Colors.white10),
+                            ),
+                            child: Row(children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration:
+                                const BoxDecoration(
+                                  color: Color(
+                                      0xFF1A1A3A),
+                                  shape:
+                                  BoxShape.circle,
+                                ),
+                                child: ClipOval(
+                                  child: avatar !=
+                                      null &&
+                                      avatar
+                                          .isNotEmpty
+                                      ? Image.network(
+                                      avatar,
+                                      fit: BoxFit
+                                          .cover,
+                                      errorBuilder: (_,
+                                          __,
+                                          ___) =>
+                                          Center(
+                                              child: Text(
+                                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800))))
+                                      : Center(
+                                      child: Text(
+                                          name.isNotEmpty
+                                              ? name[0]
+                                              .toUpperCase()
+                                              : '?',
+                                          style: const TextStyle(
+                                              color: Colors
+                                                  .white,
+                                              fontWeight:
+                                              FontWeight.w800))),
+                                ),
+                              ),
+                              const SizedBox(
+                                  width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment
+                                      .start,
+                                  children: [
+                                    Text(name,
+                                        overflow:
+                                        TextOverflow
+                                            .ellipsis,
+                                        style: const TextStyle(
+                                            color: Colors
+                                                .white,
+                                            fontWeight:
+                                            FontWeight
+                                                .w700,
+                                            fontSize:
+                                            13)),
+                                    Text(
+                                        '${pl['player_id'] ?? ''} • ${pl['sub_role'] ?? 'Player'} • Qo ${pl['qo_score'] ?? 0}',
+                                        overflow:
+                                        TextOverflow
+                                            .ellipsis,
+                                        style: const TextStyle(
+                                            color: Colors
+                                                .white38,
+                                            fontSize:
+                                            11)),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                  Icons
+                                      .chevron_right,
+                                  color:
+                                  Colors.white24,
+                                  size: 18),
+                            ]),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ]);
+              },
+            ),
+      ),
+    );
   }
 
   Future<void> _joinLeague() async {
@@ -216,7 +428,7 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide:
-                        const BorderSide(color: Colors.white12),
+                    const BorderSide(color: Colors.white12),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -396,9 +608,27 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
                       color: AppColors.primary.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Center(
-                        child: Text(t['emoji'] as String,
-                            style: const TextStyle(fontSize: 24))),
+                    child: Builder(builder: (context) {
+                      final u = ApiConfig.resolveMediaUrl(
+                          t['logo_url'] as String?);
+                      if (u != null && u.isNotEmpty) {
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(u,
+                              width: 48,
+                              height: 48,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Center(
+                                  child: Text(t['emoji'] as String,
+                                      style: const TextStyle(
+                                          fontSize: 24)))),
+                        );
+                      }
+                      return Center(
+                          child: Text(t['emoji'] as String,
+                              style:
+                              const TextStyle(fontSize: 24)));
+                    }),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -426,10 +656,7 @@ class _JoinLeagueScreenState extends State<JoinLeagueScreen> {
                   ),
                   // ── View Players button ──
                   GestureDetector(
-                    onTap: () {
-                      showInfo(context,
-                          'Roster is visible after you join the team.');
-                    },
+                    onTap: () => _showTeamPlayers(t),
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
