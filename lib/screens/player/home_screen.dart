@@ -6,6 +6,7 @@ import '../../api/api_config.dart';
 import '../../api/mappers.dart';
 import '../../api/services.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/avatar_picker.dart' show cropProfileImage;
 import 'dugout_screen.dart';
 import 'playbook_screen.dart';
 import 'performance_screen.dart';
@@ -40,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: const Color(0xFF111111),
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
@@ -118,109 +119,34 @@ class _HomeTabState extends State<_HomeTab> {
     return slug[0].toUpperCase() + slug.substring(1);
   }
 
-  /// Official SportyQo scoring card — how every Qo point is earned.
-  void _showHowPointsWork(BuildContext context) {
-    Widget row(String left, String right) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        Expanded(
-            child: Text(left,
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 13))),
-        Text(right,
-            style: const TextStyle(
-                color: Color(0xFF00C853),
-                fontWeight: FontWeight.w700,
-                fontSize: 13)),
-      ]),
-    );
-    Widget heading(String text) => Padding(
-      padding: const EdgeInsets.only(top: 14, bottom: 4),
-      child: Text(text,
-          style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 14)),
-    );
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF0F0F2A),
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-          borderRadius:
-          BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.75,
-        maxChildSize: 0.92,
-        builder: (context, scrollController) =>
-            SingleChildScrollView(
-              controller: scrollController,
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('How Qo Points Work 🏏',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 4),
-                  const Text(
-                      'Official SportyQo cricket scoring structure. Your coach submits match stats and points land here automatically.',
-                      style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 12,
-                          height: 1.5)),
-                  heading('Joining Bonus'),
-                  row('Welcome bonus on joining SportyQo', '+50'),
-                  heading('Batting (runs scored)'),
-                  row('0 – 10 runs', '+5'),
-                  row('11 – 25 runs', '+8'),
-                  row('26 – 45 runs', '+12'),
-                  row('46 – 99 runs', '+20'),
-                  row('100+ runs', '+50'),
-                  heading('Bowling (wickets taken)'),
-                  row('1 – 2 wickets', '+5'),
-                  row('3+ wickets', '+20'),
-                  heading('Fielding (catches / assists)'),
-                  row('2 catches or assists', '+2'),
-                  row('3+ catches or assists', '+5'),
-                  heading('Achievement Bonuses'),
-                  row('Man of the Match', '+20'),
-                  row('Player of the Match', '+20'),
-                  row('Best Bowler', '+20'),
-                  row('Best Batsman', '+20'),
-                  row('MVP Performance', '+25'),
-                  heading('Team Achievements'),
-                  row('Match win (team bonus)', '+20'),
-                  row('Championship Runner-Up', '+50'),
-                  row('Championship Winner', '+100'),
-                  heading('Community'),
-                  row('Coach recommendation', '+25'),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(14))),
-                      child: const Text('Got it',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-      ),
-    );
+  /// Color for the current tier badge — matches the 8 tiers seeded on the
+  /// server (Purple → Green → Yellow → Orange → Red → Bronze → Silver → Gold).
+  Color get _cardTierColor {
+    final slug = ((_dash?['qo_score']?['card_tier'] as String?) ?? 'purple')
+        .toLowerCase();
+    switch (slug) {
+      case 'green':
+        return const Color(0xFF00C853);
+      case 'yellow':
+        return const Color(0xFFFFEB3B);
+      case 'orange':
+        return const Color(0xFFFF9800);
+      case 'red':
+        return const Color(0xFFFF3B30);
+      case 'bronze':
+      case 'bronze_pro':
+        return const Color(0xFFCD7F32);
+      case 'silver':
+      case 'silver_pro':
+        return const Color(0xFF9E9E9E);
+      case 'gold':
+      case 'golden':
+      case 'golden_pro':
+        return const Color(0xFFFFB300);
+      case 'purple':
+      default:
+        return const Color(0xFF7B2FFF);
+    }
   }
 
   Future<void> _loadDashboard() async {
@@ -267,83 +193,65 @@ class _HomeTabState extends State<_HomeTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: const Color(0xFF111111),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Top Bar ──
+              // ── Top Bar (SportyQo logo + name — matches coach home) ──
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                     20, 16, 20, 0),
                 child: Row(children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        Row(children: [
-                          Text(
-                              (_dash?['player']?['first_name'] as String?) ??
-                                  Session.firstName,
-                              style: const TextStyle(
-                                  fontSize: 30,
-                                  fontWeight:
-                                  FontWeight.w800,
-                                  color: Colors.white)),
-                          const Text('.',
-                              style: TextStyle(
-                                  fontSize: 30,
-                                  fontWeight:
-                                  FontWeight.w800,
-                                  color:
-                                  AppColors.primary)),
-                        ]),
-                        if ((_dash?['player']?['player_id'] ?? widget.playerId) != null) ...[
-                          const SizedBox(height: 4),
-                          Text((_dash?['player']?['player_id'] ?? widget.playerId!) as String,
-                              style: const TextStyle(
-                                  color:
-                                  Color(0xFF00C853),
-                                  fontSize: 13,
-                                  fontWeight:
-                                  FontWeight.w600,
-                                  letterSpacing: 0.5)),
-                        ],
-                        const SizedBox(height: 8),
-                        Text(
-                            [
-                              _dash?['player']?['age_group'],
-                              _dash?['player']?['sub_role'],
-                            ]
-                                .whereType<String>()
-                                .where((s) => s.isNotEmpty)
-                                .join(' • '),
-                            style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 13)),
-                        const SizedBox(height: 2),
-                        Text(
-                            _activeTeam ?? 'No Team',
-                            style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 13,
-                                fontWeight:
-                                FontWeight.w600)),
-                      ],
+                  ClipRRect(
+                    borderRadius:
+                    BorderRadius.circular(8),
+                    child: Image.network(
+                      'https://i.ibb.co/pjLXfmH4/29.png',
+                      width: 36, height: 36,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          Container(
+                            width: 36, height: 36,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius:
+                              BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.bolt,
+                                color: Colors.white,
+                                size: 20),
+                          ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: const [
+                      Text('SportyQo',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight:
+                              FontWeight.w800)),
+                      Text('Every Player Counts.',
+                          style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 9)),
+                    ],
+                  ),
+                  const Spacer(),
                   GestureDetector(
                     onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const
-                            _NotificationScreen())),
+                            builder: (_) =>
+                            const _NotificationScreen())),
                     child: Stack(children: [
                       Container(
-                        width: 42,
-                        height: 42,
+                        width: 42, height: 42,
                         decoration: BoxDecoration(
                             color: Colors.white10,
                             shape: BoxShape.circle),
@@ -365,7 +273,7 @@ class _HomeTabState extends State<_HomeTab> {
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                     color: const Color(
-                                        0xFF0A0A1A),
+                                        0xFF111111),
                                     width: 1.5)),
                           ),
                         ),
@@ -396,7 +304,6 @@ class _HomeTabState extends State<_HomeTab> {
                                     s.isNotEmpty)
                                         .join(' • '),
                                   )));
-                      // refresh so a new avatar shows up
                       _loadDashboard();
                     },
                     child: _HeaderAvatar(
@@ -408,6 +315,49 @@ class _HomeTabState extends State<_HomeTab> {
                             Session.firstName),
                   ),
                 ]),
+              ),
+
+              const SizedBox(height: 20),
+
+              // ── Player name + ID + role (below the SportyQo logo) ──
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20),
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Text(
+                          (_dash?['player']?['first_name']
+                          as String?) ??
+                              Session.firstName,
+                          style: const TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white)),
+                      const Text('.',
+                          style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primary)),
+                    ]),
+                    if ((_dash?['player']?['player_id'] ??
+                        widget.playerId) !=
+                        null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                          (_dash?['player']?['player_id'] ??
+                              widget.playerId!)
+                          as String,
+                          style: const TextStyle(
+                              color: Color(0xFF00C853),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5)),
+                    ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 20),
@@ -425,7 +375,7 @@ class _HomeTabState extends State<_HomeTab> {
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF13132B),
+                      color: const Color(0xFF141414),
                       borderRadius:
                       BorderRadius.circular(22),
                       border: Border.all(
@@ -479,12 +429,12 @@ class _HomeTabState extends State<_HomeTab> {
                               horizontal: 10,
                               vertical: 5),
                           decoration: BoxDecoration(
-                            color: AppColors.primary
+                            color: _cardTierColor
                                 .withOpacity(0.18),
                             borderRadius:
                             BorderRadius.circular(20),
                             border: Border.all(
-                                color: AppColors.primary
+                                color: _cardTierColor
                                     .withOpacity(0.4)),
                           ),
                           child: Row(
@@ -495,7 +445,7 @@ class _HomeTabState extends State<_HomeTab> {
                                   height: 8,
                                   decoration: BoxDecoration(
                                       color:
-                                      AppColors.primary,
+                                      _cardTierColor,
                                       shape:
                                       BoxShape.circle)),
                               const SizedBox(width: 6),
@@ -509,17 +459,43 @@ class _HomeTabState extends State<_HomeTab> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Row(children: [
-                          const Icon(Icons.arrow_upward,
-                              color: Color(0xFF7B2FFF),
-                              size: 14),
-                          Text('+${_dash?['qo_score']?['delta_month'] ?? 0} this month',
-                              style: const TextStyle(
-                                  color: Color(0xFF7B2FFF),
-                                  fontSize: 12,
-                                  fontWeight:
-                                  FontWeight.w500)),
-                        ]),
+                        // The most recent bonus so the player can see
+                        // what just landed — e.g. "+1 Shared a post in the
+                        // Dugout". If nothing has been earned yet, hide.
+                        Builder(builder: (_) {
+                          final events = ((_dash?['recent_points']
+                          as List<dynamic>?) ??
+                              const [])
+                              .cast<Map<String, dynamic>>();
+                          if (events.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          final last = events.first;
+                          final pts = (last['points'] as num?)
+                              ?.toInt() ??
+                              0;
+                          final reason =
+                              (last['reason'] as String?) ?? '';
+                          return Row(children: [
+                            Icon(Icons.arrow_upward,
+                                color: _cardTierColor,
+                                size: 14),
+                            const SizedBox(width: 2),
+                            Flexible(
+                              child: Text(
+                                  '${pts >= 0 ? '+$pts' : '$pts'} $reason',
+                                  overflow:
+                                  TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                      color: _cardTierColor,
+                                      fontSize: 12,
+                                      fontWeight:
+                                      FontWeight.w500)),
+                            ),
+                          ]);
+                        }),
+
                       ],
                     ),
                   ),
@@ -528,13 +504,29 @@ class _HomeTabState extends State<_HomeTab> {
 
               const SizedBox(height: 14),
 
-              // ── Active League ──
+              // ── Active League ── (always visible — a prompt to join
+              // when the player hasn't picked a team yet)
               Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20),
                 child: GestureDetector(
                   onTap: _activeTeam == null
-                      ? null
+                      ? () async {
+                    // Not in a team yet — tap goes to Join League
+                    await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                                JoinLeagueScreen(
+                                    onJoined: (t, l) {
+                                      setState(() {
+                                        _activeTeam = t;
+                                        _activeLeague = l;
+                                      });
+                                      _loadDashboard();
+                                    })));
+                    _loadDashboard();
+                  }
                       : () async {
                     final exited =
                     await Navigator.push<bool>(
@@ -563,7 +555,7 @@ class _HomeTabState extends State<_HomeTab> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF13132B),
+                      color: const Color(0xFF141414),
                       borderRadius:
                       BorderRadius.circular(18),
                       border: Border.all(
@@ -634,7 +626,6 @@ class _HomeTabState extends State<_HomeTab> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 22),
 
               // ── Upcoming Match (only shown when the backend
@@ -678,7 +669,7 @@ class _HomeTabState extends State<_HomeTab> {
                     decoration: BoxDecoration(
                       borderRadius:
                       BorderRadius.circular(20),
-                      color: const Color(0xFF13132B),
+                      color: const Color(0xFF141414),
                       border: Border.all(
                           color: Colors.white10),
                     ),
@@ -695,7 +686,7 @@ class _HomeTabState extends State<_HomeTab> {
                               errorBuilder: (_, __, ___) =>
                                   Container(
                                       color: const Color(
-                                          0xFF13132B)),
+                                          0xFF141414)),
                             ),
                           ),
                           Positioned.fill(
@@ -822,137 +813,6 @@ class _HomeTabState extends State<_HomeTab> {
                 const SizedBox(height: 16),
               ],
 
-              // ── Points Breakdown (named, from the Qo ledger) ──
-              if (((_dash?['recent_points'] as List<dynamic>?) ?? const [])
-                  .isNotEmpty) ...[
-                Padding(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 20),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F0F2A),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(children: [
-                          const Icon(Icons.stacked_line_chart,
-                              color: AppColors.primary, size: 18),
-                          const SizedBox(width: 8),
-                          const Text('Points Breakdown',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15)),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: () =>
-                                _showHowPointsWork(context),
-                            child: const Icon(
-                                Icons.info_outline,
-                                color: Colors.white38,
-                                size: 18),
-                          ),
-                        ]),
-                        const SizedBox(height: 12),
-                        // bonus / match / coach / community totals
-                        Row(
-                          mainAxisAlignment:
-                          MainAxisAlignment.spaceAround,
-                          children: [
-                            _BreakdownStat(
-                                label: 'Bonus',
-                                value:
-                                '${_dash?['points_breakdown']?['bonus'] ?? 0}'),
-                            Container(
-                                width: 1,
-                                height: 30,
-                                color: Colors.white10),
-                            _BreakdownStat(
-                                label: 'Match',
-                                value:
-                                '${_dash?['points_breakdown']?['match'] ?? 0}'),
-                            Container(
-                                width: 1,
-                                height: 30,
-                                color: Colors.white10),
-                            _BreakdownStat(
-                                label: 'Coach',
-                                value:
-                                '${_dash?['points_breakdown']?['coach'] ?? 0}'),
-                            Container(
-                                width: 1,
-                                height: 30,
-                                color: Colors.white10),
-                            _BreakdownStat(
-                                label: 'Community',
-                                value:
-                                '${_dash?['points_breakdown']?['community'] ?? 0}'),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        const Divider(color: Colors.white10, height: 1),
-                        const SizedBox(height: 8),
-                        ...((_dash?['recent_points'] as List<dynamic>)
-                            .take(5))
-                            .map((raw) {
-                          final e = raw as Map<String, dynamic>;
-                          final pts = (e['points'] as num?)?.toInt() ?? 0;
-                          return Padding(
-                            padding:
-                            const EdgeInsets.symmetric(vertical: 7),
-                            child: Row(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary
-                                        .withOpacity(0.15),
-                                    borderRadius:
-                                    BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                      (e['label'] as String?) ?? '',
-                                      style: const TextStyle(
-                                          color: AppColors.primary,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700)),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                      (e['reason'] as String?) ?? '',
-                                      style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 12,
-                                          height: 1.3)),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                    pts >= 0 ? '+$pts' : '$pts',
-                                    style: TextStyle(
-                                        color: pts >= 0
-                                            ? const Color(0xFF00C853)
-                                            : AppColors.error,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800)),
-                              ],
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
               // ── Join League ──
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -991,7 +851,7 @@ class _HomeTabState extends State<_HomeTab> {
                             errorBuilder: (_, __, ___) =>
                                 Container(
                                     color: const Color(
-                                        0xFF13132B)),
+                                        0xFF141414)),
                           ),
                         ),
                         Positioned.fill(
@@ -1283,7 +1143,7 @@ class _NotificationScreenState
         .length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: const Color(0xFF111111),
       body: SafeArea(
         child: Column(children: [
           Padding(
@@ -1537,7 +1397,7 @@ class _AllMatchesScreenState extends State<_AllMatchesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: const Color(0xFF111111),
       body: SafeArea(
         child: Column(children: [
           Padding(
@@ -1853,7 +1713,7 @@ class _LeagueDetailScreenState
         (_detail?['status'] as String?) != 'completed';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: const Color(0xFF111111),
       body: SafeArea(
         child: Column(children: [
           Padding(
@@ -2278,7 +2138,7 @@ class _HeaderAvatar extends StatelessWidget {
       height: 44,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: const Color(0xFF13132B),
+        color: const Color(0xFF141414),
         border: Border.all(color: AppColors.primary, width: 2),
       ),
       child: ClipOval(
@@ -2330,12 +2190,15 @@ class _ProfileImageScreenState extends State<_ProfileImageScreen> {
   Future<void> _pick(ImageSource source) async {
     if (_uploading) return;
     try {
-      final x = await _picker.pickImage(
+      final raw = await _picker.pickImage(
           source: source,
           maxWidth: 1080,
           maxHeight: 1080,
           imageQuality: 85);
-      if (x == null) return; // user cancelled
+      if (raw == null) return; // user cancelled
+      // Crop step — square, locked ratio for the avatar.
+      final x = await cropProfileImage(raw);
+      if (x == null || !mounted) return;
       setState(() => _uploading = true);
 
       final bytes = await x.readAsBytes();
@@ -2369,7 +2232,7 @@ class _ProfileImageScreenState extends State<_ProfileImageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A1A),
+      backgroundColor: const Color(0xFF111111),
       body: SafeArea(
         child: Column(children: [
           Padding(
@@ -2406,7 +2269,7 @@ class _ProfileImageScreenState extends State<_ProfileImageScreen> {
                 height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF13132B),
+                  color: const Color(0xFF141414),
                   border: Border.all(
                       color: AppColors.primary, width: 3),
                 ),
@@ -2516,25 +2379,5 @@ class _ProfileImageScreenState extends State<_ProfileImageScreen> {
         ]),
       ),
     );
-  }
-}
-
-// ── Points Breakdown mini stat ────────────────────────────────────────
-class _BreakdownStat extends StatelessWidget {
-  final String label, value;
-  const _BreakdownStat({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(children: [
-      Text(value,
-          style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w800)),
-      const SizedBox(height: 2),
-      Text(label,
-          style: const TextStyle(color: Colors.white38, fontSize: 11)),
-    ]);
   }
 }

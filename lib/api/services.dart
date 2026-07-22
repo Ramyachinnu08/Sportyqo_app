@@ -102,6 +102,15 @@ class UserService {
   static Future<Map<String, dynamic>> profile(String userId) async =>
       await ApiClient.get('/users/$userId/profile') as Map<String, dynamic>;
 
+  /// Instagram-style people search — matches by name or player_id prefix.
+  static Future<List<dynamic>> search(String q, {int limit = 20}) async {
+    final trimmed = q.trim();
+    if (trimmed.isEmpty) return const [];
+    final res = await ApiClient.get('/users/search',
+        query: {'q': trimmed, 'limit': '$limit'}) as Map<String, dynamic>;
+    return (res['items'] as List<dynamic>?) ?? const [];
+  }
+
   static Future<Map<String, dynamic>> me() async {
     final me = await ApiClient.get('/users/me') as Map<String, dynamic>;
     Session.user = me;

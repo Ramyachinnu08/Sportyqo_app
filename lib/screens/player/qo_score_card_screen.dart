@@ -214,27 +214,29 @@ class _QoScoreCardScreenState extends State<QoScoreCardScreen> {
                           color: Colors.white70,
                           fontSize: 14)),
                   const SizedBox(height: 8),
-                  const Text('242',
-                      style: TextStyle(
+                  Text('$currentScore',
+                      style: const TextStyle(
                           color: Colors.white,
                           fontSize: 72,
                           fontWeight: FontWeight.w900,
                           height: 1.1)),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius:
-                      BorderRadius.circular(20),
+                  if ((_data?['percentile'] as int?) != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius:
+                        BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                          'Top ${_data!['percentile']}% Players',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13)),
                     ),
-                    child: const Text('Top 15% Players',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13)),
-                  ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment:
@@ -296,11 +298,11 @@ class _QoScoreCardScreenState extends State<QoScoreCardScreen> {
                       const SizedBox(height: 16),
 
                       if (_tiers.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
                           child: Center(
                               child: CircularProgressIndicator(
-                                  color: Color(0xFF7B2FFF))),
+                                  color: cardColor)),
                         )
                       else
                         for (var i = 0; i < _tiers.length; i++) ...[

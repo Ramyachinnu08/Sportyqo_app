@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../api/api_config.dart';
 import '../../api/mappers.dart';
@@ -28,6 +30,42 @@ class _CoachDugoutScreenState
   final TextEditingController _searchController =
   TextEditingController();
 
+  // Instagram-style people search (replaces the feed when typing).
+  List<Map<String, dynamic>> _peopleResults = [];
+  bool _searching = false;
+  Timer? _searchDebounce;
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _searchPeople(String q) async {
+    _searchDebounce?.cancel();
+    if (q.trim().isEmpty) {
+      setState(() {
+        _peopleResults = [];
+        _searching = false;
+      });
+      return;
+    }
+    setState(() => _searching = true);
+    _searchDebounce = Timer(const Duration(milliseconds: 250), () async {
+      try {
+        final items = await UserService.search(q);
+        if (!mounted || _searchQuery.trim() != q.trim()) return;
+        setState(() {
+          _peopleResults = items.cast<Map<String, dynamic>>();
+          _searching = false;
+        });
+      } catch (_) {
+        if (mounted) setState(() => _searching = false);
+      }
+    });
+  }
+
   List<Map<String, dynamic>> _posts = [];
   bool _loading = true;
 
@@ -54,7 +92,7 @@ class _CoachDugoutScreenState
 
   void _onSearchChanged(String v) {
     setState(() => _searchQuery = v);
-    _loadFeed();
+    _searchPeople(v); // Instagram-style people lookup
   }
 
   void _onTabChanged(String tab) {
@@ -274,8 +312,10 @@ class _CoachDugoutScreenState
                         ? GestureDetector(
                       onTap: () {
                         _searchController.clear();
-                        setState(
-                                () => _searchQuery = '');
+                        setState(() {
+                          _searchQuery = '';
+                          _peopleResults = [];
+                        });
                       },
                       child: const Icon(Icons.close,
                           color: Colors.white38,
@@ -369,27 +409,145 @@ class _CoachDugoutScreenState
 
             const SizedBox(height: 12),
 
-            // ── Posts ──
-            Expanded(
-              child: _filteredPosts.isEmpty
-                  ? const Center(
-                child: Text('No posts found',
-                    style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 14)),
+            // ── People search results (Instagram-style dropdown) ──
+            if (_searchQuery.trim().isNotEmpty)
+              Expanded(
+                child: _searching
+                    ? const Center(
+                    child: CircularProgressIndicator(
+                        color: Color(0xFF00C853)))
+                    : _peopleResults.isEmpty
+                    ? const Center(
+                    child: Text('No accounts found',
+                        style: TextStyle(
+                            color: Colors.white54,
+                            fontSize: 14)))
+                    : ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 4),
+                  itemCount: _peopleResults.length,
+                  separatorBuilder: (_, __) =>
+                  const SizedBox(height: 4),
+                  itemBuilder: (context, i) {
+                    final u = _peopleResults[i];
+                    final name = (u['name'] as String?) ?? '';
+                    final avatar = ApiConfig.resolveMediaUrl(
+                        u['avatar_url'] as String?);
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  ProfileDetailScreen(
+                                      person: <String, dynamic>{
+                                        'author_id':
+                                        u['id'] as String,
+                                        'name': name,
+                                        'avatar': avatar ?? '',
+                                        'verified':
+                                        u['verified'] == true,
+                                        'sport': (u['sub_role']
+                                        as String?) ??
+                                            'Player',
+                                        'location': '',
+                                        'bio': '',
+                                      }))),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 8),
+                        child: Row(children: [
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: const BoxDecoration(
+                                color: Color(0xFF1A1A1A),
+                                shape: BoxShape.circle),
+                            child: ClipOval(
+                              child: avatar != null &&
+                                  avatar.isNotEmpty
+                                  ? Image.network(avatar,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) =>
+                                      Center(
+                                          child: Text(
+                                              name.isNotEmpty
+                                                  ? name[0]
+                                                  .toUpperCase()
+                                                  : '?',
+                                              style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w800))))
+                                  : Center(
+                                  child: Text(
+                                      name.isNotEmpty
+                                          ? name[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800))),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  Flexible(
+                                    child: Text(name,
+                                        overflow:
+                                        TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14)),
+                                  ),
+                                  if (u['verified'] == true) ...[
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.verified,
+                                        color: Color(0xFF00C853),
+                                        size: 14),
+                                  ],
+                                ]),
+                                const SizedBox(height: 2),
+                                Text(
+                                    '${u['player_id'] ?? ''} • ${u['sub_role'] ?? 'Player'} • Qo ${u['qo_score'] ?? 0}',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ]),
+                      ),
+                    );
+                  },
+                ),
               )
-                  : ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 0),
-                itemCount: _groupedFeed.length,
-                separatorBuilder: (_, __) =>
-                const SizedBox(height: 10),
-                itemBuilder: (context, i) {
-                  final group = _groupedFeed[i];
-                  return AuthorPostsSwiper(
-                    posts: group,
-                    accent: const Color(0xFF00C853),
-                    buildCard: (post) => _PostCard(
+            else
+            // ── Posts ──
+              Expanded(
+                child: _filteredPosts.isEmpty
+                    ? const Center(
+                  child: Text('No posts found',
+                      style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 14)),
+                )
+                    : ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 0),
+                  itemCount: _groupedFeed.length,
+                  separatorBuilder: (_, __) =>
+                  const SizedBox(height: 10),
+                  itemBuilder: (context, i) {
+                    // Only the newest post per author — the coach opens
+                    // the full playbook from the profile page.
+                    final post = _groupedFeed[i].first;
+                    return _PostCard(
                       post: post,
                       onLike: () async {
                         final index = _posts.indexOf(post);
@@ -429,11 +587,10 @@ class _CoachDugoutScreenState
                           ),
                         );
                       },
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
           ],
         ),
       ),

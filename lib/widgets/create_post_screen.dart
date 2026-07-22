@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -7,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../api/services.dart';
 import 'app_video_player.dart';
+import 'avatar_picker.dart' show cropPostImage;
 
 /// Instagram-style "new post" screen: media preview, caption,
 /// category, then multipart upload to POST /posts.
@@ -17,10 +19,10 @@ class CreatePostScreen extends StatefulWidget {
   final String? initialCategory;
   const CreatePostScreen(
       {super.key,
-      required this.file,
-      required this.isVideo,
-      this.categories,
-      this.initialCategory});
+        required this.file,
+        required this.isVideo,
+        this.categories,
+        this.initialCategory});
 
   @override
   State<CreatePostScreen> createState() =>
@@ -33,6 +35,10 @@ class CreatePostScreenState extends State<CreatePostScreen> {
       widget.initialCategory ?? 'playing';
   bool _posting = false;
   Uint8List? _bytes;
+  // Current file being edited — starts as the picked file, replaced
+  // whenever the user crops. Kept as a separate field so the widget's
+  // original file stays untouched.
+  late XFile _currentFile = widget.file;
 
   static const _defaultCategories = <String, String>{
     'playing': 'Playing',
@@ -46,15 +52,34 @@ class CreatePostScreenState extends State<CreatePostScreen> {
   @override
   void initState() {
     super.initState();
-    widget.file.readAsBytes().then((b) {
+    _currentFile.readAsBytes().then((b) {
       if (mounted) setState(() => _bytes = b);
     });
   }
 
+  Future<void> _cropCurrent() async {
+    if (widget.isVideo) return; // videos can't be cropped here
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Cropping is only available in the mobile app — try the APK on your phone.'),
+          backgroundColor: Color(0xFF7B2FFF)));
+      return;
+    }
+    final result = await cropPostImage(_currentFile);
+    if (result == null || !mounted) return;
+    final bytes = await result.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _currentFile = result;
+      _bytes = bytes;
+    });
+  }
+
   String get _mime {
-    final fromFile = widget.file.mimeType;
+    final fromFile = _currentFile.mimeType;
     if (fromFile != null && fromFile.isNotEmpty) return fromFile;
-    final n = widget.file.name.toLowerCase();
+    final n = _currentFile.name.toLowerCase();
     if (widget.isVideo) {
       if (n.endsWith('.mov')) return 'video/quicktime';
       if (n.endsWith('.webm')) return 'video/webm';
@@ -71,7 +96,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
 
   Future<void> _share() async {
     if (_posting) return;
-    final bytes = _bytes ?? await widget.file.readAsBytes();
+    final bytes = _bytes ?? await _currentFile.readAsBytes();
     setState(() => _posting = true);
     try {
       final parts = _mime.split('/');
@@ -80,11 +105,11 @@ class CreatePostScreenState extends State<CreatePostScreen> {
         category: _category,
         media: [
           http.MultipartFile.fromBytes('media', bytes,
-              filename: widget.file.name.isNotEmpty
-                  ? widget.file.name
+              filename: _currentFile.name.isNotEmpty
+                  ? _currentFile.name
                   : (widget.isVideo
-                      ? 'video.mp4'
-                      : 'photo.jpg'),
+                  ? 'video.mp4'
+                  : 'photo.jpg'),
               contentType: MediaType(parts[0], parts[1])),
         ],
       );
@@ -130,16 +155,16 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       borderRadius: BorderRadius.circular(20)),
                   child: _posting
                       ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2))
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2))
                       : const Text('Share',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14)),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14)),
                 ),
               ),
             ]),
@@ -153,25 +178,69 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                   // ── Media preview ──
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      width: double.infinity,
-                      height: 280,
-                      color: const Color(0xFF111111),
-                      child: widget.isVideo
-                          ? AppVideoPlayer.file(
-                              widget.file.path,
-                              loop: true)
-                          : _bytes == null
-                              ? const Center(
-                                  child:
-                                      CircularProgressIndicator(
-                                          color: Color(
-                                              0xFF7B2FFF)))
-                              : Image.memory(_bytes!,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: 280),
-                    ),
+                    child: Stack(children: [
+                      Container(
+                        width: double.infinity,
+                        height: 280,
+                        color: const Color(0xFF111111),
+                        child: widget.isVideo
+                            ? AppVideoPlayer.file(
+                            _currentFile.path,
+                            loop: true)
+                            : _bytes == null
+                            ? const Center(
+                            child:
+                            CircularProgressIndicator(
+                                color: Color(
+                                    0xFF7B2FFF)))
+                            : Image.memory(_bytes!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: 280),
+                      ),
+                      // ── Crop button (top-right, images only, mobile only) ──
+                      if (!widget.isVideo && !kIsWeb)
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius:
+                              BorderRadius.circular(20),
+                              onTap: _cropCurrent,
+                              child: Container(
+                                padding: const EdgeInsets
+                                    .symmetric(
+                                    horizontal: 12,
+                                    vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black
+                                      .withOpacity(0.65),
+                                  borderRadius:
+                                  BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize:
+                                  MainAxisSize.min,
+                                  children: const [
+                                    Icon(Icons.crop,
+                                        color: Colors.white,
+                                        size: 16),
+                                    SizedBox(width: 6),
+                                    Text('Crop',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                            fontWeight:
+                                            FontWeight.w700)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ]),
                   ),
                   const SizedBox(height: 20),
 
@@ -187,10 +256,10 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                     maxLines: 4,
                     maxLength: 2000,
                     style:
-                        const TextStyle(color: Colors.white),
+                    const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       hintText:
-                          'Write a caption… use #hashtags too',
+                      'Write a caption… use #hashtags too',
                       hintStyle: const TextStyle(
                           color: Colors.white30),
                       counterStyle: const TextStyle(
@@ -199,7 +268,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       fillColor: const Color(0xFF111111),
                       border: OutlineInputBorder(
                           borderRadius:
-                              BorderRadius.circular(12),
+                          BorderRadius.circular(12),
                           borderSide: BorderSide.none),
                     ),
                   ),
@@ -219,18 +288,18 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                       final active = _category == e.key;
                       return GestureDetector(
                         onTap: () => setState(
-                            () => _category = e.key),
+                                () => _category = e.key),
                         child: Container(
                           padding:
-                              const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8),
+                          const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8),
                           decoration: BoxDecoration(
                             color: active
                                 ? const Color(0xFF7B2FFF)
                                 : const Color(0xFF111111),
                             borderRadius:
-                                BorderRadius.circular(20),
+                            BorderRadius.circular(20),
                             border: Border.all(
                                 color: active
                                     ? const Color(0xFF7B2FFF)
@@ -243,7 +312,7 @@ class CreatePostScreenState extends State<CreatePostScreen> {
                                       : Colors.white54,
                                   fontSize: 13,
                                   fontWeight:
-                                      FontWeight.w600)),
+                                  FontWeight.w600)),
                         ),
                       );
                     }).toList(),

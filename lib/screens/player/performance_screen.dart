@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../api/services.dart';
 import '../../theme/app_theme.dart';
+import 'qo_score_card_screen.dart';
 
 class PerformanceScreen extends StatefulWidget {
   const PerformanceScreen({super.key});
@@ -58,6 +59,35 @@ class _PerformanceScreenState
     return '${words.join(' ')} Card';
   }
 
+  /// Real tier color matching the 8 tiers seeded on the server —
+  /// Purple → Green → Yellow → Orange → Red → Bronze → Silver → Gold.
+  Color _tierColor() {
+    final slug = (_qo['card_tier'] as String? ?? 'purple').toLowerCase();
+    switch (slug) {
+      case 'green':
+        return const Color(0xFF00C853);
+      case 'yellow':
+        return const Color(0xFFFFEB3B);
+      case 'orange':
+        return const Color(0xFFFF9800);
+      case 'red':
+        return const Color(0xFFFF3B30);
+      case 'bronze':
+      case 'bronze_pro':
+        return const Color(0xFFCD7F32);
+      case 'silver':
+      case 'silver_pro':
+        return const Color(0xFF9E9E9E);
+      case 'gold':
+      case 'golden':
+      case 'golden_pro':
+        return const Color(0xFFFFB300);
+      case 'purple':
+      default:
+        return const Color(0xFF7B2FFF);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,13 +140,13 @@ class _PerformanceScreenState
                                   horizontal: 10,
                                   vertical: 4),
                               decoration: BoxDecoration(
-                                color: AppColors.primary
+                                color: _tierColor()
                                     .withOpacity(0.2),
                                 borderRadius:
                                 BorderRadius.circular(
                                     20),
                                 border: Border.all(
-                                    color: AppColors.primary
+                                    color: _tierColor()
                                         .withOpacity(0.4)),
                               ),
                               child: Row(children: [
@@ -144,13 +174,13 @@ class _PerformanceScreenState
                                     fontSize: 12)),
                             const SizedBox(height: 6),
                             Row(children: [
-                              const Icon(Icons.arrow_upward,
-                                  color: AppColors.primary,
+                              Icon(Icons.arrow_upward,
+                                  color: _tierColor(),
                                   size: 14),
                               Text('+${_qo['delta_week'] ?? 0} points this week',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       color:
-                                      AppColors.primary,
+                                      _tierColor(),
                                       fontSize: 12,
                                       fontWeight:
                                       FontWeight.w500)),
@@ -163,15 +193,15 @@ class _PerformanceScreenState
                         height: 70,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.primary
+                          color: _tierColor()
                               .withOpacity(0.15),
                           border: Border.all(
-                              color: AppColors.primary
+                              color: _tierColor()
                                   .withOpacity(0.3),
                               width: 2),
                         ),
-                        child: const Icon(Icons.shield,
-                            color: AppColors.primary,
+                        child: Icon(Icons.shield,
+                            color: _tierColor(),
                             size: 36),
                       ),
                     ],
@@ -180,98 +210,110 @@ class _PerformanceScreenState
 
                 const SizedBox(height: 8),
 
-                // ── Card Progress ──
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F0F2A),
-                    borderRadius: BorderRadius.circular(16),
-                    border:
-                    Border.all(color: Colors.white10),
-                  ),
-                  child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                    children: [
-                      const Text('Card Progress',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14)),
-                      const SizedBox(height: 12),
-                      Row(children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                              color: AppColors.primary
-                                  .withOpacity(0.2),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: AppColors.primary
-                                      .withOpacity(0.4))),
-                          child: const Icon(Icons.bolt,
+                // ── Card Progress (tap to open the full Qo Score Card) ──
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                          const QoScoreCardScreen())),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F0F2A),
+                      borderRadius: BorderRadius.circular(16),
+                      border:
+                      Border.all(color: Colors.white10),
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      children: [
+                        Row(children: const [
+                          Text('Card Progress',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14)),
+                          Spacer(),
+                          Icon(Icons.chevron_right,
+                              color: Colors.white38, size: 20),
+                        ]),
+                        const SizedBox(height: 12),
+                        Row(children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                                color: AppColors.primary
+                                    .withOpacity(0.2),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: AppColors.primary
+                                        .withOpacity(0.4))),
+                            child: const Icon(Icons.bolt,
+                                color: AppColors.primary,
+                                size: 16),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(_tierLabel(),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14)),
+                          const Spacer(),
+                          RichText(
+                            text: TextSpan(children: [
+                              TextSpan(
+                                  text: '${_progress['current'] ?? 0}',
+                                  style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight:
+                                      FontWeight.w800,
+                                      fontSize: 14)),
+                              TextSpan(
+                                  text: ' / ${_progress['target'] ?? 1000}',
+                                  style: const TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 13)),
+                            ]),
+                          ),
+                        ]),
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius:
+                          BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                              value: ((_progress['current'] as num?) ?? 0) /
+                                  (((_progress['target'] as num?) ?? 1000) == 0
+                                      ? 1
+                                      : ((_progress['target'] as num?) ?? 1000)),
+                              backgroundColor: Colors.white10,
                               color: AppColors.primary,
-                              size: 16),
+                              minHeight: 8),
                         ),
-                        const SizedBox(width: 10),
-                        Text(_tierLabel(),
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14)),
-                        const Spacer(),
-                        RichText(
-                          text: TextSpan(children: [
-                            TextSpan(
-                                text: '${_progress['current'] ?? 0}',
-                                style: const TextStyle(
-                                    color: AppColors.primary,
-                                    fontWeight:
-                                    FontWeight.w800,
-                                    fontSize: 14)),
-                            TextSpan(
-                                text: ' / ${_progress['target'] ?? 1000}',
-                                style: const TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 13)),
-                          ]),
-                        ),
-                      ]),
-                      const SizedBox(height: 10),
-                      ClipRRect(
-                        borderRadius:
-                        BorderRadius.circular(6),
-                        child: LinearProgressIndicator(
-                            value: ((_progress['current'] as num?) ?? 0) /
-                                (((_progress['target'] as num?) ?? 1000) == 0
-                                    ? 1
-                                    : ((_progress['target'] as num?) ?? 1000)),
-                            backgroundColor: Colors.white10,
-                            color: AppColors.primary,
-                            minHeight: 8),
-                      ),
-                      const SizedBox(height: 8),
-                      if (_progress['next_tier'] != null)
-                        RichText(
-                          text: TextSpan(children: [
-                            TextSpan(
-                                text:
-                                '${_progress['points_needed'] ?? 0} points to ',
-                                style: const TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 12)),
-                            TextSpan(
-                                text:
-                                '${_progress['next_tier']}',
-                                style: const TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 12,
-                                    fontWeight:
-                                    FontWeight.w600)),
-                          ]),
-                        ),
-                    ],
+                        const SizedBox(height: 8),
+                        if (_progress['next_tier'] != null)
+                          RichText(
+                            text: TextSpan(children: [
+                              TextSpan(
+                                  text:
+                                  '${_progress['points_needed'] ?? 0} points to ',
+                                  style: const TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 12)),
+                              TextSpan(
+                                  text:
+                                  '${_progress['next_tier']}',
+                                  style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontSize: 12,
+                                      fontWeight:
+                                      FontWeight.w600)),
+                            ]),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
 

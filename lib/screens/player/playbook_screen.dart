@@ -113,7 +113,11 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
           .map((raw) {
         final m = raw as Map<String, dynamic>;
         return <String, dynamic>{
-          'title': m['title'] ?? '',
+          // The post's caption is the story — show it as the title text.
+          'title':
+          (m['caption'] as String?)?.trim().isNotEmpty == true
+              ? (m['caption'] as String).trim()
+              : (m['title'] ?? ''),
           'subtitle': m['subtitle'] ?? '',
           'date': m['date'] ?? '',
           'type': m['type'] ?? 'image',
@@ -532,41 +536,19 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
 
               const SizedBox(height: 16),
 
-              // ── About (real bio; hidden when empty) ──
+              // ── Bio (plain text, no About label / no box) ──
               if (((_profile['about'] as String?) ?? '')
                   .trim()
                   .isNotEmpty) ...[
                 Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 20),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF111111),
-                      borderRadius: BorderRadius.circular(12),
-                      border:
-                      Border.all(color: Colors.white10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        const Text('About',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14)),
-                        const SizedBox(height: 6),
-                        Text(
-                            (_profile['about'] as String).trim(),
-                            style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 13,
-                                height: 1.5)),
-                      ],
-                    ),
-                  ),
+                  child: Text(
+                      (_profile['about'] as String).trim(),
+                      style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          height: 1.5)),
                 ),
 
                 const SizedBox(height: 16),
@@ -684,44 +666,7 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                 const SizedBox(height: 4),
               ],
 
-              // ── Content Grid ──
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics:
-                  const NeverScrollableScrollPhysics(),
-                  gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 0.85,
-                  ),
-                  itemCount: _currentContent.length,
-                  itemBuilder: (context, i) {
-                    final item = _currentContent[i];
-                    return GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              _VideoPlayerScreen(
-                                  item: item),
-                        ),
-                      ),
-                      onLongPress: () =>
-                          _deleteTabItem(item),
-                      child: _VideoCard(item: item),
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ── Add New ──
+              // ── Add New (moved ABOVE the grid) ──
               Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 20),
@@ -782,6 +727,39 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                 ),
               ),
 
+              const SizedBox(height: 16),
+
+              // ── Content Grid (Instagram-style: edge-to-edge, 1px gaps) ──
+              GridView.builder(
+                shrinkWrap: true,
+                physics:
+                const NeverScrollableScrollPhysics(),
+                gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 2,
+                  mainAxisSpacing: 2,
+                  childAspectRatio: 1.0,
+                ),
+                itemCount: _currentContent.length,
+                itemBuilder: (context, i) {
+                  final item = _currentContent[i];
+                  return GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            _VideoPlayerScreen(
+                                item: item),
+                      ),
+                    ),
+                    onLongPress: () =>
+                        _deleteTabItem(item),
+                    child: _VideoCard(item: item),
+                  );
+                },
+              ),
+
               const SizedBox(height: 32),
             ],
           ),
@@ -803,7 +781,6 @@ class _SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<_SettingsScreen> {
   bool _notificationsOn = true;
-  bool _darkMode = true;
   bool _privateProfile = false;
   bool _locationOn = true;
   bool _emailAlerts = true;
@@ -821,7 +798,6 @@ class _SettingsScreenState extends State<_SettingsScreen> {
       setState(() {
         _notificationsOn =
             st['notifications_enabled'] as bool? ?? _notificationsOn;
-        _darkMode = st['dark_mode'] as bool? ?? _darkMode;
         _privateProfile =
             st['private_profile'] as bool? ?? _privateProfile;
         _locationOn =
@@ -910,20 +886,6 @@ class _SettingsScreenState extends State<_SettingsScreen> {
                         setState(
                                 () => _notificationsOn = v);
                         _push('notifications_enabled', v);
-                      },
-                      activeColor:
-                      const Color(0xFF7B2FFF),
-                    ),
-                  ),
-                  _SettingsRow(
-                    icon: Icons.dark_mode_outlined,
-                    title: 'Dark Mode',
-                    subtitle: 'Switch app appearance',
-                    trailing: Switch(
-                      value: _darkMode,
-                      onChanged: (v) {
-                        setState(() => _darkMode = v);
-                        _push('dark_mode', v);
                       },
                       activeColor:
                       const Color(0xFF7B2FFF),
@@ -2741,97 +2703,42 @@ class _VideoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: Stack(children: [
-        Positioned.fill(
-          child: item['type'] == 'video'
-              ? Builder(builder: (context) {
-            final thumb =
-            item['thumbnail'] as String?;
-            final iconBox = Container(
-                color: const Color(0xFF15152A),
-                child: const Center(
-                    child: Icon(
-                        Icons.movie_outlined,
-                        color: Colors.white24,
-                        size: 40)));
-            return thumb != null &&
-                thumb.isNotEmpty
-                ? Image.network(thumb,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                iconBox)
-                : iconBox;
-          })
-              : Image.network(
-            item['image'] ?? '',
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) =>
-                Container(
-                    color: const Color(0xFF1A1A1A)),
-          ),
+    // Instagram grid tile: just the image / video thumbnail edge-to-edge.
+    // Text (title / date) shows only when the user opens the item.
+    return Stack(fit: StackFit.expand, children: [
+      Positioned.fill(
+        child: item['type'] == 'video'
+            ? Builder(builder: (context) {
+          final thumb = item['thumbnail'] as String?;
+          final iconBox = Container(
+              color: const Color(0xFF15152A),
+              child: const Center(
+                  child: Icon(
+                      Icons.movie_outlined,
+                      color: Colors.white24,
+                      size: 32)));
+          return thumb != null && thumb.isNotEmpty
+              ? Image.network(thumb,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+              iconBox)
+              : iconBox;
+        })
+            : Image.network(
+          item['image'] ?? '',
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+              color: const Color(0xFF1A1A1A)),
         ),
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.8),
-                ],
-              ),
-            ),
-          ),
+      ),
+      if (item['type'] == 'video')
+        const Positioned(
+          top: 6,
+          right: 6,
+          child: Icon(Icons.play_circle_fill,
+              color: Colors.white, size: 22),
         ),
-        if (item['type'] == 'video')
-          Positioned(
-            top: 10, left: 10,
-            child: Container(
-              width: 32, height: 32,
-              decoration: const BoxDecoration(
-                  color: Colors.black54,
-                  shape: BoxShape.circle),
-              child: const Icon(Icons.play_arrow,
-                  color: Colors.white, size: 20),
-            ),
-          ),
-        Positioned(
-          bottom: 0, left: 0, right: 0,
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-              children: [
-                Text(item['title'],
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
-                Row(children: [
-                  Expanded(
-                    child: Text(item['subtitle'],
-                        style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11)),
-                  ),
-                  Text(item['date'],
-                      style: const TextStyle(
-                          color: Colors.white38,
-                          fontSize: 10)),
-                ]),
-              ],
-            ),
-          ),
-        ),
-      ]),
-    );
+    ]);
   }
 }
 
@@ -2893,38 +2800,39 @@ class _VideoPlayerScreenState
               ),
             ),
           ]),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (((widget.item['title'] as String?) ?? '')
-                    .isNotEmpty)
-                  Text(widget.item['title'],
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800)),
-                const SizedBox(height: 6),
-                Row(children: [
-                  if (((widget.item['subtitle'] as String?) ??
-                      '')
-                      .isNotEmpty) ...[
-                    Text(widget.item['subtitle'],
-                        style: const TextStyle(
-                            color: Color(0xFF7B2FFF),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600)),
-                    const Text(' • ',
-                        style:
-                        TextStyle(color: Colors.white38)),
-                  ],
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Date first (small, muted)
                   Text((widget.item['date'] as String?) ?? '',
                       style: const TextStyle(
                           color: Colors.white38,
-                          fontSize: 13)),
-                ]),
-              ],
+                          fontSize: 12)),
+                  const SizedBox(height: 10),
+                  // Then caption / bio — the story of this post
+                  if (((widget.item['title'] as String?) ?? '')
+                      .isNotEmpty)
+                    Text(widget.item['title'],
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            height: 1.3)),
+                  if (((widget.item['subtitle'] as String?) ??
+                      '')
+                      .isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(widget.item['subtitle'],
+                        style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            height: 1.5)),
+                  ],
+                ],
+              ),
             ),
           ),
         ]),
