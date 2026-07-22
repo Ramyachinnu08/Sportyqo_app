@@ -18,6 +18,8 @@ class _CoachLeaguesScreenState extends State<CoachLeaguesScreen> {
   Map<String, dynamic>? _detail; // GET /leagues/{id}
   bool _loading = true;
 
+  List<Map<String, dynamic>> _leagues = [];
+
   @override
   void initState() {
     super.initState();
@@ -27,15 +29,34 @@ class _CoachLeaguesScreenState extends State<CoachLeaguesScreen> {
   Future<void> _load() async {
     try {
       final leagues = await LeagueService.myLeagues();
-      if (leagues.isEmpty) {
-        if (mounted) setState(() => _loading = false);
+      if (!mounted) return;
+      final list = leagues.cast<Map<String, dynamic>>();
+      if (list.isEmpty) {
+        setState(() {
+          _leagues = [];
+          _league = null;
+          _detail = null;
+          _loading = false;
+        });
         return;
       }
-      final league = leagues.first as Map<String, dynamic>;
-      final detail = await LeagueService.detail(league['id'] as String);
+      // Keep the currently selected league if the coach has one in view;
+      // otherwise show the newest one. This way creating a new league
+      // doesn't wipe the coach's context on an existing tournament.
+      Map<String, dynamic> selected = list.first;
+      if (_league != null) {
+        final currentId = _league!['id'];
+        final match = list.firstWhere(
+                (l) => l['id'] == currentId,
+            orElse: () => list.first);
+        selected = match;
+      }
+      final detail =
+      await LeagueService.detail(selected['id'] as String);
       if (!mounted) return;
       setState(() {
-        _league = league;
+        _leagues = list;
+        _league = selected;
         _detail = detail;
         _loading = false;
       });
@@ -45,6 +66,71 @@ class _CoachLeaguesScreenState extends State<CoachLeaguesScreen> {
         showApiError(context, e);
       }
     }
+  }
+
+  Future<void> _switchLeague(Map<String, dynamic> lg) async {
+    setState(() => _loading = true);
+    try {
+      final detail = await LeagueService.detail(lg['id'] as String);
+      if (!mounted) return;
+      setState(() {
+        _league = lg;
+        _detail = detail;
+        _loading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        showApiError(context, e);
+      }
+    }
+  }
+
+  void _showLeaguePicker() {
+    if (_leagues.length <= 1) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF141414),
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+          BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 18, 20, 8),
+            child: Text('Your Leagues',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800)),
+          ),
+          ..._leagues.map((lg) {
+            final selected = _league?['id'] == lg['id'];
+            final status = (lg['status'] as String?) ?? 'active';
+            return ListTile(
+              leading: const Text('🏏',
+                  style: TextStyle(fontSize: 22)),
+              title: Text((lg['name'] as String?) ?? '',
+                  style: const TextStyle(color: Colors.white)),
+              subtitle: Text(
+                  '${lg['cricket_type'] ?? ''} • ${lg['teams_count'] ?? 0} teams • $status',
+                  style: const TextStyle(
+                      color: Colors.white54, fontSize: 12)),
+              trailing: selected
+                  ? const Icon(Icons.check_circle,
+                  color: Color(0xFF00C853))
+                  : const Icon(Icons.chevron_right,
+                  color: Colors.white38),
+              onTap: () {
+                Navigator.pop(ctx);
+                _switchLeague(lg);
+              },
+            );
+          }),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
   }
 
   int get _playersCount => (_league?['players_count'] as int?) ?? 0;
@@ -242,118 +328,142 @@ class _CoachLeaguesScreenState extends State<CoachLeaguesScreen> {
                 child: Column(
                   children: [
 
-                    // ── League Card ──
-                    Container(
-                      padding:
-                      const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(
-                            0xFF111111),
-                        borderRadius:
-                        BorderRadius.circular(
-                            16),
-                        border: Border.all(
-                            color: Colors.white10),
-                      ),
-                      child: Row(children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: const Color(
-                                0xFF0A1A3A),
-                            borderRadius:
-                            BorderRadius
-                                .circular(12),
-                            border: Border.all(
-                                color: const Color(
-                                    0xFF1A6BFF)
-                                    .withOpacity(
-                                    0.3)),
-                          ),
-                          child: const Center(
-                              child: Text('🦅',
-                                  style: TextStyle(
-                                      fontSize:
-                                      32))),
+                    // ── League Card (tap to switch when there are multiple) ──
+                    GestureDetector(
+                      onTap: _leagues.length > 1
+                          ? _showLeaguePicker
+                          : null,
+                      child: Container(
+                        padding:
+                        const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                              0xFF111111),
+                          borderRadius:
+                          BorderRadius.circular(
+                              16),
+                          border: Border.all(
+                              color: Colors.white10),
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment
-                                .start,
-                            children: [
-                              Row(children: [
-                                Expanded(
-                                  child: Text(
-                                      (_league?['name'] as String?) ?? '',
-                                      style: const TextStyle(
-                                          color: Colors
-                                              .white,
-                                          fontWeight:
-                                          FontWeight
-                                              .w800,
-                                          fontSize:
-                                          15)),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets
-                                      .symmetric(
-                                      horizontal:
-                                      10,
-                                      vertical: 4),
-                                  decoration:
-                                  BoxDecoration(
-                                    color: const Color(
-                                        0xFF00C853)
-                                        .withOpacity(
-                                        0.15),
-                                    borderRadius:
-                                    BorderRadius
-                                        .circular(
-                                        20),
-                                    border: Border.all(
-                                        color: const Color(
-                                            0xFF00C853)
-                                            .withOpacity(
-                                            0.3)),
+                        child: Row(children: [
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                  0xFF0A1A3A),
+                              borderRadius:
+                              BorderRadius
+                                  .circular(12),
+                              border: Border.all(
+                                  color: const Color(
+                                      0xFF1A6BFF)
+                                      .withOpacity(
+                                      0.3)),
+                            ),
+                            child: const Center(
+                                child: Text('🦅',
+                                    style: TextStyle(
+                                        fontSize:
+                                        32))),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment
+                                  .start,
+                              children: [
+                                Row(children: [
+                                  Expanded(
+                                    child: Text(
+                                        (_league?['name'] as String?) ?? '',
+                                        style: const TextStyle(
+                                            color: Colors
+                                                .white,
+                                            fontWeight:
+                                            FontWeight
+                                                .w800,
+                                            fontSize:
+                                            15)),
                                   ),
-                                  child: const Text(
-                                      'Active',
-                                      style: TextStyle(
-                                          color: Color(
-                                              0xFF00C853),
-                                          fontSize:
-                                          11,
-                                          fontWeight:
-                                          FontWeight
-                                              .w700)),
-                                ),
-                              ]),
-                              const SizedBox(
-                                  height: 4),
-                              Text(
-                                  'Code: ${_league?['league_code'] ?? ''}  •  ${_league?['cricket_type'] ?? ''}',
-                                  style: const TextStyle(
-                                      color: Colors
-                                          .white54,
-                                      fontSize:
-                                      13)),
-                              const SizedBox(
-                                  height: 2),
-                              Text(
-                                  '$_teamsCount Teams  •  ${_detail?['location'] ?? ''}',
-                                  style: const TextStyle(
-                                      color: Colors
-                                          .white38,
-                                      fontSize:
-                                      12)),
-                            ],
+                                  Container(
+                                    padding: const EdgeInsets
+                                        .symmetric(
+                                        horizontal:
+                                        10,
+                                        vertical: 4),
+                                    decoration:
+                                    BoxDecoration(
+                                      color: const Color(
+                                          0xFF00C853)
+                                          .withOpacity(
+                                          0.15),
+                                      borderRadius:
+                                      BorderRadius
+                                          .circular(
+                                          20),
+                                      border: Border.all(
+                                          color: const Color(
+                                              0xFF00C853)
+                                              .withOpacity(
+                                              0.3)),
+                                    ),
+                                    child: const Text(
+                                        'Active',
+                                        style: TextStyle(
+                                            color: Color(
+                                                0xFF00C853),
+                                            fontSize:
+                                            11,
+                                            fontWeight:
+                                            FontWeight
+                                                .w700)),
+                                  ),
+                                ]),
+                                const SizedBox(
+                                    height: 4),
+                                Text(
+                                    'Code: ${_league?['league_code'] ?? ''}  •  ${_league?['cricket_type'] ?? ''}',
+                                    style: const TextStyle(
+                                        color: Colors
+                                            .white54,
+                                        fontSize:
+                                        13)),
+                                const SizedBox(
+                                    height: 2),
+                                Text(
+                                    '$_teamsCount Teams  •  ${_detail?['location'] ?? ''}',
+                                    style: const TextStyle(
+                                        color: Colors
+                                            .white38,
+                                        fontSize:
+                                        12)),
+                              ],
+                            ),
                           ),
-                        ),
-                      ]),
+                          if (_leagues.length > 1)
+                            const Padding(
+                              padding: EdgeInsets.only(
+                                  left: 6),
+                              child: Icon(
+                                  Icons.swap_horiz,
+                                  color: Colors.white38,
+                                  size: 20),
+                            ),
+                        ]),
+                      ),
                     ),
+                    if (_leagues.length > 1)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            top: 6, left: 4),
+                        child: Text(
+                            'Tap the card to switch between your ${_leagues.length} leagues',
+                            style: const TextStyle(
+                                color: Colors.white38,
+                                fontSize: 11)),
+                      ),
 
                     const SizedBox(height: 12),
 

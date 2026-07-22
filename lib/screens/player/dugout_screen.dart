@@ -687,35 +687,35 @@ class _PostCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Post Header ──
+          // ── Post Header (compact, Instagram-style) ──
           Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: Row(
               crossAxisAlignment:
-              CrossAxisAlignment.start,
+              CrossAxisAlignment.center,
               children: [
                 GestureDetector(
                   onTap: onTapProfile,
                   child: ClipOval(
                     child: Image.network(
                       (post['avatar'] as String?) ?? '',
-                      width: 46,
-                      height: 46,
+                      width: 34,
+                      height: 34,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) =>
                           Container(
-                            width: 46,
-                            height: 46,
+                            width: 34,
+                            height: 34,
                             color: const Color(0xFF7B2FFF)
                                 .withOpacity(0.3),
                             child: const Icon(Icons.person,
                                 color: Colors.white,
-                                size: 24),
+                                size: 18),
                           ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: GestureDetector(
                     onTap: onTapProfile,
@@ -724,72 +724,71 @@ class _PostCard extends StatelessWidget {
                       CrossAxisAlignment.start,
                       children: [
                         Row(children: [
-                          Text(post['name'],
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight:
-                                  FontWeight.w700,
-                                  fontSize: 15)),
+                          Flexible(
+                            child: Text(post['name'],
+                                overflow:
+                                TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight:
+                                    FontWeight.w700,
+                                    fontSize: 13)),
+                          ),
                           if (post['verified'] as bool) ...[
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 3),
                             const Icon(Icons.verified,
                                 color: Color(0xFF7B2FFF),
-                                size: 16),
+                                size: 13),
                           ],
                         ]),
-                        Text(post['role'],
+                        Text(
+                            '${post['role']} • ${post['time']}',
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                                 color: Colors.white54,
-                                fontSize: 12)),
-                        Text(post['time'],
-                            style: const TextStyle(
-                                color: Colors.white38,
                                 fontSize: 11)),
                       ],
                     ),
                   ),
                 ),
-                Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
+                // Compact Qo pill (inline, single-line)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7B2FFF)
+                        .withOpacity(0.15),
+                    borderRadius:
+                    BorderRadius.circular(20),
+                    border: Border.all(
                         color: const Color(0xFF7B2FFF)
-                            .withOpacity(0.15),
-                        borderRadius:
-                        BorderRadius.circular(10),
-                        border: Border.all(
-                            color:
-                            const Color(0xFF7B2FFF)
-                                .withOpacity(0.4)),
-                      ),
-                      child: Column(children: [
-                        const Text('Qo Score',
-                            style: TextStyle(
-                                color: Color(0xFF7B2FFF),
-                                fontSize: 9,
-                                fontWeight:
-                                FontWeight.w600)),
+                            .withOpacity(0.4)),
+                  ),
+                  child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.bolt,
+                            color: Color(0xFF7B2FFF),
+                            size: 12),
+                        const SizedBox(width: 3),
                         Text('${post['qoScore']}',
                             style: const TextStyle(
                                 color: Color(0xFF7B2FFF),
-                                fontSize: 22,
+                                fontSize: 12,
                                 fontWeight:
-                                FontWeight.w900,
-                                height: 1.1)),
+                                FontWeight.w800)),
                       ]),
-                    ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: onMenu,
-                      behavior: HitTestBehavior.opaque,
-                      child: const Icon(Icons.more_horiz,
-                          color: Colors.white38, size: 20),
-                    ),
-                  ],
+                ),
+                const SizedBox(width: 6),
+                GestureDetector(
+                  onTap: onMenu,
+                  behavior: HitTestBehavior.opaque,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: 4, vertical: 4),
+                    child: Icon(Icons.more_horiz,
+                        color: Colors.white38, size: 18),
+                  ),
                 ),
               ],
             ),
