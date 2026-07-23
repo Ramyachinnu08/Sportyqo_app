@@ -872,6 +872,9 @@ class ProfileDetailScreenState
   String _locationText = '';
   String _bioText = '';
   Map<String, List<Map<String, dynamic>>> _tabItems = {};
+  // Coach recommendations for this player — loaded with the profile
+  // and shown as a highlighted card above the tabs so it's noticeable.
+  List<Map<String, dynamic>> _recommendations = [];
 
   List<Map<String, dynamic>> get _gridItems {
     const keys = [
@@ -948,6 +951,9 @@ class ProfileDetailScreenState
             (res['location'] as String?) ?? '';
         _bioText = (res['bio'] as String?) ?? '';
         _tabItems = parsedTabs;
+        _recommendations =
+            ((res['recommendations'] as List<dynamic>?) ?? const [])
+                .cast<Map<String, dynamic>>();
       });
     } catch (_) {}
   }
@@ -1312,6 +1318,124 @@ class ProfileDetailScreenState
               ),
 
               const SizedBox(height: 16),
+
+              // ── Coach Recommendations (real data from backend) ──
+              if (_recommendations.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF141414),
+                      borderRadius:
+                      BorderRadius.circular(14),
+                      border: Border.all(
+                          color: const Color(0xFF00C853)
+                              .withOpacity(0.4)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          const Icon(Icons.star_rounded,
+                              color: Colors.amber,
+                              size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                              'Coach Recommendations (${_recommendations.length})',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight:
+                                  FontWeight.w800,
+                                  fontSize: 14)),
+                        ]),
+                        const SizedBox(height: 12),
+                        ..._recommendations
+                            .take(3)
+                            .map((r) => Padding(
+                          padding:
+                          const EdgeInsets.only(
+                              bottom: 10),
+                          child: Column(
+                            crossAxisAlignment:
+                            CrossAxisAlignment
+                                .start,
+                            children: [
+                              Row(children: [
+                                const Icon(
+                                    Icons.verified,
+                                    color: Color(
+                                        0xFF00C853),
+                                    size: 14),
+                                const SizedBox(
+                                    width: 6),
+                                Flexible(
+                                  child: Text(
+                                      (r['coach_name']
+                                      as String?) ??
+                                          'Coach',
+                                      overflow:
+                                      TextOverflow
+                                          .ellipsis,
+                                      style: const TextStyle(
+                                          color: Colors
+                                              .white,
+                                          fontWeight: FontWeight
+                                              .w700,
+                                          fontSize: 13)),
+                                ),
+                              ]),
+                              if ((r['coach_role']
+                              as String?)
+                                  ?.isNotEmpty ==
+                                  true) ...[
+                                const SizedBox(
+                                    height: 2),
+                                Text(
+                                    (r['coach_role']
+                                    as String?) ??
+                                        '',
+                                    style: const TextStyle(
+                                        color:
+                                        Colors.white38,
+                                        fontSize: 11)),
+                              ],
+                              if ((r['note']
+                              as String?)
+                                  ?.isNotEmpty ==
+                                  true) ...[
+                                const SizedBox(
+                                    height: 4),
+                                Text(
+                                    '"${r['note']}"',
+                                    style: const TextStyle(
+                                        color: Colors
+                                            .white70,
+                                        fontSize: 12,
+                                        fontStyle:
+                                        FontStyle
+                                            .italic,
+                                        height: 1.4)),
+                              ],
+                            ],
+                          ),
+                        )),
+                        if (_recommendations.length > 3)
+                          Text(
+                              '+${_recommendations.length - 3} more',
+                              style: const TextStyle(
+                                  color: Color(0xFF00C853),
+                                  fontSize: 12,
+                                  fontWeight:
+                                  FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
 
               // ── Tabs ──
               Container(

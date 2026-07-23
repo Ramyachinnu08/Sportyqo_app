@@ -3,6 +3,7 @@ import '../../api/services.dart';
 import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
 import 'enter_mobile_screen.dart';
+import 'login_screen.dart';
 
 class CreateCoachAccountScreen extends StatefulWidget {
   const CreateCoachAccountScreen({super.key});
@@ -225,22 +226,29 @@ class _CreateCoachAccountScreenState extends State<CreateCoachAccountScreen> {
               ),
               const SizedBox(height: 24),
               Center(
-                child: RichText(
-                  text: const TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'Already have an account? ',
-                        style:
-                        TextStyle(color: AppColors.textGrey, fontSize: 14),
-                      ),
-                      TextSpan(
-                        text: 'Login',
-                        style: TextStyle(
-                            color: Color(0xFF00C853),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600),
-                      ),
-                    ],
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) =>
+                          const LoginScreen())),
+                  child: RichText(
+                    text: const TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Already have an account? ',
+                          style:
+                          TextStyle(color: AppColors.textGrey, fontSize: 14),
+                        ),
+                        TextSpan(
+                          text: 'Login',
+                          style: TextStyle(
+                              color: Color(0xFF00C853),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

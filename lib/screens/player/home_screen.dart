@@ -195,493 +195,662 @@ class _HomeTabState extends State<_HomeTab> {
     return Scaffold(
       backgroundColor: const Color(0xFF111111),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Top Bar (SportyQo logo + name — matches coach home) ──
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    20, 16, 20, 0),
-                child: Row(children: [
-                  ClipRRect(
-                    borderRadius:
-                    BorderRadius.circular(8),
-                    child: Image.network(
-                      'https://i.ibb.co/pjLXfmH4/29.png',
-                      width: 36, height: 36,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          Container(
-                            width: 36, height: 36,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius:
-                              BorderRadius.circular(8),
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: _loadDashboard,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Top Bar (SportyQo logo + name — matches coach home) ──
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      20, 16, 20, 0),
+                  child: Row(children: [
+                    ClipRRect(
+                      borderRadius:
+                      BorderRadius.circular(8),
+                      child: Image.network(
+                        'https://i.ibb.co/pjLXfmH4/29.png',
+                        width: 36, height: 36,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Container(
+                              width: 36, height: 36,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius:
+                                BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.bolt,
+                                  color: Colors.white,
+                                  size: 20),
                             ),
-                            child: const Icon(Icons.bolt,
-                                color: Colors.white,
-                                size: 20),
-                          ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                      children: const [
+                        Text('SportyQo',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight:
+                                FontWeight.w800)),
+                        Text('Every Player Counts.',
+                            style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 9)),
+                      ],
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                              const _NotificationScreen())),
+                      child: Stack(children: [
+                        Container(
+                          width: 42, height: 42,
+                          decoration: BoxDecoration(
+                              color: Colors.white10,
+                              shape: BoxShape.circle),
+                          child: const Icon(
+                              Icons.notifications_outlined,
+                              color: Colors.white,
+                              size: 22),
+                        ),
+                        if (((_dash?['unread_notifications']
+                        as num?) ??
+                            0) >
+                            0)
+                          Positioned(
+                            top: 6, right: 6,
+                            child: Container(
+                              width: 9, height: 9,
+                              decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: const Color(
+                                          0xFF111111),
+                                      width: 1.5)),
+                            ),
+                          ),
+                      ]),
+                    ),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: () async {
+                        final p = _dash?['player']
+                        as Map<String, dynamic>?;
+                        await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    _ProfileImageScreen(
+                                      avatarUrl: p?['avatar_url']
+                                      as String?,
+                                      name: (p?['full_name']
+                                      as String?) ??
+                                          '',
+                                      details: [
+                                        p?['age_group'],
+                                        p?['sub_role'],
+                                        _activeTeam,
+                                      ]
+                                          .whereType<String>()
+                                          .where((s) =>
+                                      s.isNotEmpty)
+                                          .join(' • '),
+                                    )));
+                        _loadDashboard();
+                      },
+                      child: _HeaderAvatar(
+                          url: _dash?['player']?['avatar_url']
+                          as String?,
+                          name: (_dash?['player']
+                          ?['first_name']
+                          as String?) ??
+                              Session.firstName),
+                    ),
+                  ]),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Player name + ID + role (below the SportyQo logo) ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20),
+                  child: Column(
                     crossAxisAlignment:
                     CrossAxisAlignment.start,
-                    children: const [
-                      Text('SportyQo',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight:
-                              FontWeight.w800)),
-                      Text('Every Player Counts.',
-                          style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 9)),
+                    children: [
+                      Row(children: [
+                        Text(
+                            (_dash?['player']?['first_name']
+                            as String?) ??
+                                Session.firstName,
+                            style: const TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white)),
+                        const Text('.',
+                            style: TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary)),
+                      ]),
+                      if ((_dash?['player']?['player_id'] ??
+                          widget.playerId) !=
+                          null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                            (_dash?['player']?['player_id'] ??
+                                widget.playerId!)
+                            as String,
+                            style: const TextStyle(
+                                color: Color(0xFF00C853),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5)),
+                      ],
                     ],
                   ),
-                  const Spacer(),
-                  GestureDetector(
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Qo Score Card ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20),
+                  child: GestureDetector(
                     onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (_) =>
-                            const _NotificationScreen())),
-                    child: Stack(children: [
-                      Container(
-                        width: 42, height: 42,
-                        decoration: BoxDecoration(
-                            color: Colors.white10,
-                            shape: BoxShape.circle),
-                        child: const Icon(
-                            Icons.notifications_outlined,
-                            color: Colors.white,
-                            size: 22),
+                            const QoScoreCardScreen())),
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF141414),
+                        borderRadius:
+                        BorderRadius.circular(22),
+                        border: Border.all(
+                            color: Colors.white10),
                       ),
-                      if (((_dash?['unread_notifications']
-                      as num?) ??
-                          0) >
-                          0)
-                        Positioned(
-                          top: 6, right: 6,
-                          child: Container(
-                            width: 9, height: 9,
-                            decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: const Color(
-                                        0xFF111111),
-                                    width: 1.5)),
+                      child: Column(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment:
+                            MainAxisAlignment
+                                .spaceBetween,
+                            children: const [
+                              Text('Qo Score',
+                                  style: TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 13)),
+                              Icon(Icons.chevron_right,
+                                  color: Colors.white38,
+                                  size: 20),
+                            ],
                           ),
-                        ),
-                    ]),
+                          const SizedBox(height: 4),
+                          Row(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.center,
+                            children: [
+                              Text('${_dash?['qo_score']?['current'] ?? 0}',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 54,
+                                      fontWeight:
+                                      FontWeight.w800,
+                                      height: 1)),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: SizedBox(
+                                  height: 56,
+                                  child: CustomPaint(
+                                      painter:
+                                      _ScoreGraphPainter()),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5),
+                            decoration: BoxDecoration(
+                              color: _cardTierColor
+                                  .withOpacity(0.18),
+                              borderRadius:
+                              BorderRadius.circular(20),
+                              border: Border.all(
+                                  color: _cardTierColor
+                                      .withOpacity(0.4)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                        color:
+                                        _cardTierColor,
+                                        shape:
+                                        BoxShape.circle)),
+                                const SizedBox(width: 6),
+                                Text('$_cardTierLabel Card',
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight:
+                                        FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // The most recent bonus so the player can see
+                          // what just landed — e.g. "+1 Shared a post in the
+                          // Dugout". If nothing has been earned yet, hide.
+                          Builder(builder: (_) {
+                            final events = ((_dash?['recent_points']
+                            as List<dynamic>?) ??
+                                const [])
+                                .cast<Map<String, dynamic>>();
+                            if (events.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
+                            final last = events.first;
+                            final pts = (last['points'] as num?)
+                                ?.toInt() ??
+                                0;
+                            final reason =
+                                (last['reason'] as String?) ?? '';
+                            return Row(children: [
+                              Icon(Icons.arrow_upward,
+                                  color: _cardTierColor,
+                                  size: 14),
+                              const SizedBox(width: 2),
+                              Flexible(
+                                child: Text(
+                                    '${pts >= 0 ? '+$pts' : '$pts'} $reason',
+                                    overflow:
+                                    TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                        color: _cardTierColor,
+                                        fontSize: 12,
+                                        fontWeight:
+                                        FontWeight.w500)),
+                              ),
+                            ]);
+                          }),
+
+                        ],
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () async {
-                      final p = _dash?['player']
-                      as Map<String, dynamic>?;
+                ),
+
+                const SizedBox(height: 14),
+
+                // ── Active League ── (always visible — a prompt to join
+                // when the player hasn't picked a team yet)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20),
+                  child: GestureDetector(
+                    onTap: _activeTeam == null
+                        ? () async {
+                      // Not in a team yet — tap goes to Join League
                       await Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (_) =>
-                                  _ProfileImageScreen(
-                                    avatarUrl: p?['avatar_url']
-                                    as String?,
-                                    name: (p?['full_name']
-                                    as String?) ??
-                                        '',
-                                    details: [
-                                      p?['age_group'],
-                                      p?['sub_role'],
-                                      _activeTeam,
-                                    ]
-                                        .whereType<String>()
-                                        .where((s) =>
-                                    s.isNotEmpty)
-                                        .join(' • '),
-                                  )));
+                                  JoinLeagueScreen(
+                                      onJoined: (t, l) {
+                                        setState(() {
+                                          _activeTeam = t;
+                                          _activeLeague = l;
+                                        });
+                                        _loadDashboard();
+                                      })));
                       _loadDashboard();
+                    }
+                        : () async {
+                      final exited =
+                      await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  _LeagueDetailScreen(
+                                    leagueId:
+                                    _activeLeagueId,
+                                    leagueName:
+                                    _activeLeague!,
+                                    teamName:
+                                    _activeTeam!,
+                                    sport: widget
+                                        .selectedSport,
+                                  )));
+                      if (exited == true) {
+                        setState(() {
+                          _activeTeam = null;
+                          _activeLeague = null;
+                          _activeLeagueId = null;
+                        });
+                        _loadDashboard();
+                      }
                     },
-                    child: _HeaderAvatar(
-                        url: _dash?['player']?['avatar_url']
-                        as String?,
-                        name: (_dash?['player']
-                        ?['first_name']
-                        as String?) ??
-                            Session.firstName),
-                  ),
-                ]),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ── Player name + ID + role (below the SportyQo logo) ──
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20),
-                child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Text(
-                          (_dash?['player']?['first_name']
-                          as String?) ??
-                              Session.firstName,
-                          style: const TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white)),
-                      const Text('.',
-                          style: TextStyle(
-                              fontSize: 30,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary)),
-                    ]),
-                    if ((_dash?['player']?['player_id'] ??
-                        widget.playerId) !=
-                        null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                          (_dash?['player']?['player_id'] ??
-                              widget.playerId!)
-                          as String,
-                          style: const TextStyle(
-                              color: Color(0xFF00C853),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5)),
-                    ],
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ── Qo Score Card ──
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20),
-                child: GestureDetector(
-                  onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) =>
-                          const QoScoreCardScreen())),
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF141414),
-                      borderRadius:
-                      BorderRadius.circular(22),
-                      border: Border.all(
-                          color: Colors.white10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment:
-                          MainAxisAlignment
-                              .spaceBetween,
-                          children: const [
-                            Text('Qo Score',
-                                style: TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 13)),
-                            Icon(Icons.chevron_right,
-                                color: Colors.white38,
-                                size: 20),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.center,
-                          children: [
-                            Text('${_dash?['qo_score']?['current'] ?? 0}',
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 54,
-                                    fontWeight:
-                                    FontWeight.w800,
-                                    height: 1)),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: SizedBox(
-                                height: 56,
-                                child: CustomPaint(
-                                    painter:
-                                    _ScoreGraphPainter()),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding:
-                          const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5),
-                          decoration: BoxDecoration(
-                            color: _cardTierColor
-                                .withOpacity(0.18),
-                            borderRadius:
-                            BorderRadius.circular(20),
-                            border: Border.all(
-                                color: _cardTierColor
-                                    .withOpacity(0.4)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF141414),
+                        borderRadius:
+                        BorderRadius.circular(18),
+                        border: Border.all(
+                            color: Colors.white10),
+                      ),
+                      child: Row(children: [
+                        _ShieldBadge(
+                            color: AppColors.primary,
+                            icon: Icons.shield),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                      color:
-                                      _cardTierColor,
-                                      shape:
-                                      BoxShape.circle)),
-                              const SizedBox(width: 6),
-                              Text('$_cardTierLabel Card',
+                              const Text('ACTIVE LEAGUE',
+                                  style: TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 10,
+                                      letterSpacing: 1)),
+                              const SizedBox(height: 2),
+                              Text(
+                                  _activeTeam ??
+                                      'Not in a team',
                                   style: const TextStyle(
                                       color: Colors.white,
-                                      fontSize: 12,
+                                      fontSize: 17,
                                       fontWeight:
-                                      FontWeight.w600)),
+                                      FontWeight.w700)),
+                              Text(
+                                  _activeLeague ??
+                                      'Join a league to get started',
+                                  style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 12)),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        // The most recent bonus so the player can see
-                        // what just landed — e.g. "+1 Shared a post in the
-                        // Dugout". If nothing has been earned yet, hide.
-                        Builder(builder: (_) {
-                          final events = ((_dash?['recent_points']
-                          as List<dynamic>?) ??
-                              const [])
-                              .cast<Map<String, dynamic>>();
-                          if (events.isEmpty) {
-                            return const SizedBox.shrink();
-                          }
-                          final last = events.first;
-                          final pts = (last['points'] as num?)
-                              ?.toInt() ??
-                              0;
-                          final reason =
-                              (last['reason'] as String?) ?? '';
-                          return Row(children: [
-                            Icon(Icons.arrow_upward,
-                                color: _cardTierColor,
-                                size: 14),
-                            const SizedBox(width: 2),
-                            Flexible(
-                              child: Text(
-                                  '${pts >= 0 ? '+$pts' : '$pts'} $reason',
-                                  overflow:
-                                  TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  style: TextStyle(
-                                      color: _cardTierColor,
-                                      fontSize: 12,
-                                      fontWeight:
-                                      FontWeight.w500)),
+                        if (_activeTeam != null)
+                          Container(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00C853)
+                                  .withOpacity(0.15),
+                              borderRadius:
+                              BorderRadius.circular(20),
+                              border: Border.all(
+                                  color:
+                                  const Color(0xFF00C853)
+                                      .withOpacity(0.3)),
                             ),
-                          ]);
-                        }),
-
-                      ],
+                            child: const Text('Active',
+                                style: TextStyle(
+                                    color:
+                                    Color(0xFF00C853),
+                                    fontSize: 12,
+                                    fontWeight:
+                                    FontWeight.w600)),
+                          ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.chevron_right,
+                            color: Colors.white38,
+                            size: 20),
+                      ]),
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 22),
 
-              const SizedBox(height: 14),
-
-              // ── Active League ── (always visible — a prompt to join
-              // when the player hasn't picked a team yet)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20),
-                child: GestureDetector(
-                  onTap: _activeTeam == null
-                      ? () async {
-                    // Not in a team yet — tap goes to Join League
-                    await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) =>
-                                JoinLeagueScreen(
-                                    onJoined: (t, l) {
-                                      setState(() {
-                                        _activeTeam = t;
-                                        _activeLeague = l;
-                                      });
-                                      _loadDashboard();
-                                    })));
-                    _loadDashboard();
-                  }
-                      : () async {
-                    final exited =
-                    await Navigator.push<bool>(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) =>
-                                _LeagueDetailScreen(
-                                  leagueId:
-                                  _activeLeagueId,
-                                  leagueName:
-                                  _activeLeague!,
-                                  teamName:
-                                  _activeTeam!,
-                                  sport: widget
-                                      .selectedSport,
-                                )));
-                    if (exited == true) {
-                      setState(() {
-                        _activeTeam = null;
-                        _activeLeague = null;
-                        _activeLeagueId = null;
-                      });
-                      _loadDashboard();
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF141414),
-                      borderRadius:
-                      BorderRadius.circular(18),
-                      border: Border.all(
-                          color: Colors.white10),
-                    ),
-                    child: Row(children: [
-                      _ShieldBadge(
-                          color: AppColors.primary,
-                          icon: Icons.shield),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                          children: [
-                            const Text('ACTIVE LEAGUE',
-                                style: TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 10,
-                                    letterSpacing: 1)),
-                            const SizedBox(height: 2),
-                            Text(
-                                _activeTeam ??
-                                    'Not in a team',
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 17,
-                                    fontWeight:
-                                    FontWeight.w700)),
-                            Text(
-                                _activeLeague ??
-                                    'Join a league to get started',
-                                style: const TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      if (_activeTeam != null)
-                        Container(
-                          padding:
-                          const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00C853)
-                                .withOpacity(0.15),
-                            borderRadius:
-                            BorderRadius.circular(20),
-                            border: Border.all(
-                                color:
-                                const Color(0xFF00C853)
-                                    .withOpacity(0.3)),
-                          ),
-                          child: const Text('Active',
+                // ── Upcoming Match (only shown when the backend
+                //    returns a scheduled match for this player) ──
+                if (_upcoming != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment:
+                      MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Upcoming Match',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700)),
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const
+                                  _AllMatchesScreen())),
+                          child: const Text('View All',
                               style: TextStyle(
-                                  color:
-                                  Color(0xFF00C853),
-                                  fontSize: 12,
+                                  color: AppColors.primary,
+                                  fontSize: 13,
                                   fontWeight:
                                   FontWeight.w600)),
                         ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.chevron_right,
-                          color: Colors.white38,
-                          size: 20),
-                    ]),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 22),
 
-              // ── Upcoming Match (only shown when the backend
-              //    returns a scheduled match for this player) ──
-              if (_upcoming != null) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Upcoming Match',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700)),
-                      GestureDetector(
-                        onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const
-                                _AllMatchesScreen())),
-                        child: const Text('View All',
-                            style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 13,
-                                fontWeight:
-                                FontWeight.w600)),
+                  const SizedBox(height: 10),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius:
+                        BorderRadius.circular(20),
+                        color: const Color(0xFF141414),
+                        border: Border.all(
+                            color: Colors.white10),
                       ),
-                    ],
+                      child: Column(children: [
+                        ClipRRect(
+                          borderRadius:
+                          const BorderRadius.vertical(
+                              top: Radius.circular(20)),
+                          child: Stack(children: [
+                            Positioned.fill(
+                              child: Image.network(
+                                'https://i.ibb.co/ksm7Jj8f/1a.png',
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    Container(
+                                        color: const Color(
+                                            0xFF141414)),
+                              ),
+                            ),
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin:
+                                    Alignment.topCenter,
+                                    end: Alignment
+                                        .bottomCenter,
+                                    colors: [
+                                      Colors.black
+                                          .withOpacity(0.45),
+                                      Colors.black
+                                          .withOpacity(0.6),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding:
+                              const EdgeInsets.symmetric(
+                                  vertical: 26),
+                              child: Row(
+                                mainAxisAlignment:
+                                MainAxisAlignment
+                                    .spaceEvenly,
+                                children: [
+                                  Column(children: [
+                                    _ShieldBadge(
+                                        color:
+                                        AppColors.primary,
+                                        icon: Icons.shield,
+                                        size: 56,
+                                        letter: 'A'),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                        (_upcoming?['team_a']?['name'] as String?) ?? '',
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                            fontWeight:
+                                            FontWeight
+                                                .w600)),
+                                  ]),
+                                  const Text('VS',
+                                      style: TextStyle(
+                                          color:
+                                          AppColors.primary,
+                                          fontSize: 18,
+                                          fontWeight:
+                                          FontWeight.w800)),
+                                  Column(children: [
+                                    _ShieldBadge(
+                                        color: Colors.white24,
+                                        icon: Icons.bolt,
+                                        size: 56,
+                                        iconColor:
+                                        Colors.white),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                        (_upcoming?['team_b']?['name'] as String?) ?? '',
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                            fontWeight:
+                                            FontWeight
+                                                .w600)),
+                                  ]),
+                                ],
+                              ),
+                            ),
+                          ]),
+                        ),
+                        const Divider(
+                            color: Colors.white10, height: 1),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(children: [
+                                const Icon(
+                                    Icons
+                                        .calendar_today_outlined,
+                                    color: Colors.white54,
+                                    size: 14),
+                                const SizedBox(width: 4),
+                                Text(_fmtDate(_upcoming?['starts_at'] as String?),
+                                    style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12)),
+                              ]),
+                              Row(children: [
+                                const Icon(Icons.access_time,
+                                    color: Colors.white54,
+                                    size: 14),
+                                const SizedBox(width: 4),
+                                Text(_fmtTime(_upcoming?['starts_at'] as String?),
+                                    style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12)),
+                              ]),
+                              Row(children: [
+                                const Icon(
+                                    Icons.location_on_outlined,
+                                    color: Colors.white54,
+                                    size: 14),
+                                const SizedBox(width: 4),
+                                Text((_upcoming?['venue'] as String?) ?? 'TBD',
+                                    style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12)),
+                              ]),
+                            ],
+                          ),
+                        ),
+                      ]),
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 10),
+                  const SizedBox(height: 16),
+                ],
 
+                // ── Join League ──
                 Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 20),
-                  child: Container(
-                    decoration: BoxDecoration(
+                  child: GestureDetector(
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => JoinLeagueScreen(
+                              onJoined: (teamName,
+                                  leagueName) {
+                                setState(() {
+                                  _activeTeam = teamName;
+                                  _activeLeague =
+                                      leagueName;
+                                });
+                                _loadDashboard();
+                              },
+                            ))),
+                    child: ClipRRect(
                       borderRadius:
                       BorderRadius.circular(20),
-                      color: const Color(0xFF141414),
-                      border: Border.all(
-                          color: Colors.white10),
-                    ),
-                    child: Column(children: [
-                      ClipRRect(
-                        borderRadius:
-                        const BorderRadius.vertical(
-                            top: Radius.circular(20)),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius:
+                          BorderRadius.circular(20),
+                          border: Border.all(
+                              color: AppColors.primary
+                                  .withOpacity(0.3)),
+                        ),
                         child: Stack(children: [
                           Positioned.fill(
                             child: Image.network(
-                              'https://i.ibb.co/ksm7Jj8f/1a.png',
+                              'https://i.ibb.co/QjvzBGMY/1aa.png',
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) =>
                                   Container(
@@ -693,287 +862,123 @@ class _HomeTabState extends State<_HomeTab> {
                             child: Container(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  begin:
-                                  Alignment.topCenter,
-                                  end: Alignment
-                                      .bottomCenter,
+                                  begin: Alignment.topLeft,
+                                  end:
+                                  Alignment.bottomRight,
                                   colors: [
                                     Colors.black
-                                        .withOpacity(0.45),
+                                        .withOpacity(0.55),
                                     Colors.black
-                                        .withOpacity(0.6),
+                                        .withOpacity(0.4),
                                   ],
                                 ),
                               ),
                             ),
                           ),
-                          Container(
+                          Padding(
                             padding:
-                            const EdgeInsets.symmetric(
-                                vertical: 26),
-                            child: Row(
-                              mainAxisAlignment:
-                              MainAxisAlignment
-                                  .spaceEvenly,
-                              children: [
-                                Column(children: [
-                                  _ShieldBadge(
-                                      color:
-                                      AppColors.primary,
-                                      icon: Icons.shield,
-                                      size: 56,
-                                      letter: 'A'),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                      (_upcoming?['team_a']?['name'] as String?) ?? '',
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                          fontWeight:
-                                          FontWeight
-                                              .w600)),
-                                ]),
-                                const Text('VS',
-                                    style: TextStyle(
+                            const EdgeInsets.all(20),
+                            child: Row(children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment
+                                      .start,
+                                  children: [
+                                    Row(children: [
+                                      Container(
+                                        width: 30,
+                                        height: 30,
+                                        decoration:
+                                        BoxDecoration(
+                                          color: AppColors
+                                              .primary
+                                              .withOpacity(
+                                              0.15),
+                                          borderRadius:
+                                          BorderRadius
+                                              .circular(
+                                              8),
+                                        ),
+                                        child: const Icon(
+                                            Icons.add,
+                                            color: AppColors
+                                                .primary,
+                                            size: 18),
+                                      ),
+                                      const SizedBox(
+                                          width: 10),
+                                      const Text(
+                                          'Join League',
+                                          style: TextStyle(
+                                              color:
+                                              Colors.white,
+                                              fontSize: 18,
+                                              fontWeight:
+                                              FontWeight
+                                                  .w700)),
+                                    ]),
+                                    const SizedBox(
+                                        height: 8),
+                                    const Text(
+                                        'Enter a league code shared\nby your coach or organizer.',
+                                        style: TextStyle(
+                                            color:
+                                            Colors.white70,
+                                            fontSize: 12,
+                                            height: 1.5)),
+                                    const SizedBox(
+                                        height: 16),
+                                    Container(
+                                      padding: const EdgeInsets
+                                          .symmetric(
+                                          horizontal: 20,
+                                          vertical: 10),
+                                      decoration:
+                                      BoxDecoration(
                                         color:
                                         AppColors.primary,
-                                        fontSize: 18,
-                                        fontWeight:
-                                        FontWeight.w800)),
-                                Column(children: [
-                                  _ShieldBadge(
-                                      color: Colors.white24,
-                                      icon: Icons.bolt,
-                                      size: 56,
-                                      iconColor:
-                                      Colors.white),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                      (_upcoming?['team_b']?['name'] as String?) ?? '',
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                          fontWeight:
-                                          FontWeight
-                                              .w600)),
-                                ]),
-                              ],
-                            ),
+                                        borderRadius:
+                                        BorderRadius
+                                            .circular(25),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize:
+                                        MainAxisSize.min,
+                                        children: const [
+                                          Text('Join League',
+                                              style: TextStyle(
+                                                  color: Colors
+                                                      .white,
+                                                  fontWeight:
+                                                  FontWeight
+                                                      .w700,
+                                                  fontSize:
+                                                  14)),
+                                          SizedBox(width: 8),
+                                          Icon(
+                                              Icons
+                                                  .arrow_forward,
+                                              color:
+                                              Colors.white,
+                                              size: 16),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ]),
                           ),
                         ]),
                       ),
-                      const Divider(
-                          color: Colors.white10, height: 1),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(children: [
-                              const Icon(
-                                  Icons
-                                      .calendar_today_outlined,
-                                  color: Colors.white54,
-                                  size: 14),
-                              const SizedBox(width: 4),
-                              Text(_fmtDate(_upcoming?['starts_at'] as String?),
-                                  style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12)),
-                            ]),
-                            Row(children: [
-                              const Icon(Icons.access_time,
-                                  color: Colors.white54,
-                                  size: 14),
-                              const SizedBox(width: 4),
-                              Text(_fmtTime(_upcoming?['starts_at'] as String?),
-                                  style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12)),
-                            ]),
-                            Row(children: [
-                              const Icon(
-                                  Icons.location_on_outlined,
-                                  color: Colors.white54,
-                                  size: 14),
-                              const SizedBox(width: 4),
-                              Text((_upcoming?['venue'] as String?) ?? 'TBD',
-                                  style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12)),
-                            ]),
-                          ],
-                        ),
-                      ),
-                    ]),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-              ],
-
-              // ── Join League ──
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20),
-                child: GestureDetector(
-                  onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => JoinLeagueScreen(
-                            onJoined: (teamName,
-                                leagueName) {
-                              setState(() {
-                                _activeTeam = teamName;
-                                _activeLeague =
-                                    leagueName;
-                              });
-                              _loadDashboard();
-                            },
-                          ))),
-                  child: ClipRRect(
-                    borderRadius:
-                    BorderRadius.circular(20),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius:
-                        BorderRadius.circular(20),
-                        border: Border.all(
-                            color: AppColors.primary
-                                .withOpacity(0.3)),
-                      ),
-                      child: Stack(children: [
-                        Positioned.fill(
-                          child: Image.network(
-                            'https://i.ibb.co/QjvzBGMY/1aa.png',
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                Container(
-                                    color: const Color(
-                                        0xFF141414)),
-                          ),
-                        ),
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end:
-                                Alignment.bottomRight,
-                                colors: [
-                                  Colors.black
-                                      .withOpacity(0.55),
-                                  Colors.black
-                                      .withOpacity(0.4),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding:
-                          const EdgeInsets.all(20),
-                          child: Row(children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment
-                                    .start,
-                                children: [
-                                  Row(children: [
-                                    Container(
-                                      width: 30,
-                                      height: 30,
-                                      decoration:
-                                      BoxDecoration(
-                                        color: AppColors
-                                            .primary
-                                            .withOpacity(
-                                            0.15),
-                                        borderRadius:
-                                        BorderRadius
-                                            .circular(
-                                            8),
-                                      ),
-                                      child: const Icon(
-                                          Icons.add,
-                                          color: AppColors
-                                              .primary,
-                                          size: 18),
-                                    ),
-                                    const SizedBox(
-                                        width: 10),
-                                    const Text(
-                                        'Join League',
-                                        style: TextStyle(
-                                            color:
-                                            Colors.white,
-                                            fontSize: 18,
-                                            fontWeight:
-                                            FontWeight
-                                                .w700)),
-                                  ]),
-                                  const SizedBox(
-                                      height: 8),
-                                  const Text(
-                                      'Enter a league code shared\nby your coach or organizer.',
-                                      style: TextStyle(
-                                          color:
-                                          Colors.white70,
-                                          fontSize: 12,
-                                          height: 1.5)),
-                                  const SizedBox(
-                                      height: 16),
-                                  Container(
-                                    padding: const EdgeInsets
-                                        .symmetric(
-                                        horizontal: 20,
-                                        vertical: 10),
-                                    decoration:
-                                    BoxDecoration(
-                                      color:
-                                      AppColors.primary,
-                                      borderRadius:
-                                      BorderRadius
-                                          .circular(25),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize:
-                                      MainAxisSize.min,
-                                      children: const [
-                                        Text('Join League',
-                                            style: TextStyle(
-                                                color: Colors
-                                                    .white,
-                                                fontWeight:
-                                                FontWeight
-                                                    .w700,
-                                                fontSize:
-                                                14)),
-                                        SizedBox(width: 8),
-                                        Icon(
-                                            Icons
-                                                .arrow_forward,
-                                            color:
-                                            Colors.white,
-                                            size: 16),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ]),
-                        ),
-                      ]),
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 32),
-            ],
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
         ),
       ),
