@@ -885,45 +885,6 @@ class _CoachPlaybookScreenState
 
               const SizedBox(height: 16),
 
-              // ── Recommend Players Button ──
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20),
-                child: GestureDetector(
-                  onTap: () =>
-                      _showRecommendPlayers(context),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00C853),
-                      borderRadius:
-                      BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.people_alt_outlined,
-                            color: Colors.white, size: 20),
-                        SizedBox(width: 10),
-                        Text('Recommend Players',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16)),
-                        SizedBox(width: 6),
-                        Icon(Icons.arrow_forward,
-                            color: Colors.white, size: 18),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
               // ── Add New (moved ABOVE the grid) ──
               Padding(
                 padding: const EdgeInsets.symmetric(

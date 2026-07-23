@@ -122,48 +122,31 @@ class _CoachHomeTabState extends State<_CoachHomeTab> {
             CrossAxisAlignment.start,
             children: [
 
-              // ── Top Bar ──
+              // ── Top Bar (bigger logo only, no text — new design) ──
               Padding(
                 padding: const EdgeInsets.fromLTRB(
                     20, 16, 20, 0),
                 child: Row(children: [
                   ClipRRect(
                     borderRadius:
-                    BorderRadius.circular(8),
+                    BorderRadius.circular(10),
                     child: Image.network(
-                      'https://i.ibb.co/pjLXfmH4/29.png',
-                      width: 36, height: 36,
+                      'https://i.ibb.co/0y3vKB8V/102.png',
+                      width: 52, height: 52,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) =>
                           Container(
-                            width: 36, height: 36,
+                            width: 52, height: 52,
                             decoration: BoxDecoration(
                               color: const Color(0xFF00C853),
                               borderRadius:
-                              BorderRadius.circular(8),
+                              BorderRadius.circular(10),
                             ),
                             child: const Icon(Icons.bolt,
                                 color: Colors.white,
-                                size: 20),
+                                size: 28),
                           ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                    children: const [
-                      Text('SportyQo',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight:
-                              FontWeight.w800)),
-                      Text('Every Player Counts.',
-                          style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 9)),
-                    ],
                   ),
                   const Spacer(),
                   GestureDetector(

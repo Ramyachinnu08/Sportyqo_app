@@ -560,6 +560,10 @@ class _PlaybookScreenState extends State<PlaybookScreen> {
                     horizontal: 20),
                 child: Row(children: [
                   _StatItem(
+                      value: '${_qo['current'] ?? 0}',
+                      label: 'Qo Points'),
+                  _Divider(),
+                  _StatItem(
                       value: '${_stats['followers'] ?? 0}',
                       label: 'Fans',
                       onTap: () => Navigator.push(

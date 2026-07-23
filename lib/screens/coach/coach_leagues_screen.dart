@@ -526,11 +526,15 @@ class _CoachLeaguesScreenState extends State<CoachLeaguesScreen> {
                         await Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => SelectMatchScreen(
-                                    leagueId: _league!['id'] as String,
-                                    leagueName:
-                                    _league!['name'] as String)));
-                        _load(); // refresh after points submission
+                                builder: (_) =>
+                                    _PlayersLeaderboardScreen(
+                                        leagueId:
+                                        _league!['id']
+                                        as String,
+                                        leagueName:
+                                        _league!['name']
+                                        as String)));
+                        _load();
                       },
                     ),
                     const SizedBox(height: 10),
@@ -985,6 +989,323 @@ class _TeamsScreenState extends State<_TeamsScreen> {
         ),
       ),
     );
+  }
+}
+
+// ── Players Leaderboard ────────────────────────────────────────────────
+// IPL-style aggregated stats for every player in the league: total runs,
+// wickets, catches, matches played, points earned. Tap a row → open the
+// player's Instagram-style profile.
+
+class _PlayersLeaderboardScreen extends StatefulWidget {
+  final String leagueId;
+  final String leagueName;
+  const _PlayersLeaderboardScreen(
+      {required this.leagueId, required this.leagueName});
+
+  @override
+  State<_PlayersLeaderboardScreen> createState() =>
+      _PlayersLeaderboardScreenState();
+}
+
+class _PlayersLeaderboardScreenState
+    extends State<_PlayersLeaderboardScreen> {
+  bool _loading = true;
+  List<Map<String, dynamic>> _players = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final items =
+      await LeagueService.players(widget.leagueId);
+      if (!mounted) return;
+      setState(() {
+        _players = items.cast<Map<String, dynamic>>();
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: SafeArea(
+        child: Column(children: [
+          Padding(
+            padding:
+            const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Row(children: [
+              GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.arrow_back_ios,
+                      color: Colors.white, size: 20)),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    const Text('Players & Points',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800)),
+                    Text(widget.leagueName,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 12)),
+                  ],
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: _loading
+                ? const Center(
+                child: CircularProgressIndicator(
+                    color: Color(0xFF1A6BFF)))
+                : _players.isEmpty
+                ? const Center(
+                child: Text(
+                    'No players have joined this league yet.',
+                    style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 13)))
+                : RefreshIndicator(
+              color: const Color(0xFF1A6BFF),
+              onRefresh: _load,
+              child: ListView.separated(
+                padding:
+                const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4),
+                itemCount: _players.length,
+                separatorBuilder: (_, __) =>
+                const SizedBox(height: 8),
+                itemBuilder: (context, i) {
+                  final p = _players[i];
+                  return _LeaderboardRow(
+                    index: i + 1,
+                    player: p,
+                    onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                                ProfileDetailScreen(
+                                  person: <String,
+                                      dynamic>{
+                                    'author_id':
+                                    p['id'],
+                                    'name': p[
+                                    'name'] ??
+                                        '',
+                                    'avatar': ApiConfig
+                                        .resolveMediaUrl(
+                                        p['avatar_url']
+                                        as String?) ??
+                                        '',
+                                    'verified':
+                                    false,
+                                    'sport': p[
+                                    'sub_role'] ??
+                                        'Player',
+                                    'location': '',
+                                    'bio': '',
+                                    'qoScore': p[
+                                    'qo_score'] ??
+                                        0,
+                                  },
+                                ))),
+                  );
+                },
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _LeaderboardRow extends StatelessWidget {
+  final int index;
+  final Map<String, dynamic> player;
+  final VoidCallback onTap;
+  const _LeaderboardRow(
+      {required this.index,
+        required this.player,
+        required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final avatar = ApiConfig.resolveMediaUrl(
+        player['avatar_url'] as String?);
+    final name = (player['name'] as String?) ?? '';
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111111),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Column(children: [
+          // ── Top row: rank + avatar + name/team + Qo pill ──
+          Row(children: [
+            SizedBox(
+              width: 22,
+              child: Text('$index',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: index <= 3
+                          ? const Color(0xFF00C853)
+                          : Colors.white38,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13)),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              width: 38,
+              height: 38,
+              decoration: const BoxDecoration(
+                  color: Color(0xFF1A1A1A),
+                  shape: BoxShape.circle),
+              child: ClipOval(
+                child: avatar != null && avatar.isNotEmpty
+                    ? Image.network(avatar,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Center(
+                        child: Text(
+                            name.isNotEmpty
+                                ? name[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight:
+                                FontWeight.w800))))
+                    : Center(
+                    child: Text(
+                        name.isNotEmpty
+                            ? name[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight:
+                            FontWeight.w800))),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  Text(name,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
+                  Text(
+                      '${player['team_name'] ?? ''} • ${player['sub_role'] ?? 'Player'}',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11)),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF7B2FFF)
+                    .withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                    color: const Color(0xFF7B2FFF)
+                        .withOpacity(0.4)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.bolt,
+                    color: Color(0xFF7B2FFF), size: 12),
+                const SizedBox(width: 3),
+                Text('${player['qo_score'] ?? 0}',
+                    style: const TextStyle(
+                        color: Color(0xFF7B2FFF),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          const Divider(color: Colors.white10, height: 1),
+          const SizedBox(height: 8),
+          // ── Bottom row: match stats ──
+          Row(
+              mainAxisAlignment:
+              MainAxisAlignment.spaceAround,
+              children: [
+                _StatMini(
+                    value: '${player['matches'] ?? 0}',
+                    label: 'M'),
+                _StatMini(
+                    value: '${player['runs'] ?? 0}',
+                    label: 'Runs'),
+                _StatMini(
+                    value: '${player['wickets'] ?? 0}',
+                    label: 'Wkts'),
+                _StatMini(
+                    value: '${player['catches'] ?? 0}',
+                    label: 'Ct'),
+                _StatMini(
+                    value:
+                    '+${player['points_this_league'] ?? 0}',
+                    label: 'Pts',
+                    highlight: true),
+              ]),
+        ]),
+      ),
+    );
+  }
+}
+
+class _StatMini extends StatelessWidget {
+  final String value;
+  final String label;
+  final bool highlight;
+  const _StatMini(
+      {required this.value,
+        required this.label,
+        this.highlight = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Text(value,
+          style: TextStyle(
+              color: highlight
+                  ? const Color(0xFF00C853)
+                  : Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 14)),
+      const SizedBox(height: 2),
+      Text(label,
+          style: const TextStyle(
+              color: Colors.white38, fontSize: 10)),
+    ]);
   }
 }
 

@@ -122,8 +122,8 @@ class _SelectMatchScreenState extends State<SelectMatchScreen> {
               style: const TextStyle(color: Colors.white),
               items: _teams
                   .map((t) => DropdownMenuItem(
-                      value: t['id'] as String,
-                      child: Text(t['name'] as String)))
+                  value: t['id'] as String,
+                  child: Text(t['name'] as String)))
                   .toList(),
               onChanged: (v) => setSheet(() => teamAId = v),
             ),
@@ -135,8 +135,8 @@ class _SelectMatchScreenState extends State<SelectMatchScreen> {
               style: const TextStyle(color: Colors.white),
               items: _teams
                   .map((t) => DropdownMenuItem(
-                      value: t['id'] as String,
-                      child: Text(t['name'] as String)))
+                  value: t['id'] as String,
+                  child: Text(t['name'] as String)))
                   .toList(),
               onChanged: (v) => setSheet(() => teamBId = v),
             ),
@@ -283,20 +283,25 @@ class _SelectMatchScreenState extends State<SelectMatchScreen> {
                 itemBuilder: (context, i) {
                   final m = _filtered[i];
                   return GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SelectPlayersScreen(
-                          leagueId: widget.leagueId,
-                          matchId: m['id'] as String?,
-                          teamAId: m['team1_id'] as String?,
-                          teamBId: m['team2_id'] as String?,
-                          completed: m['status'] == 'Completed',
-                          teamName: m['team1'] as String,
-                          matchName: '${m['team1']} vs ${m['team2']}',
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SelectPlayersScreen(
+                            leagueId: widget.leagueId,
+                            matchId: m['id'] as String?,
+                            teamAId: m['team1_id'] as String?,
+                            teamBId: m['team2_id'] as String?,
+                            completed: m['status'] == 'Completed',
+                            teamName: m['team1'] as String,
+                            matchName: '${m['team1']} vs ${m['team2']}',
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                      // Reload so scores just entered stay visible (fixes
+                      // "player score vanishes" — was stale cache before).
+                      if (mounted) _load();
+                    },
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(

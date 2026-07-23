@@ -1291,6 +1291,11 @@ class PlayerProfileDetailScreenState
                           Row(children: [
                             _StatCol(
                                 value:
+                                '${(widget.person['qoScore'] ?? 0)}',
+                                label: 'Qo Score'),
+                            const SizedBox(width: 20),
+                            _StatCol(
+                                value:
                                 '$_postsCount',
                                 label: 'Posts'),
                             const SizedBox(width: 20),
@@ -1305,6 +1310,52 @@ class PlayerProfileDetailScreenState
                           ]),
                         ],
                       ),
+                    ),
+                    // ── Qo Score box on the right side of the header ──
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF141414),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: themeColor.withOpacity(0.4)),
+                      ),
+                      child: Column(children: [
+                        Text('Qo Score',
+                            style: TextStyle(
+                                color: themeColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text('${widget.person['qoScore'] ?? 0}',
+                            style: TextStyle(
+                                color: themeColor,
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                height: 1.1)),
+                        const SizedBox(height: 4),
+                        const Text('Rank',
+                            style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 9)),
+                        Text(
+                            (widget.person['rank'] != null)
+                                ? '#${widget.person['rank']}'
+                                : '—',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 2),
+                        Text(
+                            'in ${(widget.person['category'] as String?) ?? 'Cricket'}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                color: Colors.white38,
+                                fontSize: 9)),
+                      ]),
                     ),
                   ],
                 ),

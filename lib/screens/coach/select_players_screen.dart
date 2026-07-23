@@ -612,22 +612,22 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                       // Batting
                       const Text('Batting', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                       const SizedBox(height: 12),
-                      _StatRow(label: 'Runs Scored', value: _runs, onDec: () => setState(() => _runs = (_runs - 1).clamp(0, 999)), onInc: () => setState(() => _runs++)),
-                      _StatRow(label: '4s', value: _fours, onDec: () => setState(() => _fours = (_fours - 1).clamp(0, 99)), onInc: () => setState(() => _fours++)),
-                      _StatRow(label: '6s', value: _sixes, onDec: () => setState(() => _sixes = (_sixes - 1).clamp(0, 99)), onInc: () => setState(() => _sixes++)),
+                      _StatRow(label: 'Runs Scored', value: _runs, max: 999, onDec: () => setState(() => _runs = (_runs - 1).clamp(0, 999)), onInc: () => setState(() => _runs++), onSet: (v) => setState(() => _runs = v)),
+                      _StatRow(label: '4s', value: _fours, max: 99, onDec: () => setState(() => _fours = (_fours - 1).clamp(0, 99)), onInc: () => setState(() => _fours++), onSet: (v) => setState(() => _fours = v)),
+                      _StatRow(label: '6s', value: _sixes, max: 99, onDec: () => setState(() => _sixes = (_sixes - 1).clamp(0, 99)), onInc: () => setState(() => _sixes++), onSet: (v) => setState(() => _sixes = v)),
 
                       const SizedBox(height: 16),
                       // Bowling
                       const Text('Bowling', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                       const SizedBox(height: 12),
-                      _StatRow(label: 'Wickets Taken', value: _wickets, onDec: () => setState(() => _wickets = (_wickets - 1).clamp(0, 10)), onInc: () => setState(() => _wickets++)),
+                      _StatRow(label: 'Wickets Taken', value: _wickets, max: 10, onDec: () => setState(() => _wickets = (_wickets - 1).clamp(0, 10)), onInc: () => setState(() => _wickets++), onSet: (v) => setState(() => _wickets = v)),
 
                       const SizedBox(height: 16),
                       // Fielding
                       const Text('Fielding', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                       const SizedBox(height: 12),
-                      _StatRow(label: 'Catches', value: _catches, onDec: () => setState(() => _catches = (_catches - 1).clamp(0, 10)), onInc: () => setState(() => _catches++)),
-                      _StatRow(label: 'Run Outs / Assists', value: _runOuts, onDec: () => setState(() => _runOuts = (_runOuts - 1).clamp(0, 10)), onInc: () => setState(() => _runOuts++)),
+                      _StatRow(label: 'Catches', value: _catches, max: 10, onDec: () => setState(() => _catches = (_catches - 1).clamp(0, 10)), onInc: () => setState(() => _catches++), onSet: (v) => setState(() => _catches = v)),
+                      _StatRow(label: 'Run Outs / Assists', value: _runOuts, max: 10, onDec: () => setState(() => _runOuts = (_runOuts - 1).clamp(0, 10)), onInc: () => setState(() => _runOuts++), onSet: (v) => setState(() => _runOuts = v)),
 
                       const SizedBox(height: 16),
                       // Achievement Awards (official SportyQo card)
@@ -714,8 +714,66 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
 class _StatRow extends StatelessWidget {
   final String label;
   final int value;
+  final int max;
   final VoidCallback onDec, onInc;
-  const _StatRow({required this.label, required this.value, required this.onDec, required this.onInc});
+  final ValueChanged<int> onSet;
+  const _StatRow({
+    required this.label,
+    required this.value,
+    required this.onDec,
+    required this.onInc,
+    required this.onSet,
+    this.max = 999,
+  });
+
+  Future<void> _promptForValue(BuildContext context) async {
+    final ctrl = TextEditingController(text: '$value');
+    final entered = await showDialog<int>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: const Color(0xFF141414),
+        title: Text(label,
+            style: const TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color(0xFF1A1A1A),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none),
+            hintText: '0',
+            hintStyle:
+            const TextStyle(color: Colors.white24),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Colors.white54))),
+          TextButton(
+              onPressed: () {
+                final n = int.tryParse(ctrl.text.trim());
+                if (n == null) return;
+                Navigator.pop(dialogCtx, n.clamp(0, max));
+              },
+              child: const Text('Save',
+                  style: TextStyle(
+                      color: Color(0xFF1A6BFF),
+                      fontWeight: FontWeight.w700))),
+        ],
+      ),
+    );
+    if (entered != null) onSet(entered);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -731,9 +789,19 @@ class _StatRow extends StatelessWidget {
             child: const Icon(Icons.remove, color: Colors.white60, size: 16),
           ),
         ),
-        SizedBox(
-          width: 50,
-          child: Text('$value', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16), textAlign: TextAlign.center),
+        // Tap the number to type it directly — much faster for scores like 87.
+        GestureDetector(
+          onTap: () => _promptForValue(context),
+          child: Container(
+            width: 50,
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text('$value',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16),
+                textAlign: TextAlign.center),
+          ),
         ),
         GestureDetector(
           onTap: onInc,

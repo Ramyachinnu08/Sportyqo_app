@@ -92,7 +92,7 @@ class _BrandSplashScreenState extends State<BrandSplashScreen>
           child: ScaleTransition(
             scale: _scaleAnimation,
             child: Image.network(
-              'https://i.ibb.co/0V2bSM4q/Screenshot-2026-06-20-220904.png',
+              'https://i.ibb.co/mCXmZHmX/Whats-App-Image-2026-07-23-at-11-24-14-AM.jpg',
               width: logoSize,
               height: logoSize,
               fit: BoxFit.contain,

@@ -203,48 +203,31 @@ class _HomeTabState extends State<_HomeTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Top Bar (SportyQo logo + name — matches coach home) ──
+                // ── Top Bar (bigger logo only, no text — new design) ──
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                       20, 16, 20, 0),
                   child: Row(children: [
                     ClipRRect(
                       borderRadius:
-                      BorderRadius.circular(8),
+                      BorderRadius.circular(10),
                       child: Image.network(
-                        'https://i.ibb.co/pjLXfmH4/29.png',
-                        width: 36, height: 36,
+                        'https://i.ibb.co/0y3vKB8V/102.png',
+                        width: 52, height: 52,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) =>
                             Container(
-                              width: 36, height: 36,
+                              width: 52, height: 52,
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
                                 borderRadius:
-                                BorderRadius.circular(8),
+                                BorderRadius.circular(10),
                               ),
                               child: const Icon(Icons.bolt,
                                   color: Colors.white,
-                                  size: 20),
+                                  size: 28),
                             ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: const [
-                        Text('SportyQo',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight:
-                                FontWeight.w800)),
-                        Text('Every Player Counts.',
-                            style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 9)),
-                      ],
                     ),
                     const Spacer(),
                     GestureDetector(
@@ -1225,10 +1208,13 @@ class _NotificationScreenState
                         color: Colors.white38)))
                 : ListView.separated(
               padding: const EdgeInsets.symmetric(
-                  horizontal: 20),
+                  horizontal: 8, vertical: 4),
               itemCount: _notifications.length,
               separatorBuilder: (_, __) =>
-              const SizedBox(height: 10),
+              const Divider(
+                  color: Colors.white10,
+                  height: 1,
+                  thickness: 0.5),
               itemBuilder: (context, i) {
                 final n = _notifications[i];
                 return GestureDetector(
@@ -1245,79 +1231,75 @@ class _NotificationScreenState
                       };
                     });
                   },
+                  behavior: HitTestBehavior.opaque,
                   child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: n['read'] as bool
-                          ? const Color(0xFF0F0F2A)
-                          : AppColors.primary
-                          .withOpacity(0.08),
-                      borderRadius:
-                      BorderRadius.circular(14),
-                      border: Border.all(
-                        color: n['read'] as bool
-                            ? Colors.white10
-                            : AppColors.primary
-                            .withOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(children: [
-                      Container(
-                        width: 44, height: 44,
-                        decoration: BoxDecoration(
-                          color: (n['color'] as Color)
-                              .withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                            n['icon'] as IconData,
-                            color: n['color'] as Color,
-                            size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                          children: [
-                            Row(children: [
-                              Expanded(
-                                  child: Text(
-                                      n['title']
-                                      as String,
-                                      style: const TextStyle(
-                                          color:
-                                          Colors.white,
-                                          fontWeight:
-                                          FontWeight
-                                              .w700,
-                                          fontSize: 14))),
-                              if (!(n['read'] as bool))
-                                Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                        color: AppColors
-                                            .primary,
-                                        shape: BoxShape
-                                            .circle)),
-                            ]),
-                            const SizedBox(height: 3),
-                            Text(
-                                n['subtitle'] as String,
-                                style: const TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 12,
-                                    height: 1.4)),
-                            const SizedBox(height: 4),
-                            Text(n['time'] as String,
-                                style: const TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 11)),
-                          ],
-                        ),
-                      ),
-                    ]),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    color: n['read'] as bool
+                        ? Colors.transparent
+                        : AppColors.primary
+                        .withOpacity(0.06),
+                    child: Row(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: (n['color'] as Color)
+                                  .withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(n['icon'] as IconData,
+                                color: n['color'] as Color,
+                                size: 16),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  Expanded(
+                                      child: Text(
+                                          n['title'] as String,
+                                          overflow: TextOverflow
+                                              .ellipsis,
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight:
+                                              FontWeight.w600,
+                                              fontSize: 13))),
+                                  if (!(n['read'] as bool))
+                                    Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: const BoxDecoration(
+                                            color: AppColors
+                                                .primary,
+                                            shape: BoxShape
+                                                .circle)),
+                                ]),
+                                const SizedBox(height: 2),
+                                Text(
+                                    n['subtitle'] as String,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 12,
+                                        height: 1.3)),
+                                const SizedBox(height: 2),
+                                Text(n['time'] as String,
+                                    style: const TextStyle(
+                                        color: Colors.white38,
+                                        fontSize: 10)),
+                              ],
+                            ),
+                          ),
+                        ]),
                   ),
                 );
               },
