@@ -39,11 +39,6 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Generate launcher icons
-        # Turns assets/logo.png into every Android + iOS icon size so the
-        # new SportyQo logo shows on the phone home screen too.
-        run: dart run flutter_launcher_icons
-
       - name: Build release APKs
         # universal APK (works on every phone) + smaller per-ABI APKs
         run: |
