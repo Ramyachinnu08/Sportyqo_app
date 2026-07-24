@@ -1206,11 +1206,6 @@ class ProfileDetailScreenState
                           const SizedBox(height: 12),
                           Row(children: [
                             _StatCol(
-                                value:
-                                '${(widget.person['qoScore'] ?? 0)}',
-                                label: 'Qo Score'),
-                            const SizedBox(width: 20),
-                            _StatCol(
                                 value: '$_postsCount',
                                 label: 'Posts'),
                             const SizedBox(width: 20),

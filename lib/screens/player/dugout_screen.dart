@@ -1287,13 +1287,8 @@ class PlayerProfileDetailScreenState
                                     fontSize: 12)),
                           ]),
                           const SizedBox(height: 12),
-                          // Stats
+                          // Stats (Qo Score is shown in the box on the right)
                           Row(children: [
-                            _StatCol(
-                                value:
-                                '${(widget.person['qoScore'] ?? 0)}',
-                                label: 'Qo Score'),
-                            const SizedBox(width: 20),
                             _StatCol(
                                 value:
                                 '$_postsCount',
