@@ -69,26 +69,42 @@ class _SelectPlayersScreenState
       if (futures.isEmpty) {
         futures.add(LeagueService.players(widget.leagueId!));
       }
+      // Also fetch previously-saved scores for this match so we can
+      // pre-fill instead of showing 0s ("score vanishes" fix).
+      final savedByUserId = <String, Map<String, dynamic>>{};
+      if (widget.matchId != null) {
+        try {
+          final res = await LeagueService.matchParticipants(widget.matchId!);
+          for (final it in (res['items'] as List<dynamic>? ?? const [])) {
+            final m = it as Map<String, dynamic>;
+            savedByUserId[m['user_id'] as String] = m;
+          }
+        } catch (_) {
+          // No saved data yet — that's fine, we'll show 0s as before.
+        }
+      }
       final lists = await Future.wait(futures);
       final all = lists.expand((l) => l).toList();
       final items = <Map<String, dynamic>>[];
       for (var i = 0; i < all.length; i++) {
         final raw = all[i] as Map<String, dynamic>;
+        final userId = raw['id'] as String;
+        final prior = savedByUserId[userId];
         items.add(<String, dynamic>{
           'user_id': raw['id'],
           'team_id': raw['team_id'],
           'name': raw['name'] ?? '',
           'initials': _initials(raw['name'] as String? ?? ''),
           'role': raw['sub_role'] ?? 'Player',
-          'runs': 0,
-          'wkts': 0,
-          'catches': 0,
-          'is_mom': false,
-          'is_player_of_match': false,
-          'is_best_bowler': false,
-          'is_best_batsman': false,
-          'is_mvp': false,
-          'pts': 0.0,
+          'runs': (prior?['runs'] as num?)?.toInt() ?? 0,
+          'wkts': (prior?['wickets'] as num?)?.toInt() ?? 0,
+          'catches': (prior?['catches'] as num?)?.toInt() ?? 0,
+          'is_mom': prior?['is_mom'] == true,
+          'is_player_of_match': prior?['is_player_of_match'] == true,
+          'is_best_bowler': prior?['is_best_bowler'] == true,
+          'is_best_batsman': prior?['is_best_batsman'] == true,
+          'is_mvp': prior?['is_mvp'] == true,
+          'pts': (prior?['qo_points_awarded'] as num?)?.toDouble() ?? 0.0,
           'color': _avatarColors[i % _avatarColors.length],
         });
       }
@@ -342,12 +358,34 @@ class _SelectPlayersScreenState
                 SizedBox(width: 50, child: Text('${p['runs']}', style: const TextStyle(color: Colors.white, fontSize: 13), textAlign: TextAlign.center)),
                 // Wkts
                 SizedBox(width: 50, child: Text('${p['wkts']}', style: const TextStyle(color: Colors.white, fontSize: 13), textAlign: TextAlign.center)),
-                // Pts
-                SizedBox(width: 50, child: Text('${p['pts']}', style: const TextStyle(color: Colors.white, fontSize: 13), textAlign: TextAlign.center)),
+                // Pts (live-calculated from current stats)
+                SizedBox(width: 50, child: Text('${_effPts(p).toInt()}', style: const TextStyle(color: Colors.white, fontSize: 13), textAlign: TextAlign.center)),
                 // Edit button
                 GestureDetector(
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _EditPlayerStatsScreen(player: p, onSave: (updated) {
                     setState(() => _players[i] = updated);
+                    // Auto-save to backend so scores persist across visits.
+                    // Fire-and-forget — the UI already reflects the change.
+                    final mid = widget.matchId;
+                    if (mid != null && !widget.completed) {
+                      LeagueService.draftPoints(matchId: mid, playerStats: [
+                        {
+                          'user_id': updated['user_id'],
+                          'runs': updated['runs'] ?? 0,
+                          'balls': 0,
+                          'wickets': updated['wkts'] ?? 0,
+                          'catches': updated['catches'] ?? 0,
+                          'is_mom': updated['is_mom'] == true,
+                          'is_player_of_match': updated['is_player_of_match'] == true,
+                          'is_best_bowler': updated['is_best_bowler'] == true,
+                          'is_best_batsman': updated['is_best_batsman'] == true,
+                          'is_mvp': updated['is_mvp'] == true,
+                        }
+                      ]).catchError((e) {
+                        if (mounted) showApiError(context, e);
+                        return <String, dynamic>{};
+                      });
+                    }
                   }))),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -367,10 +405,56 @@ class _SelectPlayersScreenState
     );
   }
 
+  /// Live points calculation using the official Qo slabs. Used by both
+  /// the Players list and Team Summary so the number always matches
+  /// what the coach will save.
+  double _calcPtsFor(Map<String, dynamic> p) {
+    final r = p['runs'] as int;
+    final w = p['wkts'] as int;
+    final c = p['catches'] as int? ?? 0;
+    final ro = p['run_outs'] as int? ?? 0;
+    int batting;
+    if (r >= 100) {
+      batting = 50;
+    } else if (r >= 46) {
+      batting = 20;
+    } else if (r >= 26) {
+      batting = 12;
+    } else if (r >= 11) {
+      batting = 8;
+    } else if (r > 0) {
+      batting = 5;
+    } else {
+      batting = 0;
+    }
+    final bowling = w >= 3 ? 20 : (w >= 1 ? 5 : 0);
+    final fCount = c + ro;
+    final fielding = fCount >= 3 ? 5 : (fCount == 2 ? 2 : 0);
+    int bonus = 0;
+    if (p['is_mom'] == true) bonus += 20;
+    if (p['is_player_of_match'] == true) bonus += 20;
+    if (p['is_best_bowler'] == true) bonus += 20;
+    if (p['is_best_batsman'] == true) bonus += 20;
+    if (p['is_mvp'] == true) bonus += 25;
+    return (batting + bowling + fielding + bonus).toDouble();
+  }
+
+  double _effPts(Map<String, dynamic> p) {
+    final stored = p['pts'] as double;
+    return stored > 0 ? stored : _calcPtsFor(p);
+  }
+
   Widget _buildTeamSummary() {
     final totalRuns = _players.fold<int>(0, (sum, p) => sum + (p['runs'] as int));
-    final totalPts = _players.fold<double>(0, (sum, p) => sum + (p['pts'] as double));
-    final sorted = List<Map<String, dynamic>>.from(_players)..sort((a, b) => (b['pts'] as double).compareTo(a['pts'] as double));
+    final totalWkts = _players.fold<int>(0, (sum, p) => sum + (p['wkts'] as int));
+    final totalPts = _players.fold<double>(0, (sum, p) => sum + _effPts(p));
+    // Build a list with effective points so sort + display show correct values.
+    final withPts = _players
+        .map((p) => <String, dynamic>{...p, '__eff_pts': _effPts(p)})
+        .toList();
+    final sorted = List<Map<String, dynamic>>.from(withPts)
+      ..sort((a, b) =>
+          (b['__eff_pts'] as double).compareTo(a['__eff_pts'] as double));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -389,8 +473,8 @@ class _SelectPlayersScreenState
               children: [
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('Total Runs', style: TextStyle(color: Colors.white38, fontSize: 11)),
-                  Text('$totalRuns/6', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
-                  const Text('20 Overs', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                  Text('$totalRuns/$totalWkts', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                  Text('$totalWkts Wickets', style: const TextStyle(color: Colors.white38, fontSize: 11)),
                 ]),
                 Container(height: 50, width: 1, color: Colors.white10),
                 Column(children: [
@@ -442,7 +526,7 @@ class _SelectPlayersScreenState
                       ),
                       const SizedBox(width: 10),
                       Expanded(child: Text(p['name'] as String, style: const TextStyle(color: Colors.white, fontSize: 13))),
-                      Text('${p['pts']}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+                      Text('${(p['__eff_pts'] as double).toInt()}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
                     ]),
                   );
                 }),
@@ -611,23 +695,44 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                     children: [
                       // Batting
                       const Text('Batting', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                      const SizedBox(height: 6),
+                      const Text('Runs already includes all boundary runs. 4s and 6s are extra info.',
+                          style: TextStyle(color: Colors.white54, fontSize: 11)),
                       const SizedBox(height: 12),
-                      _StatRow(label: 'Runs Scored', value: _runs, max: 999, onDec: () => setState(() => _runs = (_runs - 1).clamp(0, 999)), onInc: () => setState(() => _runs++), onSet: (v) => setState(() => _runs = v)),
-                      _StatRow(label: '4s', value: _fours, max: 99, onDec: () => setState(() => _fours = (_fours - 1).clamp(0, 99)), onInc: () => setState(() => _fours++), onSet: (v) => setState(() => _fours = v)),
-                      _StatRow(label: '6s', value: _sixes, max: 99, onDec: () => setState(() => _sixes = (_sixes - 1).clamp(0, 99)), onInc: () => setState(() => _sixes++), onSet: (v) => setState(() => _sixes = v)),
+                      _StatRow(label: 'Runs Scored', value: _runs, max: 999,
+                          onDec: () => setState(() => _runs = (_runs - 1).clamp(0, 999)),
+                          onInc: () => setState(() => _runs = (_runs + 1).clamp(0, 999)),
+                          onSet: (v) => setState(() => _runs = v.clamp(0, 999))),
+                      _StatRow(label: '4s', value: _fours, max: 99,
+                          onDec: () => setState(() => _fours = (_fours - 1).clamp(0, 99)),
+                          onInc: () => setState(() => _fours = (_fours + 1).clamp(0, 99)),
+                          onSet: (v) => setState(() => _fours = v.clamp(0, 99))),
+                      _StatRow(label: '6s', value: _sixes, max: 99,
+                          onDec: () => setState(() => _sixes = (_sixes - 1).clamp(0, 99)),
+                          onInc: () => setState(() => _sixes = (_sixes + 1).clamp(0, 99)),
+                          onSet: (v) => setState(() => _sixes = v.clamp(0, 99))),
 
                       const SizedBox(height: 16),
                       // Bowling
                       const Text('Bowling', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                       const SizedBox(height: 12),
-                      _StatRow(label: 'Wickets Taken', value: _wickets, max: 10, onDec: () => setState(() => _wickets = (_wickets - 1).clamp(0, 10)), onInc: () => setState(() => _wickets++), onSet: (v) => setState(() => _wickets = v)),
+                      _StatRow(label: 'Wickets Taken', value: _wickets, max: 10,
+                          onDec: () => setState(() => _wickets = (_wickets - 1).clamp(0, 10)),
+                          onInc: () => setState(() => _wickets = (_wickets + 1).clamp(0, 10)),
+                          onSet: (v) => setState(() => _wickets = v.clamp(0, 10))),
 
                       const SizedBox(height: 16),
                       // Fielding
                       const Text('Fielding', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                       const SizedBox(height: 12),
-                      _StatRow(label: 'Catches', value: _catches, max: 10, onDec: () => setState(() => _catches = (_catches - 1).clamp(0, 10)), onInc: () => setState(() => _catches++), onSet: (v) => setState(() => _catches = v)),
-                      _StatRow(label: 'Run Outs / Assists', value: _runOuts, max: 10, onDec: () => setState(() => _runOuts = (_runOuts - 1).clamp(0, 10)), onInc: () => setState(() => _runOuts++), onSet: (v) => setState(() => _runOuts = v)),
+                      _StatRow(label: 'Catches', value: _catches, max: 10,
+                          onDec: () => setState(() => _catches = (_catches - 1).clamp(0, 10)),
+                          onInc: () => setState(() => _catches = (_catches + 1).clamp(0, 10)),
+                          onSet: (v) => setState(() => _catches = v.clamp(0, 10))),
+                      _StatRow(label: 'Run Outs / Assists', value: _runOuts, max: 10,
+                          onDec: () => setState(() => _runOuts = (_runOuts - 1).clamp(0, 10)),
+                          onInc: () => setState(() => _runOuts = (_runOuts + 1).clamp(0, 10)),
+                          onSet: (v) => setState(() => _runOuts = v.clamp(0, 10))),
 
                       const SizedBox(height: 16),
                       // Achievement Awards (official SportyQo card)

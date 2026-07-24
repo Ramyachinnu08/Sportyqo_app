@@ -283,23 +283,23 @@ class _CreateProfileScreenState
                         child: ClipOval(
                           child: _avatarUrl != null
                               ? Image.network(
-                                  ApiConfig.resolveMediaUrl(
-                                          _avatarUrl) ??
-                                      _avatarUrl!,
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __,
-                                          ___) =>
-                                      const Icon(
-                                          Icons.person,
-                                          size: 50,
-                                          color: AppColors
-                                              .textGrey))
-                              : const Icon(Icons.person,
+                              ApiConfig.resolveMediaUrl(
+                                  _avatarUrl) ??
+                                  _avatarUrl!,
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __,
+                                  ___) =>
+                              const Icon(
+                                  Icons.person,
                                   size: 50,
-                                  color:
-                                      AppColors.textGrey),
+                                  color: AppColors
+                                      .textGrey))
+                              : const Icon(Icons.person,
+                              size: 50,
+                              color:
+                              AppColors.textGrey),
                         ),
                       ),
                       Positioned(

@@ -1206,15 +1206,10 @@ class _NotificationScreenState
                 child: Text('No notifications yet',
                     style: TextStyle(
                         color: Colors.white38)))
-                : ListView.separated(
+                : ListView.builder(
               padding: const EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 4),
+                  vertical: 4),
               itemCount: _notifications.length,
-              separatorBuilder: (_, __) =>
-              const Divider(
-                  color: Colors.white10,
-                  height: 1,
-                  thickness: 0.5),
               itemBuilder: (context, i) {
                 final n = _notifications[i];
                 return GestureDetector(
@@ -1232,73 +1227,59 @@ class _NotificationScreenState
                     });
                   },
                   behavior: HitTestBehavior.opaque,
-                  child: Container(
+                  child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    color: n['read'] as bool
-                        ? Colors.transparent
-                        : AppColors.primary
-                        .withOpacity(0.06),
+                        horizontal: 16, vertical: 8),
                     child: Row(
                         crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        CrossAxisAlignment.center,
                         children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: (n['color'] as Color)
-                                  .withOpacity(0.15),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(n['icon'] as IconData,
-                                color: n['color'] as Color,
-                                size: 16),
-                          ),
-                          const SizedBox(width: 12),
+                          Icon(n['icon'] as IconData,
+                              color: n['color'] as Color,
+                              size: 20),
+                          const SizedBox(width: 14),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                Row(children: [
-                                  Expanded(
-                                      child: Text(
-                                          n['title'] as String,
-                                          overflow: TextOverflow
-                                              .ellipsis,
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight:
-                                              FontWeight.w600,
-                                              fontSize: 13))),
-                                  if (!(n['read'] as bool))
-                                    Container(
-                                        width: 6,
-                                        height: 6,
-                                        decoration: const BoxDecoration(
-                                            color: AppColors
-                                                .primary,
-                                            shape: BoxShape
-                                                .circle)),
-                                ]),
-                                const SizedBox(height: 2),
-                                Text(
-                                    n['subtitle'] as String,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        color: Colors.white54,
-                                        fontSize: 12,
-                                        height: 1.3)),
-                                const SizedBox(height: 2),
-                                Text(n['time'] as String,
-                                    style: const TextStyle(
-                                        color: Colors.white38,
-                                        fontSize: 10)),
-                              ],
+                            child: RichText(
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              text: TextSpan(
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    height: 1.35),
+                                children: [
+                                  TextSpan(
+                                      text: n['title'] as String,
+                                      style: const TextStyle(
+                                          fontWeight:
+                                          FontWeight.w700)),
+                                  const TextSpan(text: '  '),
+                                  TextSpan(
+                                      text: n['subtitle']
+                                      as String,
+                                      style: const TextStyle(
+                                          color:
+                                          Colors.white70)),
+                                  TextSpan(
+                                      text:
+                                      '   ${n['time'] as String}',
+                                      style: const TextStyle(
+                                          color:
+                                          Colors.white38,
+                                          fontSize: 12)),
+                                ],
+                              ),
                             ),
                           ),
+                          if (!(n['read'] as bool)) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle)),
+                          ],
                         ]),
                   ),
                 );

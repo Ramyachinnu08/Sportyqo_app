@@ -378,6 +378,24 @@ class LeagueService {
           body: {'result': result, 'player_stats': playerStats},
           extraHeaders: {'Idempotency-Key': idempotencyKey})
       as Map<String, dynamic>;
+
+  /// Fetch any previously-saved participant stats for a match so the
+  /// scoring screen can pre-fill runs / wickets / catches / bonuses
+  /// instead of resetting them to 0 (fixes the "score vanishes" bug).
+  static Future<Map<String, dynamic>> matchParticipants(String matchId) async =>
+      await ApiClient.get('/matches/$matchId/participants')
+      as Map<String, dynamic>;
+
+  /// Save a partial "draft" of match stats without awarding points or
+  /// completing the match. Called on every Save from the Edit Player
+  /// screen so scores persist across visits, even before Submit.
+  static Future<Map<String, dynamic>> draftPoints({
+    required String matchId,
+    required List<Map<String, dynamic>> playerStats,
+  }) async =>
+      await ApiClient.post('/matches/$matchId/draft',
+          body: {'player_stats': playerStats})
+      as Map<String, dynamic>;
 }
 
 class FeedService {

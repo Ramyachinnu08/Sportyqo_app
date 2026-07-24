@@ -831,12 +831,10 @@ class _CoachNotificationScreenState
                 child: Text('No notifications yet',
                     style: TextStyle(
                         color: Colors.white38)))
-                : ListView.separated(
+                : ListView.builder(
               padding: const EdgeInsets.symmetric(
-                  horizontal: 20),
+                  vertical: 4),
               itemCount: _notifications.length,
-              separatorBuilder: (_, __) =>
-              const SizedBox(height: 10),
               itemBuilder: (context, i) {
                 final n = _notifications[i];
                 return GestureDetector(
@@ -853,79 +851,61 @@ class _CoachNotificationScreenState
                       };
                     });
                   },
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: n['read'] as bool
-                          ? const Color(0xFF111111)
-                          : const Color(0xFF00C853)
-                          .withOpacity(0.08),
-                      borderRadius:
-                      BorderRadius.circular(14),
-                      border: Border.all(
-                        color: n['read'] as bool
-                            ? Colors.white10
-                            : const Color(0xFF00C853)
-                            .withOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(children: [
-                      Container(
-                        width: 44, height: 44,
-                        decoration: BoxDecoration(
-                          color: (n['color'] as Color)
-                              .withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                            n['icon'] as IconData,
-                            color: n['color'] as Color,
-                            size: 22),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                          children: [
-                            Row(children: [
-                              Expanded(
-                                  child: Text(
-                                      n['title']
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    child: Row(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.center,
+                        children: [
+                          Icon(n['icon'] as IconData,
+                              color: n['color'] as Color,
+                              size: 20),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: RichText(
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              text: TextSpan(
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    height: 1.35),
+                                children: [
+                                  TextSpan(
+                                      text: n['title'] as String,
+                                      style: const TextStyle(
+                                          fontWeight:
+                                          FontWeight.w700)),
+                                  const TextSpan(text: '  '),
+                                  TextSpan(
+                                      text: n['subtitle']
                                       as String,
                                       style: const TextStyle(
                                           color:
-                                          Colors.white,
-                                          fontWeight:
-                                          FontWeight
-                                              .w700,
-                                          fontSize: 14))),
-                              if (!(n['read'] as bool))
-                                Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                        color: Color(
-                                            0xFF00C853),
-                                        shape: BoxShape
-                                            .circle)),
-                            ]),
-                            const SizedBox(height: 3),
-                            Text(
-                                n['subtitle'] as String,
-                                style: const TextStyle(
-                                    color: Colors.white54,
-                                    fontSize: 12,
-                                    height: 1.4)),
-                            const SizedBox(height: 4),
-                            Text(n['time'] as String,
-                                style: const TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 11)),
+                                          Colors.white70)),
+                                  TextSpan(
+                                      text:
+                                      '   ${n['time'] as String}',
+                                      style: const TextStyle(
+                                          color:
+                                          Colors.white38,
+                                          fontSize: 12)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (!(n['read'] as bool)) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                    color: Color(0xFF00C853),
+                                    shape: BoxShape.circle)),
                           ],
-                        ),
-                      ),
-                    ]),
+                        ]),
                   ),
                 );
               },
