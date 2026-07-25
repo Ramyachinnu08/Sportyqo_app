@@ -47,15 +47,15 @@ dev_dependencies:
     sdk: flutter
   flutter_launcher_icons: ^0.14.4
 
-# App icon generator config — reads assets/logo.png and produces every
+# App icon generator config — reads assets/102.png and produces every
 # Android + iOS icon size. Run with: dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/logo.png"
+  image_path: "assets/102.png"
   min_sdk_android: 21
   adaptive_icon_background: "#0A0A0A"
-  adaptive_icon_foreground: "assets/logo.png"
+  adaptive_icon_foreground: "assets/102.png"
   remove_alpha_ios: true
 
   # The "flutter_lints" package below contains a set of recommended lints to

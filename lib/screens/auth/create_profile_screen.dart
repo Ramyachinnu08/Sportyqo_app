@@ -452,6 +452,7 @@ class _CreateProfileScreenState
               const SizedBox(height: 8),
               TextField(
                 controller: _locationCtrl,
+                textCapitalization: TextCapitalization.words,
                 style: TextStyle(
                     color: isDark
                         ? AppColors.textWhite

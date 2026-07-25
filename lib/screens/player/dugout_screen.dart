@@ -1521,6 +1521,42 @@ class PlayerProfileDetailScreenState
                                           fontSize: 13)),
                                 ),
                               ]),
+                              // ── Star Rating (1-5) ──
+                              if (r['rating'] != null) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                    mainAxisSize:
+                                    MainAxisSize.min,
+                                    children: [
+                                      ...List.generate(5, (idx) {
+                                        final rating =
+                                        (r['rating'] as num).toDouble();
+                                        if (idx < rating.floor()) {
+                                          return const Icon(
+                                              Icons.star_rounded,
+                                              color: Colors.amber,
+                                              size: 16);
+                                        } else if (idx < rating) {
+                                          return const Icon(
+                                              Icons.star_half_rounded,
+                                              color: Colors.amber,
+                                              size: 16);
+                                        } else {
+                                          return Icon(
+                                              Icons.star_rounded,
+                                              color: Colors.white.withOpacity(0.15),
+                                              size: 16);
+                                        }
+                                      }),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                          '${(r['rating'] as num).toStringAsFixed((r['rating'] as num) % 1 == 0 ? 0 : 1)}/5',
+                                          style: const TextStyle(
+                                              color: Colors.amber,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700)),
+                                    ]),
+                              ],
                               if ((r['coach_role']
                               as String?)
                                   ?.isNotEmpty ==

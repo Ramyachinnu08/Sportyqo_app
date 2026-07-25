@@ -1833,7 +1833,7 @@ class _AboutScreen extends StatelessWidget {
               TextSpan(
                   text: 'Qo',
                   style: TextStyle(
-                      color: Color(0xFF7B2FFF),
+                      color: Colors.white,
                       fontSize: 26,
                       fontWeight: FontWeight.w800)),
             ]),

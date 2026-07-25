@@ -1101,30 +1101,10 @@ class _PlayersLeaderboardScreenState
                         context,
                         MaterialPageRoute(
                             builder: (_) =>
-                                ProfileDetailScreen(
-                                  person: <String,
-                                      dynamic>{
-                                    'author_id':
-                                    p['id'],
-                                    'name': p[
-                                    'name'] ??
-                                        '',
-                                    'avatar': ApiConfig
-                                        .resolveMediaUrl(
-                                        p['avatar_url']
-                                        as String?) ??
-                                        '',
-                                    'verified':
-                                    false,
-                                    'sport': p[
-                                    'sub_role'] ??
-                                        'Player',
-                                    'location': '',
-                                    'bio': '',
-                                    'qoScore': p[
-                                    'qo_score'] ??
-                                        0,
-                                  },
+                                _PlayerMatchHistoryScreen(
+                                  leagueId:
+                                  widget.leagueId,
+                                  player: p,
                                 ))),
                   );
                 },
@@ -1308,6 +1288,383 @@ class _StatMini extends StatelessWidget {
     ]);
   }
 }
+
+// ── Per-Player Match History ───────────────────────────────────────────
+// Shows every match this player played in this league, one row per
+// match with runs / wickets / catches / points. Tapped from the
+// Players & Points leaderboard so coaches can drill down instead of
+// only seeing aggregate totals.
+
+class _PlayerMatchHistoryScreen extends StatefulWidget {
+  final String leagueId;
+  final Map<String, dynamic> player;
+  const _PlayerMatchHistoryScreen(
+      {required this.leagueId, required this.player});
+
+  @override
+  State<_PlayerMatchHistoryScreen> createState() =>
+      _PlayerMatchHistoryScreenState();
+}
+
+class _PlayerMatchHistoryScreenState
+    extends State<_PlayerMatchHistoryScreen> {
+  bool _loading = true;
+  List<Map<String, dynamic>> _matches = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final items = await LeagueService.playerMatchHistory(
+          widget.leagueId, widget.player['id'] as String);
+      if (!mounted) return;
+      setState(() {
+        _matches = items.cast<Map<String, dynamic>>();
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  /// Live-calculated Qo points from stats — used until Submit finalizes.
+  int _calcPts(Map<String, dynamic> m) {
+    final stored = (m['qo_points_awarded'] as num?)?.toInt() ?? 0;
+    if (stored > 0) return stored;
+    final r = (m['runs'] as num?)?.toInt() ?? 0;
+    final w = (m['wickets'] as num?)?.toInt() ?? 0;
+    final c = (m['catches'] as num?)?.toInt() ?? 0;
+    int batting;
+    if (r >= 100) {
+      batting = 50;
+    } else if (r >= 46) {
+      batting = 20;
+    } else if (r >= 26) {
+      batting = 12;
+    } else if (r >= 11) {
+      batting = 8;
+    } else if (r > 0) {
+      batting = 5;
+    } else {
+      batting = 0;
+    }
+    final bowling = w >= 3 ? 20 : (w >= 1 ? 5 : 0);
+    final fielding = c >= 3 ? 5 : (c == 2 ? 2 : 0);
+    int bonus = 0;
+    if (m['is_mom'] == true) bonus += 20;
+    if (m['is_player_of_match'] == true) bonus += 20;
+    if (m['is_best_bowler'] == true) bonus += 20;
+    if (m['is_best_batsman'] == true) bonus += 20;
+    if (m['is_mvp'] == true) bonus += 25;
+    return batting + bowling + fielding + bonus;
+  }
+
+  String _formatDate(String? iso) {
+    if (iso == null || iso.isEmpty) return '';
+    try {
+      final d = DateTime.parse(iso).toLocal();
+      const months = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      return '${d.day} ${months[d.month - 1]} ${d.year}';
+    } catch (_) {
+      return iso;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.player;
+    final avatar =
+    ApiConfig.resolveMediaUrl(p['avatar_url'] as String?);
+    final name = (p['name'] as String?) ?? '';
+    final totalPts =
+    _matches.fold<int>(0, (sum, m) => sum + _calcPts(m));
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: SafeArea(
+        child: Column(children: [
+          // ── Player header ──
+          Padding(
+            padding:
+            const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Row(children: [
+              GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.arrow_back_ios,
+                      color: Colors.white, size: 20)),
+              const SizedBox(width: 12),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                    color: Color(0xFF1A1A1A),
+                    shape: BoxShape.circle),
+                child: ClipOval(
+                  child: avatar != null && avatar.isNotEmpty
+                      ? Image.network(avatar,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(
+                          child: Text(
+                              name.isNotEmpty
+                                  ? name[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight:
+                                  FontWeight.w800))))
+                      : Center(
+                      child: Text(
+                          name.isNotEmpty
+                              ? name[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight:
+                              FontWeight.w800))),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Text(name,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800)),
+                    Text(
+                        '${p['team_name'] ?? ''} • Match history',
+                        style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12)),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7B2FFF)
+                      .withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: const Color(0xFF7B2FFF)
+                          .withOpacity(0.4)),
+                ),
+                child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.bolt,
+                          color: Color(0xFF7B2FFF),
+                          size: 14),
+                      const SizedBox(width: 4),
+                      Text('$totalPts',
+                          style: const TextStyle(
+                              color: Color(0xFF7B2FFF),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800)),
+                    ]),
+              ),
+            ]),
+          ),
+          const Divider(color: Colors.white10, height: 1),
+          const SizedBox(height: 8),
+          Expanded(
+            child: _loading
+                ? const Center(
+                child: CircularProgressIndicator(
+                    color: Color(0xFF1A6BFF)))
+                : _matches.isEmpty
+                ? const Center(
+                child: Text(
+                    'No matches played yet.',
+                    style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 13)))
+                : ListView.separated(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 8),
+              itemCount: _matches.length,
+              separatorBuilder: (_, __) =>
+              const SizedBox(height: 10),
+              itemBuilder: (context, i) {
+                final m = _matches[i];
+                final pts = _calcPts(m);
+                return Container(
+                  padding:
+                  const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF111111),
+                    borderRadius:
+                    BorderRadius.circular(12),
+                    border: Border.all(
+                        color: Colors.white10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment
+                        .start,
+                    children: [
+                      Row(children: [
+                        Text(
+                            'Match ${i + 1}',
+                            style:
+                            const TextStyle(
+                                color: Color(
+                                    0xFF00C853),
+                                fontSize: 12,
+                                fontWeight:
+                                FontWeight
+                                    .w700)),
+                        const Spacer(),
+                        Text(
+                            _formatDate(m[
+                            'played_at']
+                            as String?),
+                            style:
+                            const TextStyle(
+                                color: Colors
+                                    .white54,
+                                fontSize: 11)),
+                      ]),
+                      const SizedBox(height: 4),
+                      Text(
+                          '${m['team_a'] ?? '-'} vs ${m['team_b'] ?? '-'}',
+                          overflow: TextOverflow
+                              .ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight:
+                              FontWeight
+                                  .w600)),
+                      const SizedBox(height: 10),
+                      const Divider(
+                          color: Colors.white10,
+                          height: 1),
+                      const SizedBox(height: 10),
+                      Row(
+                          mainAxisAlignment:
+                          MainAxisAlignment
+                              .spaceAround,
+                          children: [
+                            _StatMini(
+                                value:
+                                '${m['runs'] ?? 0}',
+                                label: 'Runs'),
+                            _StatMini(
+                                value:
+                                '${m['wickets'] ?? 0}',
+                                label: 'Wkts'),
+                            _StatMini(
+                                value:
+                                '${m['catches'] ?? 0}',
+                                label: 'Ct'),
+                            _StatMini(
+                                value: '+$pts',
+                                label: 'Pts',
+                                highlight: true),
+                          ]),
+                      // Bonus badges if any
+                      if (m['is_mom'] == true ||
+                          m['is_mvp'] == true ||
+                          m['is_best_bowler'] ==
+                              true ||
+                          m['is_best_batsman'] ==
+                              true ||
+                          m['is_player_of_match'] ==
+                              true) ...[
+                        const SizedBox(height: 10),
+                        Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              if (m['is_mom'] ==
+                                  true)
+                                const _BonusChip(
+                                    label:
+                                    'MoM',
+                                    icon: Icons
+                                        .military_tech),
+                              if (m['is_mvp'] ==
+                                  true)
+                                const _BonusChip(
+                                    label:
+                                    'MVP',
+                                    icon: Icons
+                                        .workspace_premium),
+                              if (m['is_player_of_match'] ==
+                                  true)
+                                const _BonusChip(
+                                    label: 'PoM',
+                                    icon: Icons
+                                        .star),
+                              if (m['is_best_bowler'] ==
+                                  true)
+                                const _BonusChip(
+                                    label:
+                                    'Best Bowler',
+                                    icon: Icons
+                                        .sports_cricket),
+                              if (m['is_best_batsman'] ==
+                                  true)
+                                const _BonusChip(
+                                    label:
+                                    'Best Batsman',
+                                    icon: Icons
+                                        .sports_baseball),
+                            ]),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _BonusChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  const _BonusChip({required this.label, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+            color: Colors.amber.withOpacity(0.4)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, color: Colors.amber, size: 12),
+        const SizedBox(width: 4),
+        Text(label,
+            style: const TextStyle(
+                color: Colors.amber,
+                fontSize: 10,
+                fontWeight: FontWeight.w700)),
+      ]),
+    );
+  }
+}
+
 
 class _StandingsScreen extends StatelessWidget {
   final List<dynamic> standings;

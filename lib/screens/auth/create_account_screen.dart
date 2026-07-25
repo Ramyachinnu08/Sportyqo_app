@@ -35,8 +35,15 @@ class _CreateAccountScreenState
     super.dispose();
   }
 
+  /// Capitalize the first letter of every word: "suneeth kumar" → "Suneeth Kumar".
+  String _titleCase(String s) => s
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .map((w) => w[0].toUpperCase() + w.substring(1).toLowerCase())
+      .join(' ');
+
   Future<void> _signUp() async {
-    final name = _nameCtrl.text.trim();
+    final name = _titleCase(_nameCtrl.text.trim());
     final email = _emailCtrl.text.trim();
     final password = _passwordCtrl.text;
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
@@ -117,6 +124,7 @@ class _CreateAccountScreenState
                 icon: Icons.person_outline,
                 isDark: isDark,
                 controller: _nameCtrl,
+                textCapitalization: TextCapitalization.words,
               ),
               const SizedBox(height: 14),
               _buildTextField(
@@ -199,16 +207,16 @@ class _CreateAccountScreenState
                                 color: AppColors.primary,
                                 fontSize: 13,
                                 decoration:
-                                    TextDecoration.underline,
+                                TextDecoration.underline,
                                 decorationColor:
-                                    AppColors.primary),
+                                AppColors.primary),
                             recognizer:
-                                TapGestureRecognizer()
-                                  ..onTap = () =>
-                                      Navigator.push(
-                                          context,
-                                          LegalScreen
-                                              .termsRoute()),
+                            TapGestureRecognizer()
+                              ..onTap = () =>
+                                  Navigator.push(
+                                      context,
+                                      LegalScreen
+                                          .termsRoute()),
                           ),
                           const TextSpan(
                             text: ' and ',
@@ -222,16 +230,16 @@ class _CreateAccountScreenState
                                 color: AppColors.primary,
                                 fontSize: 13,
                                 decoration:
-                                    TextDecoration.underline,
+                                TextDecoration.underline,
                                 decorationColor:
-                                    AppColors.primary),
+                                AppColors.primary),
                             recognizer:
-                                TapGestureRecognizer()
-                                  ..onTap = () =>
-                                      Navigator.push(
-                                          context,
-                                          LegalScreen
-                                              .privacyRoute()),
+                            TapGestureRecognizer()
+                              ..onTap = () =>
+                                  Navigator.push(
+                                      context,
+                                      LegalScreen
+                                          .privacyRoute()),
                           ),
                         ],
                       ),
@@ -323,11 +331,13 @@ class _CreateAccountScreenState
     bool obscureText = false,
     Widget? suffixIcon,
     TextEditingController? controller,
+    TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
+      textCapitalization: textCapitalization,
       style: TextStyle(
           color: isDark
               ? AppColors.textWhite

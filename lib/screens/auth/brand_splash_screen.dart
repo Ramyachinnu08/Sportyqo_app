@@ -85,14 +85,14 @@ class _BrandSplashScreenState extends State<BrandSplashScreen>
     final logoSize = screenWidth * 0.8;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: Colors.black,
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: ScaleTransition(
             scale: _scaleAnimation,
             child: Image.network(
-              'https://i.ibb.co/mCXmZHmX/Whats-App-Image-2026-07-23-at-11-24-14-AM.jpg',
+              'https://i.ibb.co/hFXzg4m3/304161.jpg',
               width: logoSize,
               height: logoSize,
               fit: BoxFit.contain,

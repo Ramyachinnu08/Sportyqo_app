@@ -372,7 +372,7 @@ class _SelectPlayersScreenState
                         {
                           'user_id': updated['user_id'],
                           'runs': updated['runs'] ?? 0,
-                          'balls': 0,
+                          'balls': updated['balls'] ?? 0,
                           'wickets': updated['wkts'] ?? 0,
                           'catches': updated['catches'] ?? 0,
                           'is_mom': updated['is_mom'] == true,
@@ -584,6 +584,7 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
   late int _runs;
   late int _fours;
   late int _sixes;
+  late int _balls;
   late int _wickets;
   late int _catches;
   late int _runOuts;
@@ -599,6 +600,7 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
     _runs = widget.player['runs'] as int;
     _fours = 0;
     _sixes = 0;
+    _balls = (widget.player['balls'] as int?) ?? 0;
     _wickets = widget.player['wkts'] as int;
     _catches = (widget.player['catches'] as int?) ?? 0;
     _runOuts = 0;
@@ -700,23 +702,32 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                           style: TextStyle(color: Colors.white54, fontSize: 11)),
                       const SizedBox(height: 12),
                       _StatRow(label: 'Runs Scored', value: _runs, max: 999,
+                          helpText: 'Total runs scored by the batter, including boundaries (4s and 6s), singles, twos, and threes. Example: If batter hit 30 in singles, 4×4=16, 2×6=12, total = 58 runs.',
                           onDec: () => setState(() => _runs = (_runs - 1).clamp(0, 999)),
                           onInc: () => setState(() => _runs = (_runs + 1).clamp(0, 999)),
                           onSet: (v) => setState(() => _runs = v.clamp(0, 999))),
                       _StatRow(label: '4s', value: _fours, max: 99,
+                          helpText: 'Number of boundary 4s scored. Each 4 is worth 4 runs (already counted in Runs Scored).',
                           onDec: () => setState(() => _fours = (_fours - 1).clamp(0, 99)),
                           onInc: () => setState(() => _fours = (_fours + 1).clamp(0, 99)),
                           onSet: (v) => setState(() => _fours = v.clamp(0, 99))),
                       _StatRow(label: '6s', value: _sixes, max: 99,
+                          helpText: 'Number of sixes hit. Each 6 is worth 6 runs (already counted in Runs Scored).',
                           onDec: () => setState(() => _sixes = (_sixes - 1).clamp(0, 99)),
                           onInc: () => setState(() => _sixes = (_sixes + 1).clamp(0, 99)),
                           onSet: (v) => setState(() => _sixes = v.clamp(0, 99))),
+                      _StatRow(label: 'Balls Faced', value: _balls, max: 999,
+                          helpText: 'Total balls faced by the batter during their innings. Used to calculate strike rate: (Runs ÷ Balls) × 100.',
+                          onDec: () => setState(() => _balls = (_balls - 1).clamp(0, 999)),
+                          onInc: () => setState(() => _balls = (_balls + 1).clamp(0, 999)),
+                          onSet: (v) => setState(() => _balls = v.clamp(0, 999))),
 
                       const SizedBox(height: 16),
                       // Bowling
                       const Text('Bowling', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                       const SizedBox(height: 12),
                       _StatRow(label: 'Wickets Taken', value: _wickets, max: 10,
+                          helpText: 'Wickets the bowler dismissed during the innings. Maximum 10 (whole team all-out). +5 pts for 1-2 wickets, +20 pts for 3 or more.',
                           onDec: () => setState(() => _wickets = (_wickets - 1).clamp(0, 10)),
                           onInc: () => setState(() => _wickets = (_wickets + 1).clamp(0, 10)),
                           onSet: (v) => setState(() => _wickets = v.clamp(0, 10))),
@@ -726,10 +737,12 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                       const Text('Fielding', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                       const SizedBox(height: 12),
                       _StatRow(label: 'Catches', value: _catches, max: 10,
+                          helpText: 'Catches taken while fielding. +2 pts for 2 catches, +5 pts for 3 or more.',
                           onDec: () => setState(() => _catches = (_catches - 1).clamp(0, 10)),
                           onInc: () => setState(() => _catches = (_catches + 1).clamp(0, 10)),
                           onSet: (v) => setState(() => _catches = v.clamp(0, 10))),
                       _StatRow(label: 'Run Outs / Assists', value: _runOuts, max: 10,
+                          helpText: 'Run outs the fielder executed or assisted in. Counted toward fielding points (combined with catches).',
                           onDec: () => setState(() => _runOuts = (_runOuts - 1).clamp(0, 10)),
                           onInc: () => setState(() => _runOuts = (_runOuts + 1).clamp(0, 10)),
                           onSet: (v) => setState(() => _runOuts = v.clamp(0, 10))),
@@ -776,6 +789,7 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                   onPressed: () {
                     final updated = Map<String, dynamic>.from(widget.player);
                     updated['runs'] = _runs;
+                    updated['balls'] = _balls;
                     updated['wkts'] = _wickets;
                     updated['catches'] = _catches;
                     updated['is_mom'] = _isMom;
@@ -822,6 +836,7 @@ class _StatRow extends StatelessWidget {
   final int max;
   final VoidCallback onDec, onInc;
   final ValueChanged<int> onSet;
+  final String? helpText;
   const _StatRow({
     required this.label,
     required this.value,
@@ -829,7 +844,40 @@ class _StatRow extends StatelessWidget {
     required this.onInc,
     required this.onSet,
     this.max = 999,
+    this.helpText,
   });
+
+  Future<void> _showHelp(BuildContext context) async {
+    if (helpText == null) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF141414),
+        title: Row(children: [
+          const Icon(Icons.help_outline,
+              color: Color(0xFF1A6BFF), size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+              child: Text(label,
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 16))),
+        ]),
+        content: Text(helpText!,
+            style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                height: 1.4)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Got it',
+                  style: TextStyle(
+                      color: Color(0xFF1A6BFF),
+                      fontWeight: FontWeight.w700))),
+        ],
+      ),
+    );
+  }
 
   Future<void> _promptForValue(BuildContext context) async {
     final ctrl = TextEditingController(text: '$value');
@@ -885,7 +933,22 @@ class _StatRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(children: [
-        Expanded(child: Text(label, style: const TextStyle(color: Colors.white60, fontSize: 13))),
+        Expanded(
+            child: Row(children: [
+              Flexible(
+                  child: Text(label,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: Colors.white60, fontSize: 13))),
+              if (helpText != null) ...[
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: () => _showHelp(context),
+                  child: const Icon(Icons.help_outline,
+                      color: Colors.white38, size: 15),
+                ),
+              ],
+            ])),
         GestureDetector(
           onTap: onDec,
           child: Container(
@@ -898,14 +961,28 @@ class _StatRow extends StatelessWidget {
         GestureDetector(
           onTap: () => _promptForValue(context),
           child: Container(
-            width: 50,
+            width: 56,
             padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text('$value',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16),
-                textAlign: TextAlign.center),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                    color: const Color(0xFF1A6BFF)
+                        .withOpacity(0.5),
+                    width: 1),
+              ),
+            ),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('$value',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.edit,
+                      color: Color(0xFF1A6BFF), size: 12),
+                ]),
           ),
         ),
         GestureDetector(

@@ -2750,7 +2750,7 @@ class _CoachAboutScreen extends StatelessWidget {
               TextSpan(
                   text: 'Qo',
                   style: TextStyle(
-                      color: Color(0xFF00C853),
+                      color: Colors.white,
                       fontSize: 26,
                       fontWeight: FontWeight.w800)),
             ]),

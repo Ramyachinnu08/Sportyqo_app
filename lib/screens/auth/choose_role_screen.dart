@@ -62,7 +62,7 @@ class ChooseRoleScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
+                        color: Colors.white,
                         fontFamily: 'Poppins',
                       ),
                     ),

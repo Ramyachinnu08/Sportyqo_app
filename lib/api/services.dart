@@ -396,6 +396,16 @@ class LeagueService {
       await ApiClient.post('/matches/$matchId/draft',
           body: {'player_stats': playerStats})
       as Map<String, dynamic>;
+
+  /// Per-match breakdown for one player inside one league — used by
+  /// the tap-on-a-leaderboard-row detail screen.
+  static Future<List<dynamic>> playerMatchHistory(
+      String leagueId, String userId) async {
+    final res = await ApiClient.get(
+        '/leagues/$leagueId/players/$userId/matches')
+    as Map<String, dynamic>;
+    return (res['items'] as List<dynamic>? ?? const []);
+  }
 }
 
 class FeedService {
