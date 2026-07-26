@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
+import '../../api/api_config.dart';
 import '../../api/services.dart';
 import '../../api/ui_helpers.dart';
 import '../../theme/app_theme.dart';
@@ -51,6 +52,31 @@ class _SelectPlayersScreenState
     return (parts.first[0] + parts.last[0]).toUpperCase();
   }
 
+  /// Returns a network image widget when `url` is a real avatar,
+  /// falls back to colored initials otherwise. Used everywhere players
+  /// are listed on this screen.
+  Widget _buildAvatar(String url, String initials, double fontSize) {
+    final resolved = ApiConfig.resolveMediaUrl(url);
+    if (resolved != null && resolved.isNotEmpty) {
+      return Image.network(
+        resolved,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Center(
+            child: Text(initials,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: fontSize))),
+      );
+    }
+    return Center(
+        child: Text(initials,
+            style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: fontSize)));
+  }
+
   Future<void> _load() async {
     if (widget.leagueId == null) {
       setState(() => _loading = false);
@@ -94,6 +120,7 @@ class _SelectPlayersScreenState
           'user_id': raw['id'],
           'team_id': raw['team_id'],
           'team_name': raw['team_name'] ?? '',
+          'avatar_url': raw['avatar_url'] ?? '',
           'name': raw['name'] ?? '',
           'initials': _initials(raw['name'] as String? ?? ''),
           'role': raw['sub_role'] ?? 'Player',
@@ -368,14 +395,18 @@ class _SelectPlayersScreenState
                         ]),
                       ),
                     Row(children: [
-                      // Avatar
+                      // Avatar (photo if available, else colored initials)
                       Container(
                         width: 40, height: 40,
                         decoration: BoxDecoration(
                           color: (p['color'] as Color).withOpacity(0.6),
                           shape: BoxShape.circle,
                         ),
-                        child: Center(child: Text(p['initials'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
+                        child: ClipOval(
+                          child: _buildAvatar(
+                              p['avatar_url'] as String? ?? '',
+                              p['initials'] as String, 13),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       // Name + role
@@ -557,7 +588,11 @@ class _SelectPlayersScreenState
                       Container(
                         width: 32, height: 32,
                         decoration: BoxDecoration(color: (p['color'] as Color).withOpacity(0.6), shape: BoxShape.circle),
-                        child: Center(child: Text(p['initials'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 11))),
+                        child: ClipOval(
+                          child: _buildAvatar(
+                              p['avatar_url'] as String? ?? '',
+                              p['initials'] as String, 11),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(child: Text(p['name'] as String, style: const TextStyle(color: Colors.white, fontSize: 13))),
