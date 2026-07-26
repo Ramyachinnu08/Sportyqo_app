@@ -93,6 +93,7 @@ class _SelectPlayersScreenState
         items.add(<String, dynamic>{
           'user_id': raw['id'],
           'team_id': raw['team_id'],
+          'team_name': raw['team_name'] ?? '',
           'name': raw['name'] ?? '',
           'initials': _initials(raw['name'] as String? ?? ''),
           'role': raw['sub_role'] ?? 'Player',
@@ -109,6 +110,11 @@ class _SelectPlayersScreenState
         });
       }
       if (!mounted) return;
+      // Sort so all players from the same team stay together (Team 1
+      // group first, then Team 2 group). This makes the section headers
+      // work correctly.
+      items.sort((a, b) =>
+          (a['team_id'] as String).compareTo(b['team_id'] as String));
       setState(() {
         _players = items;
         _loading = false;
@@ -259,7 +265,7 @@ class _SelectPlayersScreenState
                   child: const Center(child: Text('🦅', style: TextStyle(fontSize: 16))),
                 ),
                 const SizedBox(width: 10),
-                Text(widget.teamName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+                Text(widget.matchName ?? widget.teamName, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
               ]),
             ),
 
@@ -333,71 +339,100 @@ class _SelectPlayersScreenState
             separatorBuilder: (_, __) => const Divider(color: Colors.white10, height: 16),
             itemBuilder: (context, i) {
               final p = _players[i];
-              return Row(children: [
-                // Avatar
-                Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(
-                    color: (p['color'] as Color).withOpacity(0.6),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(child: Text(p['initials'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
-                ),
-                const SizedBox(width: 10),
-                // Name + role
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(p['name'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-                      Text(p['role'] as String, style: const TextStyle(color: Colors.white38, fontSize: 11)),
-                    ],
-                  ),
-                ),
-                // Runs
-                SizedBox(width: 50, child: Text('${p['runs']}', style: const TextStyle(color: Colors.white, fontSize: 13), textAlign: TextAlign.center)),
-                // Wkts
-                SizedBox(width: 50, child: Text('${p['wkts']}', style: const TextStyle(color: Colors.white, fontSize: 13), textAlign: TextAlign.center)),
-                // Pts (live-calculated from current stats)
-                SizedBox(width: 50, child: Text('${_effPts(p).toInt()}', style: const TextStyle(color: Colors.white, fontSize: 13), textAlign: TextAlign.center)),
-                // Edit button
-                GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _EditPlayerStatsScreen(player: p, onSave: (updated) {
-                    setState(() => _players[i] = updated);
-                    // Auto-save to backend so scores persist across visits.
-                    // Fire-and-forget — the UI already reflects the change.
-                    final mid = widget.matchId;
-                    if (mid != null && !widget.completed) {
-                      LeagueService.draftPoints(matchId: mid, playerStats: [
-                        {
-                          'user_id': updated['user_id'],
-                          'runs': updated['runs'] ?? 0,
-                          'balls': updated['balls'] ?? 0,
-                          'wickets': updated['wkts'] ?? 0,
-                          'catches': updated['catches'] ?? 0,
-                          'is_mom': updated['is_mom'] == true,
-                          'is_player_of_match': updated['is_player_of_match'] == true,
-                          'is_best_bowler': updated['is_best_bowler'] == true,
-                          'is_best_batsman': updated['is_best_batsman'] == true,
-                          'is_mvp': updated['is_mvp'] == true,
-                        }
-                      ]).catchError((e) {
-                        if (mounted) showApiError(context, e);
-                        return <String, dynamic>{};
-                      });
-                    }
-                  }))),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A6BFF).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF1A6BFF).withOpacity(0.3)),
-                    ),
-                    child: const Text('Edit', style: TextStyle(color: Color(0xFF1A6BFF), fontWeight: FontWeight.w700, fontSize: 12)),
-                  ),
-                ),
-              ]);
+              // Show team-name header before the first player of each team
+              // so aquil (Team 1) and Sudeep (Team 2) are visually separated.
+              final showTeamHeader = i == 0 ||
+                  _players[i - 1]['team_id'] != p['team_id'];
+              return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (showTeamHeader && (p['team_name'] as String?)?.isNotEmpty == true)
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 8, top: i == 0 ? 0 : 6),
+                        child: Row(children: [
+                          Container(
+                            width: 4, height: 14,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1A6BFF),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            (p['team_name'] as String?) ?? '',
+                            style: const TextStyle(
+                                color: Color(0xFF1A6BFF),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800),
+                          ),
+                        ]),
+                      ),
+                    Row(children: [
+                      // Avatar
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: (p['color'] as Color).withOpacity(0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(child: Text(p['initials'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
+                      ),
+                      const SizedBox(width: 10),
+                      // Name + role
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(p['name'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                            Text(p['role'] as String, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      // Runs
+                      SizedBox(width: 50, child: Text('${p['runs']}', style: const TextStyle(color: Colors.white, fontSize: 13), textAlign: TextAlign.center)),
+                      // Wkts
+                      SizedBox(width: 50, child: Text('${p['wkts']}', style: const TextStyle(color: Colors.white, fontSize: 13), textAlign: TextAlign.center)),
+                      // Pts (live-calculated from current stats)
+                      SizedBox(width: 50, child: Text('${_effPts(p).toInt()}', style: const TextStyle(color: Colors.white, fontSize: 13), textAlign: TextAlign.center)),
+                      // Edit button
+                      GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _EditPlayerStatsScreen(player: p, onSave: (updated) {
+                          setState(() => _players[i] = updated);
+                          // Auto-save to backend so scores persist across visits.
+                          // Fire-and-forget — the UI already reflects the change.
+                          final mid = widget.matchId;
+                          if (mid != null && !widget.completed) {
+                            LeagueService.draftPoints(matchId: mid, playerStats: [
+                              {
+                                'user_id': updated['user_id'],
+                                'runs': updated['runs'] ?? 0,
+                                'balls': updated['balls'] ?? 0,
+                                'wickets': updated['wkts'] ?? 0,
+                                'catches': updated['catches'] ?? 0,
+                                'is_mom': updated['is_mom'] == true,
+                                'is_player_of_match': updated['is_player_of_match'] == true,
+                                'is_best_bowler': updated['is_best_bowler'] == true,
+                                'is_best_batsman': updated['is_best_batsman'] == true,
+                                'is_mvp': updated['is_mvp'] == true,
+                              }
+                            ]).catchError((e) {
+                              if (mounted) showApiError(context, e);
+                              return <String, dynamic>{};
+                            });
+                          }
+                        }))),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A6BFF).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF1A6BFF).withOpacity(0.3)),
+                          ),
+                          child: const Text('Edit', style: TextStyle(color: Color(0xFF1A6BFF), fontWeight: FontWeight.w700, fontSize: 12)),
+                        ),
+                      ),
+                    ]),
+                  ]);
             },
           ),
         ),
