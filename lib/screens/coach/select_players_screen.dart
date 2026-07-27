@@ -438,6 +438,8 @@ class _SelectPlayersScreenState
                                 'user_id': updated['user_id'],
                                 'runs': updated['runs'] ?? 0,
                                 'balls': updated['balls'] ?? 0,
+                                'fours': updated['fours'] ?? 0,
+                                'sixes': updated['sixes'] ?? 0,
                                 'wickets': updated['wkts'] ?? 0,
                                 'catches': updated['catches'] ?? 0,
                                 'is_mom': updated['is_mom'] == true,
@@ -471,38 +473,71 @@ class _SelectPlayersScreenState
     );
   }
 
-  /// Live points calculation using the official Qo slabs. Used by both
-  /// the Players list and Team Summary so the number always matches
-  /// what the coach will save.
+  /// Official Qo Points calculation — matches the published Qo scoring
+  /// chart. Batting rewards runs, boundaries, and strike rate; bowling
+  /// rewards wickets with milestone bonuses; fielding rewards assists.
+  /// Every player gets +20 just for participating.
   double _calcPtsFor(Map<String, dynamic> p) {
     final r = p['runs'] as int;
+    final b = p['balls'] as int? ?? 0;
+    final fours = p['fours'] as int? ?? 0;
+    final sixes = p['sixes'] as int? ?? 0;
     final w = p['wkts'] as int;
     final c = p['catches'] as int? ?? 0;
     final ro = p['run_outs'] as int? ?? 0;
-    int batting;
-    if (r >= 100) {
-      batting = 50;
-    } else if (r >= 46) {
-      batting = 20;
-    } else if (r >= 26) {
-      batting = 12;
-    } else if (r >= 11) {
-      batting = 8;
-    } else if (r > 0) {
-      batting = 5;
-    } else {
-      batting = 0;
+
+    // ── BATTING ──
+    // Participation bonus (every player who plays the match).
+    double pts = 20;
+    // Every run scored — 0.5 pts per run.
+    pts += r * 0.5;
+    // Milestone bonuses — not cumulative (only the higher one applies).
+    if (r >= 50) {
+      pts += 15;
+    } else if (r >= 30) {
+      pts += 10;
     }
-    final bowling = w >= 3 ? 20 : (w >= 1 ? 5 : 0);
-    final fCount = c + ro;
-    final fielding = fCount >= 3 ? 5 : (fCount == 2 ? 2 : 0);
-    int bonus = 0;
-    if (p['is_mom'] == true) bonus += 20;
-    if (p['is_player_of_match'] == true) bonus += 20;
-    if (p['is_best_bowler'] == true) bonus += 20;
-    if (p['is_best_batsman'] == true) bonus += 20;
-    if (p['is_mvp'] == true) bonus += 25;
-    return (batting + bowling + fielding + bonus).toDouble();
+    // Boundary bonuses.
+    pts += fours * 2;
+    pts += sixes * 4;
+    // Strike rate bonus (only if we know balls faced).
+    if (b > 0) {
+      final sr = (r / b) * 100;
+      if (sr >= 151) {
+        pts += 15;
+      } else if (sr >= 121) {
+        pts += 10;
+      } else if (sr >= 100) {
+        pts += 5;
+      }
+    }
+
+    // ── BOWLING ──
+    // Every wicket — 15 pts each.
+    pts += w * 15;
+    // Milestone bonuses — take the highest tier only.
+    if (w >= 5) {
+      pts += 20;
+    } else if (w >= 3) {
+      pts += 10;
+    } else if (w >= 2) {
+      pts += 5;
+    }
+
+    // ── FIELDING ──
+    // Every assist (catch, run-out, stumping) — 5 pts each.
+    pts += (c + ro) * 5;
+
+    // ── TEAM / MATCH BONUSES ──
+    // Match Win (+20), League Runner-Up (+50), League Champion (+100)
+    // are awarded via the existing bonus flags.
+    if (p['is_mom'] == true) pts += 20;              // Match Win MoM
+    if (p['is_best_batsman'] == true) pts += 20;
+    if (p['is_best_bowler'] == true) pts += 20;
+    if (p['is_player_of_match'] == true) pts += 50;  // Runner-up equivalent
+    if (p['is_mvp'] == true) pts += 100;             // League Champion / MVP
+
+    return pts;
   }
 
   double _effPts(Map<String, dynamic> p) {
@@ -681,31 +716,51 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
     _isMvp = widget.player['is_mvp'] == true;
   }
 
-  /// Preview using the official SportyQo card. The server recomputes the
-  /// final number on submit — this is display only.
+  /// Preview using the official SportyQo Qo Points chart. The server
+  /// recomputes the final number on submit — this is display only.
   double _calculatePts() {
-    int batting;
-    if (_runs >= 100) {
-      batting = 50;
-    } else if (_runs >= 46) {
-      batting = 20;
-    } else if (_runs >= 26) {
-      batting = 12;
-    } else if (_runs >= 11) {
-      batting = 8;
-    } else {
-      batting = 5;
+    // ── BATTING ──
+    double pts = 20; // Match participation
+    pts += _runs * 0.5; // Every run scored
+    if (_runs >= 50) {
+      pts += 15; // 50+ Runs Bonus
+    } else if (_runs >= 30) {
+      pts += 10; // 30-49 Runs Bonus
     }
-    final bowling = _wickets >= 3 ? 20 : (_wickets >= 1 ? 5 : 0);
-    final fieldingCount = _catches + _runOuts;
-    final fielding = fieldingCount >= 3 ? 5 : (fieldingCount == 2 ? 2 : 0);
-    int bonus = 0;
-    if (_isMom) bonus += 20;
-    if (_isPlayerOfMatch) bonus += 20;
-    if (_isBestBowler) bonus += 20;
-    if (_isBestBatsman) bonus += 20;
-    if (_isMvp) bonus += 25;
-    return (batting + bowling + fielding + bonus).toDouble();
+    pts += _fours * 2;
+    pts += _sixes * 4;
+    // Strike rate bonus
+    if (_balls > 0) {
+      final sr = (_runs / _balls) * 100;
+      if (sr >= 151) {
+        pts += 15;
+      } else if (sr >= 121) {
+        pts += 10;
+      } else if (sr >= 100) {
+        pts += 5;
+      }
+    }
+
+    // ── BOWLING ──
+    pts += _wickets * 15;
+    if (_wickets >= 5) {
+      pts += 20;
+    } else if (_wickets >= 3) {
+      pts += 10;
+    } else if (_wickets >= 2) {
+      pts += 5;
+    }
+
+    // ── FIELDING ──
+    pts += (_catches + _runOuts) * 5;
+
+    // ── BONUSES ──
+    if (_isMom) pts += 20;
+    if (_isBestBatsman) pts += 20;
+    if (_isBestBowler) pts += 20;
+    if (_isPlayerOfMatch) pts += 50;
+    if (_isMvp) pts += 100;
+    return pts;
   }
 
   @override
@@ -772,22 +827,22 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                           style: TextStyle(color: Colors.white54, fontSize: 11)),
                       const SizedBox(height: 12),
                       _StatRow(label: 'Runs Scored', value: _runs, max: 999,
-                          helpText: 'Total runs scored by the batter, including boundaries (4s and 6s), singles, twos, and threes. Example: If batter hit 30 in singles, 4×4=16, 2×6=12, total = 58 runs.',
+                          helpText: 'Total runs scored by the batter, including boundaries (4s and 6s). Each run = +0.5 pts. Bonuses: 30-49 runs = +10 pts, 50+ runs = +15 pts (not cumulative).',
                           onDec: () => setState(() => _runs = (_runs - 1).clamp(0, 999)),
                           onInc: () => setState(() => _runs = (_runs + 1).clamp(0, 999)),
                           onSet: (v) => setState(() => _runs = v.clamp(0, 999))),
                       _StatRow(label: '4s', value: _fours, max: 99,
-                          helpText: 'Number of boundary 4s scored. Each 4 is worth 4 runs (already counted in Runs Scored).',
+                          helpText: 'Number of boundary 4s scored. Each 4 = +2 pts bonus (in addition to the 4 runs already counted).',
                           onDec: () => setState(() => _fours = (_fours - 1).clamp(0, 99)),
                           onInc: () => setState(() => _fours = (_fours + 1).clamp(0, 99)),
                           onSet: (v) => setState(() => _fours = v.clamp(0, 99))),
                       _StatRow(label: '6s', value: _sixes, max: 99,
-                          helpText: 'Number of sixes hit. Each 6 is worth 6 runs (already counted in Runs Scored).',
+                          helpText: 'Number of sixes hit. Each 6 = +4 pts bonus (in addition to the 6 runs already counted).',
                           onDec: () => setState(() => _sixes = (_sixes - 1).clamp(0, 99)),
                           onInc: () => setState(() => _sixes = (_sixes + 1).clamp(0, 99)),
                           onSet: (v) => setState(() => _sixes = v.clamp(0, 99))),
                       _StatRow(label: 'Balls Faced', value: _balls, max: 999,
-                          helpText: 'Total balls faced by the batter during their innings. Used to calculate strike rate: (Runs ÷ Balls) × 100.',
+                          helpText: 'Total balls faced by the batter. Used to calculate Strike Rate = (Runs ÷ Balls) × 100. Bonuses: SR 100-120 = +5, SR 121-150 = +10, SR 151+ = +15.',
                           onDec: () => setState(() => _balls = (_balls - 1).clamp(0, 999)),
                           onInc: () => setState(() => _balls = (_balls + 1).clamp(0, 999)),
                           onSet: (v) => setState(() => _balls = v.clamp(0, 999))),
@@ -797,7 +852,7 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                       const Text('Bowling', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                       const SizedBox(height: 12),
                       _StatRow(label: 'Wickets Taken', value: _wickets, max: 10,
-                          helpText: 'Wickets the bowler dismissed during the innings. Maximum 10 (whole team all-out). +5 pts for 1-2 wickets, +20 pts for 3 or more.',
+                          helpText: 'Wickets taken by the bowler. Every wicket = +15 pts. Milestone bonuses: 2 wkts = +5, 3 wkts = +10, 5 wkts = +20 (highest tier only, not cumulative).',
                           onDec: () => setState(() => _wickets = (_wickets - 1).clamp(0, 10)),
                           onInc: () => setState(() => _wickets = (_wickets + 1).clamp(0, 10)),
                           onSet: (v) => setState(() => _wickets = v.clamp(0, 10))),
@@ -807,12 +862,12 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                       const Text('Fielding', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
                       const SizedBox(height: 12),
                       _StatRow(label: 'Catches', value: _catches, max: 10,
-                          helpText: 'Catches taken while fielding. +2 pts for 2 catches, +5 pts for 3 or more.',
+                          helpText: 'Catches taken while fielding. Each catch = +5 pts.',
                           onDec: () => setState(() => _catches = (_catches - 1).clamp(0, 10)),
                           onInc: () => setState(() => _catches = (_catches + 1).clamp(0, 10)),
                           onSet: (v) => setState(() => _catches = v.clamp(0, 10))),
                       _StatRow(label: 'Run Outs / Assists', value: _runOuts, max: 10,
-                          helpText: 'Run outs the fielder executed or assisted in. Counted toward fielding points (combined with catches).',
+                          helpText: 'Run outs and stumpings the fielder executed or assisted in. Each = +5 pts.',
                           onDec: () => setState(() => _runOuts = (_runOuts - 1).clamp(0, 10)),
                           onInc: () => setState(() => _runOuts = (_runOuts + 1).clamp(0, 10)),
                           onSet: (v) => setState(() => _runOuts = v.clamp(0, 10))),
@@ -860,8 +915,11 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                     final updated = Map<String, dynamic>.from(widget.player);
                     updated['runs'] = _runs;
                     updated['balls'] = _balls;
+                    updated['fours'] = _fours;
+                    updated['sixes'] = _sixes;
                     updated['wkts'] = _wickets;
                     updated['catches'] = _catches;
+                    updated['run_outs'] = _runOuts;
                     updated['is_mom'] = _isMom;
                     updated['is_player_of_match'] = _isPlayerOfMatch;
                     updated['is_best_bowler'] = _isBestBowler;
