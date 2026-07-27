@@ -473,13 +473,12 @@ class _SelectPlayersScreenState
     );
   }
 
-  /// Official Qo Points calculation — matches the published Qo scoring
-  /// chart. Batting rewards runs, boundaries, and strike rate; bowling
-  /// rewards wickets with milestone bonuses; fielding rewards assists.
-  /// Every player gets +20 just for participating.
+  /// Official Qo Points calculation (participation + strike rate removed
+  /// per owner request). Batting rewards runs, boundaries, and milestone
+  /// bonuses; bowling rewards wickets with milestone bonuses; fielding
+  /// rewards assists.
   double _calcPtsFor(Map<String, dynamic> p) {
     final r = p['runs'] as int;
-    final b = p['balls'] as int? ?? 0;
     final fours = p['fours'] as int? ?? 0;
     final sixes = p['sixes'] as int? ?? 0;
     final w = p['wkts'] as int;
@@ -487,10 +486,8 @@ class _SelectPlayersScreenState
     final ro = p['run_outs'] as int? ?? 0;
 
     // ── BATTING ──
-    // Participation bonus (every player who plays the match).
-    double pts = 20;
     // Every run scored — 0.5 pts per run.
-    pts += r * 0.5;
+    double pts = r * 0.5;
     // Milestone bonuses — not cumulative (only the higher one applies).
     if (r >= 50) {
       pts += 15;
@@ -500,17 +497,6 @@ class _SelectPlayersScreenState
     // Boundary bonuses.
     pts += fours * 2;
     pts += sixes * 4;
-    // Strike rate bonus (only if we know balls faced).
-    if (b > 0) {
-      final sr = (r / b) * 100;
-      if (sr >= 151) {
-        pts += 15;
-      } else if (sr >= 121) {
-        pts += 10;
-      } else if (sr >= 100) {
-        pts += 5;
-      }
-    }
 
     // ── BOWLING ──
     // Every wicket — 15 pts each.
@@ -529,13 +515,11 @@ class _SelectPlayersScreenState
     pts += (c + ro) * 5;
 
     // ── TEAM / MATCH BONUSES ──
-    // Match Win (+20), League Runner-Up (+50), League Champion (+100)
-    // are awarded via the existing bonus flags.
-    if (p['is_mom'] == true) pts += 20;              // Match Win MoM
+    if (p['is_mom'] == true) pts += 20;
     if (p['is_best_batsman'] == true) pts += 20;
     if (p['is_best_bowler'] == true) pts += 20;
-    if (p['is_player_of_match'] == true) pts += 50;  // Runner-up equivalent
-    if (p['is_mvp'] == true) pts += 100;             // League Champion / MVP
+    if (p['is_player_of_match'] == true) pts += 50;
+    if (p['is_mvp'] == true) pts += 100;
 
     return pts;
   }
@@ -720,8 +704,7 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
   /// recomputes the final number on submit — this is display only.
   double _calculatePts() {
     // ── BATTING ──
-    double pts = 20; // Match participation
-    pts += _runs * 0.5; // Every run scored
+    double pts = _runs * 0.5; // Every run scored
     if (_runs >= 50) {
       pts += 15; // 50+ Runs Bonus
     } else if (_runs >= 30) {
@@ -729,17 +712,6 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
     }
     pts += _fours * 2;
     pts += _sixes * 4;
-    // Strike rate bonus
-    if (_balls > 0) {
-      final sr = (_runs / _balls) * 100;
-      if (sr >= 151) {
-        pts += 15;
-      } else if (sr >= 121) {
-        pts += 10;
-      } else if (sr >= 100) {
-        pts += 5;
-      }
-    }
 
     // ── BOWLING ──
     pts += _wickets * 15;
@@ -842,7 +814,7 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                           onInc: () => setState(() => _sixes = (_sixes + 1).clamp(0, 99)),
                           onSet: (v) => setState(() => _sixes = v.clamp(0, 99))),
                       _StatRow(label: 'Balls Faced', value: _balls, max: 999,
-                          helpText: 'Total balls faced by the batter. Used to calculate Strike Rate = (Runs ÷ Balls) × 100. Bonuses: SR 100-120 = +5, SR 121-150 = +10, SR 151+ = +15.',
+                          helpText: 'Total balls faced by the batter. For your records only — does not affect Qo Points.',
                           onDec: () => setState(() => _balls = (_balls - 1).clamp(0, 999)),
                           onInc: () => setState(() => _balls = (_balls + 1).clamp(0, 999)),
                           onSet: (v) => setState(() => _balls = v.clamp(0, 999))),
