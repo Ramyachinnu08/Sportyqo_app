@@ -514,12 +514,10 @@ class _SelectPlayersScreenState
     // Every assist (catch, run-out, stumping) — 5 pts each.
     pts += (c + ro) * 5;
 
-    // ── TEAM / MATCH BONUSES ──
-    if (p['is_mom'] == true) pts += 20;
+    // ── AWARD BONUS (only one applies) ──
     if (p['is_best_batsman'] == true) pts += 20;
     if (p['is_best_bowler'] == true) pts += 20;
-    if (p['is_player_of_match'] == true) pts += 50;
-    if (p['is_mvp'] == true) pts += 100;
+    if (p['is_mvp'] == true) pts += 25;
 
     return pts;
   }
@@ -726,12 +724,10 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
     // ── FIELDING ──
     pts += (_catches + _runOuts) * 5;
 
-    // ── BONUSES ──
-    if (_isMom) pts += 20;
+    // ── AWARD BONUS (only one applies) ──
     if (_isBestBatsman) pts += 20;
     if (_isBestBowler) pts += 20;
-    if (_isPlayerOfMatch) pts += 50;
-    if (_isMvp) pts += 100;
+    if (_isMvp) pts += 25;
     return pts;
   }
 
@@ -845,27 +841,45 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                           onSet: (v) => setState(() => _runOuts = v.clamp(0, 10))),
 
                       const SizedBox(height: 16),
-                      // Achievement Awards (official SportyQo card)
-                      const Text('Achievement Awards', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                      // Achievement Awards — select only ONE. Radio-style
+                      // so the coach can't accidentally stack multiple
+                      // award bonuses on one player.
+                      const Text('Achievement Award (select one)',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15)),
                       const SizedBox(height: 8),
-                      _AwardCheck(
-                          label: 'Man of the Match  (+20)',
-                          value: _isMom,
-                          onChanged: (v) => setState(() => _isMom = v)),
-                      _AwardCheck(
-                          label: 'Best Bowler  (+20)',
-                          value: _isBestBowler,
-                          onChanged: (v) =>
-                              setState(() => _isBestBowler = v)),
-                      _AwardCheck(
-                          label: 'Best Batsman  (+20)',
-                          value: _isBestBatsman,
-                          onChanged: (v) =>
-                              setState(() => _isBestBatsman = v)),
-                      _AwardCheck(
+                      _AwardRadio(
                           label: 'MVP Performance  (+25)',
-                          value: _isMvp,
-                          onChanged: (v) => setState(() => _isMvp = v)),
+                          selected: _isMvp,
+                          onTap: () => setState(() {
+                            _isMvp = !_isMvp;
+                            if (_isMvp) {
+                              _isBestBatsman = false;
+                              _isBestBowler = false;
+                            }
+                          })),
+                      _AwardRadio(
+                          label: 'Best Batsman  (+20)',
+                          selected: _isBestBatsman,
+                          onTap: () => setState(() {
+                            _isBestBatsman = !_isBestBatsman;
+                            if (_isBestBatsman) {
+                              _isMvp = false;
+                              _isBestBowler = false;
+                            }
+                          })),
+                      _AwardRadio(
+                          label: 'Best Bowler  (+20)',
+                          selected: _isBestBowler,
+                          onTap: () => setState(() {
+                            _isBestBowler = !_isBestBowler;
+                            if (_isBestBowler) {
+                              _isMvp = false;
+                              _isBestBatsman = false;
+                            }
+                          })),
                     ],
                   ),
                 ),
@@ -1284,6 +1298,62 @@ class _AwardCheck extends StatelessWidget {
           Text(label,
               style:
               const TextStyle(color: Colors.white70, fontSize: 13)),
+        ]),
+      ),
+    );
+  }
+}
+
+
+/// Radio-style award selector. Coach can pick only one of the three
+/// awards; tapping a selected row deselects it. The parent state is
+/// responsible for clearing the other flags when this one turns on.
+class _AwardRadio extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _AwardRadio(
+      {required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Row(children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                  color: selected
+                      ? const Color(0xFF1A6BFF)
+                      : Colors.white38,
+                  width: 2),
+            ),
+            child: selected
+                ? Center(
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF1A6BFF),
+                ),
+              ),
+            )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Text(label,
+              style: TextStyle(
+                  color: selected ? Colors.white : Colors.white70,
+                  fontSize: 14,
+                  fontWeight:
+                  selected ? FontWeight.w700 : FontWeight.w500)),
         ]),
       ),
     );
