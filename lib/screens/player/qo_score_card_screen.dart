@@ -516,12 +516,6 @@ class _QoScoreCardScreenState extends State<QoScoreCardScreen> {
                       const SizedBox(height: 14),
                       _PointsGroup(
                           color: cardColor,
-                          title: '🎁 Getting Started',
-                          rows: const [
-                            ['Welcome bonus on joining', '+50'],
-                          ]),
-                      _PointsGroup(
-                          color: cardColor,
                           title: '📤 Uploads',
                           rows: const [
                             ['Photo post', '+1'],
@@ -532,44 +526,42 @@ class _QoScoreCardScreenState extends State<QoScoreCardScreen> {
                           color: cardColor,
                           title: '🏏 Batting (per match)',
                           rows: const [
-                            ['0 – 10 runs', '+5'],
-                            ['11 – 25 runs', '+8'],
-                            ['26 – 45 runs', '+12'],
-                            ['46 – 99 runs', '+20'],
-                            ['100+ runs', '+50'],
+                            ['Every run scored', '+0.5'],
+                            ['30 – 49 runs bonus', '+10'],
+                            ['50+ runs bonus', '+15'],
+                            ['Every four', '+2'],
+                            ['Every six', '+4'],
                           ]),
                       _PointsGroup(
                           color: cardColor,
                           title: '🎯 Bowling',
                           rows: const [
-                            ['1 – 2 wickets', '+5'],
-                            ['3+ wickets', '+20'],
+                            ['Every wicket', '+15'],
+                            ['2 wickets bonus', '+5'],
+                            ['3 wickets bonus', '+10'],
+                            ['5 wickets bonus', '+20'],
                           ]),
                       _PointsGroup(
                           color: cardColor,
                           title: '🧤 Fielding',
                           rows: const [
-                            ['2 catches / assists', '+2'],
-                            ['3+ catches / assists', '+5'],
+                            ['Every catch / assist', '+5'],
                           ]),
                       _PointsGroup(
                           color: cardColor,
-                          title: '🏅 Achievement Bonuses',
+                          title: '🏅 Achievement Bonuses (one only)',
                           rows: const [
-                            ['Player of the Match', '+20'],
-                            ['Man of the Match', '+20'],
-                            ['Best Bowler', '+20'],
-                            ['Best Batsman', '+20'],
                             ['MVP Performance', '+25'],
+                            ['Best Batsman', '+20'],
+                            ['Best Bowler', '+20'],
                           ]),
                       _PointsGroup(
                           color: cardColor,
                           title: '🏆 Team Achievements',
                           rows: const [
                             ['Match win (team bonus)', '+20'],
-                            ['Tournament Finalist', '+50'],
-                            ['Championship Runner Up', '+50'],
-                            ['Championship Winner', '+100'],
+                            ['League Runner-Up (Finalist)', '+50'],
+                            ['League Champion', '+100'],
                           ]),
                     ],
                   ),
