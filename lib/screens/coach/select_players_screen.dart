@@ -853,11 +853,6 @@ class _EditPlayerStatsScreenState extends State<_EditPlayerStatsScreen> {
                           value: _isMom,
                           onChanged: (v) => setState(() => _isMom = v)),
                       _AwardCheck(
-                          label: 'Player of the Match  (+20)',
-                          value: _isPlayerOfMatch,
-                          onChanged: (v) =>
-                              setState(() => _isPlayerOfMatch = v)),
-                      _AwardCheck(
                           label: 'Best Bowler  (+20)',
                           value: _isBestBowler,
                           onChanged: (v) =>
