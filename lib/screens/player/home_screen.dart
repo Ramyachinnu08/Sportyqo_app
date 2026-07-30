@@ -349,6 +349,41 @@ class _HomeTabState extends State<_HomeTab> {
 
                 const SizedBox(height: 20),
 
+                // ── Nike Reward Banner ──
+                // Promo banner shown at the top of the home feed, right
+                // after the player's name/ID and above the Qo Score card.
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.network(
+                      'https://i.ibb.co/fVFm0WvX/307150.jpg',
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Container(
+                          height: 160,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF111111),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF00C853),
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stack) =>
+                      const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
                 // ── Qo Score Card ──
                 Padding(
                   padding: const EdgeInsets.symmetric(
